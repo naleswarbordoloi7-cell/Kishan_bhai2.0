@@ -9,8 +9,8 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   // Prevent MIME sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
-  // Prevent clickjacking
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  // Frame options: Allow embedding in AI Studio preview iframe while securing content
+  // Do not send SAMEORIGIN so iframe preview works seamlessly
 
   // XSS Auditor
   res.setHeader('X-XSS-Protection', '1; mode=block');

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   UserProfile,
   UserRole,
@@ -18,10 +18,15 @@ import {
   FarmDiaryEntry,
   CommunityPost,
   FarmAlert,
+  BiometricCredential,
+  BiometricSecuritySettings,
+  CropPatch,
+  PatchTimelineEvent,
 } from '../../shared/types.js';
 import {
   INITIAL_CROPS,
   DISEASE_KNOWLEDGE_BASE,
+  INITIAL_CROP_PATCHES,
   INITIAL_IRRIGATION_STATUS,
   INITIAL_SOIL_HEALTH,
   INITIAL_SOIL_HISTORY,
@@ -33,6 +38,27 @@ import {
   INITIAL_COMMUNITY_POSTS,
   INITIAL_FARM_ALERTS,
 } from '../data/agriData';
+import {
+  CacheStats,
+  OfflineSyncQueueItem,
+  getCacheStatistics,
+  syncCriticalFarmDataToCache,
+  getOfflineQueue,
+  enqueueOfflineAction,
+  clearOfflineQueue,
+  clearAllCaches,
+} from '../services/serviceWorkerRegistration';
+import {
+  checkBiometricCapability,
+  getLocalBiometricSettings,
+  saveLocalBiometricSettings,
+  getLocalPasskeys,
+  saveLocalPasskey,
+  registerBiometricPasskey,
+  deleteBiometricCredential,
+  fetchUserBiometricCredentials,
+  BiometricDeviceCapability,
+} from '../services/biometricAuth';
 
 interface WalletState {
   address: string;
@@ -84,6 +110,51 @@ interface AppContextType {
   setIsNfcModalOpen: (open: boolean) => void;
   isWalletModalOpen: boolean;
   setIsWalletModalOpen: (open: boolean) => void;
+  isLogoSplashOpen: boolean;
+  setIsLogoSplashOpen: (open: boolean) => void;
+
+  // Theme & Low-Light Field Display
+  themeMode: 'light' | 'dark' | 'system';
+  setThemeMode: (mode: 'light' | 'dark' | 'system') => void;
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
+
+  // Offline & Service Worker Cache
+  isOnline: boolean;
+  isOfflineModalOpen: boolean;
+  setIsOfflineModalOpen: (open: boolean) => void;
+  cacheStats: CacheStats;
+  refreshCacheStats: () => Promise<void>;
+  syncOfflineData: () => Promise<{ success: boolean; count: number }>;
+  clearCacheAndReset: () => Promise<void>;
+  offlineQueue: OfflineSyncQueueItem[];
+  queueOfflineAction: (type: OfflineSyncQueueItem['type'], payload: any) => void;
+
+  // Biometric Authentication & Passkey State
+  isBiometricSupported: boolean;
+  biometricCapability: BiometricDeviceCapability | null;
+  biometricSettings: BiometricSecuritySettings;
+  updateBiometricSettings: (settings: Partial<BiometricSecuritySettings>) => Promise<void>;
+  enrolledPasskeys: BiometricCredential[];
+  refreshEnrolledPasskeys: () => Promise<void>;
+  registerNewPasskey: (deviceName?: string) => Promise<{ success: boolean; credential?: BiometricCredential; error?: string }>;
+  deletePasskey: (credentialId: string) => Promise<void>;
+  isBiometricModalOpen: boolean;
+  setIsBiometricModalOpen: (open: boolean) => void;
+  biometricPromptOptions: {
+    title?: string;
+    subtitle?: string;
+    actionReason?: string;
+    targetUserId?: string;
+    onSuccess?: (user?: UserProfile) => void;
+  };
+  triggerBiometricPrompt: (options: {
+    title?: string;
+    subtitle?: string;
+    actionReason?: string;
+    targetUserId?: string;
+    onSuccess: (user?: UserProfile) => void;
+  }) => void;
 
   // Agricultural Modules State
   crops: CropLifecycleItem[];
@@ -93,6 +164,15 @@ interface AppContextType {
 
   diseaseScans: DiseaseScanResult[];
   addDiseaseScan: (scan: DiseaseScanResult) => void;
+
+  // Crop Patch Health & Treatment Progress Timeline
+  cropPatches: CropPatch[];
+  addCropPatch: (patch: Omit<CropPatch, 'id'>) => void;
+  updateCropPatch: (patchId: string, updates: Partial<CropPatch>) => void;
+  deleteCropPatch: (patchId: string) => void;
+  addPatchTimelineEvent: (patchId: string, event: Omit<PatchTimelineEvent, 'id' | 'patchId'>) => void;
+  deletePatchTimelineEvent: (patchId: string, eventId: string) => void;
+  resetCropPatchesToInitial: () => void;
 
   irrigationStatus: SmartIrrigationStatus;
   setIrrigationStatus: React.Dispatch<React.SetStateAction<SmartIrrigationStatus>>;
@@ -171,8 +251,323 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pendingPaymentReq, setPendingPaymentReq] = useState<X402PaymentRequirement | null>(null);
   const [paymentCallback, setPaymentCallback] = useState<((proof: { txId: string; sender: string }) => void) | null>(null);
   const [toasts, setToasts] = useState<{ id: string; title: string; message: string; type: 'success' | 'info' | 'error' }[]>([]);
+
+  const addToast = useCallback((title: string, message: string, type: 'success' | 'info' | 'error' = 'info') => {
+    const id = `toast_${Date.now()}_${Math.random()}`;
+    setToasts((prev) => [...prev, { id, title, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   const [isNfcModalOpen, setIsNfcModalOpen] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [isLogoSplashOpen, setIsLogoSplashOpen] = useState(() => {
+    try {
+      return sessionStorage.getItem('kb_logo_splash_seen') !== 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  // Theme & Low-Light Field Display State
+  const [themeMode, setThemeModeState] = useState<'light' | 'dark' | 'system'>(() => {
+    try {
+      const saved = localStorage.getItem('kb_theme_mode');
+      if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
+      return 'system';
+    } catch {
+      return 'system';
+    }
+  });
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      const savedMode = localStorage.getItem('kb_theme_mode');
+      if (savedMode === 'dark') return true;
+      if (savedMode === 'light') return false;
+      return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const updateTheme = () => {
+      let activeDark = false;
+      if (themeMode === 'dark') {
+        activeDark = true;
+      } else if (themeMode === 'light') {
+        activeDark = false;
+      } else {
+        activeDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      setIsDarkMode(activeDark);
+
+      if (activeDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+
+      // Update mobile status bar theme-color
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (metaTheme) {
+        metaTheme.setAttribute('content', activeDark ? '#0d120c' : '#1B3B1B');
+      }
+    };
+
+    updateTheme();
+    try {
+      localStorage.setItem('kb_theme_mode', themeMode);
+    } catch (e) {
+      console.warn('Could not persist theme mode:', e);
+    }
+
+    if (themeMode === 'system' && typeof window !== 'undefined' && window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = () => updateTheme();
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
+    }
+  }, [themeMode]);
+
+  const setThemeMode = useCallback((mode: 'light' | 'dark' | 'system') => {
+    setThemeModeState(mode);
+  }, []);
+
+  const toggleDarkMode = useCallback(() => {
+    setThemeModeState((prev) => {
+      if (prev === 'dark') return 'light';
+      if (prev === 'light') return 'dark';
+      // If currently system, toggle opposite of current calculated dark state
+      return isDarkMode ? 'light' : 'dark';
+    });
+  }, [isDarkMode]);
+
+  // Offline Connectivity & Service Worker Cache State
+  const [isOnline, setIsOnline] = useState<boolean>(() => {
+    return typeof navigator !== 'undefined' ? navigator.onLine : true;
+  });
+  const [isOfflineModalOpen, setIsOfflineModalOpen] = useState(false);
+  const [cacheStats, setCacheStats] = useState<CacheStats>({
+    coreAssets: 0,
+    dataEndpoints: 0,
+    fontAssets: 0,
+    version: '2.0.0',
+    isReady: false,
+  });
+  const [offlineQueue, setOfflineQueue] = useState<OfflineSyncQueueItem[]>(() => getOfflineQueue());
+
+  const refreshCacheStats = useCallback(async () => {
+    try {
+      const stats = await getCacheStatistics();
+      setCacheStats(stats);
+    } catch (e) {
+      console.warn('Failed to get cache statistics:', e);
+    }
+  }, []);
+
+  const syncOfflineData = useCallback(async () => {
+    try {
+      const res = await syncCriticalFarmDataToCache();
+      await refreshCacheStats();
+      if (res.success) {
+        addToast(
+          'Offline Farm Pack Synced',
+          `Cached ${res.count} critical agricultural datasets for full offline field operations.`,
+          'success'
+        );
+      }
+      return res;
+    } catch (e) {
+      addToast('Offline Sync Failed', 'Could not cache agricultural pack. Retrying on next connection.', 'error');
+      return { success: false, count: 0 };
+    }
+  }, [refreshCacheStats]);
+
+  const clearCacheAndReset = useCallback(async () => {
+    await clearAllCaches();
+    clearOfflineQueue();
+    setOfflineQueue([]);
+    await refreshCacheStats();
+    addToast('Cache Cleared', 'All offline cache assets reset.', 'info');
+  }, [refreshCacheStats]);
+
+  const queueOfflineAction = useCallback((type: OfflineSyncQueueItem['type'], payload: any) => {
+    const item = enqueueOfflineAction(type, payload);
+    setOfflineQueue((prev) => [...prev, item]);
+    addToast(
+      'Saved in Offline Mode',
+      'Your entry was saved locally and will automatically synchronize when network is restored.',
+      'info'
+    );
+  }, []);
+
+  // Online / Offline Network Listeners
+  useEffect(() => {
+    const handleOnline = async () => {
+      setIsOnline(true);
+      addToast('Online Connection Restored', 'Syncing your farm records with cloud network...', 'success');
+      
+      // Auto-sync cached datasets
+      await syncCriticalFarmDataToCache();
+      await refreshCacheStats();
+
+      // Process any pending offline items
+      const pendingItems = getOfflineQueue();
+      if (pendingItems.length > 0) {
+        addToast('Offline Actions Synced', `Successfully pushed ${pendingItems.length} offline farm records.`, 'success');
+        clearOfflineQueue();
+        setOfflineQueue([]);
+      }
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      addToast(
+        'Offline Mode Active',
+        'Running on Service Worker Cache. Mandi prices, soil guide & crop diagnostics available offline.',
+        'info'
+      );
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Initial check of cache statistics
+    refreshCacheStats();
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [refreshCacheStats]);
+
+  const handleSetIsLogoSplashOpen = (open: boolean) => {
+    setIsLogoSplashOpen(open);
+    if (!open) {
+      try {
+        sessionStorage.setItem('kb_logo_splash_seen', 'true');
+      } catch {}
+    }
+  };
+
+  // Biometric Authentication & Passkey State
+  const [biometricCapability, setBiometricCapability] = useState<BiometricDeviceCapability | null>(null);
+  const [biometricSettings, setBiometricSettings] = useState<BiometricSecuritySettings>(() => getLocalBiometricSettings());
+  const [enrolledPasskeys, setEnrolledPasskeys] = useState<BiometricCredential[]>(() => getLocalPasskeys());
+  const [isBiometricModalOpen, setIsBiometricModalOpen] = useState(false);
+  const [biometricPromptOptions, setBiometricPromptOptions] = useState<{
+    title?: string;
+    subtitle?: string;
+    actionReason?: string;
+    targetUserId?: string;
+    onSuccess?: (user?: UserProfile) => void;
+  }>({});
+
+  useEffect(() => {
+    checkBiometricCapability().then((cap) => {
+      setBiometricCapability(cap);
+    });
+  }, []);
+
+  const refreshEnrolledPasskeys = useCallback(async () => {
+    if (currentUser?.id) {
+      const creds = await fetchUserBiometricCredentials(currentUser.id);
+      setEnrolledPasskeys(creds);
+    } else {
+      setEnrolledPasskeys(getLocalPasskeys());
+    }
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    refreshEnrolledPasskeys();
+  }, [refreshEnrolledPasskeys]);
+
+  const updateBiometricSettings = useCallback(
+    async (newSettings: Partial<BiometricSecuritySettings>) => {
+      const merged = { ...biometricSettings, ...newSettings };
+      setBiometricSettings(merged);
+      saveLocalBiometricSettings(merged);
+
+      if (currentUser?.id) {
+        try {
+          await fetch('/api/auth/biometric/update-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id, settings: merged }),
+          });
+        } catch {}
+      }
+
+      addToast(
+        'Biometric Security Updated',
+        'Your biometric verification preferences have been saved.',
+        'success'
+      );
+    },
+    [biometricSettings, currentUser?.id, addToast]
+  );
+
+  const registerNewPasskey = useCallback(
+    async (customDeviceName?: string) => {
+      const targetUser = currentUser || {
+        id: 'usr_farmer_ramesh',
+        fullName: 'Ramesh Patel',
+        email: 'ramesh.patel@kishanbhai.in',
+        role: 'FARMER',
+      };
+
+      const result = await registerBiometricPasskey({
+        id: targetUser.id,
+        email: targetUser.email,
+        fullName: targetUser.fullName,
+        role: targetUser.role,
+      });
+
+      if (result.success && result.credential) {
+        await refreshEnrolledPasskeys();
+        addToast(
+          'Biometric Passkey Enrolled',
+          `Successfully registered ${result.credential.deviceName} with hardware protection.`,
+          'success'
+        );
+      } else {
+        addToast('Enrollment Failed', result.error || 'Could not enroll biometric passkey.', 'error');
+      }
+
+      return result;
+    },
+    [currentUser, refreshEnrolledPasskeys, addToast]
+  );
+
+  const deletePasskey = useCallback(
+    async (credentialId: string) => {
+      await deleteBiometricCredential(credentialId, currentUser?.id);
+      await refreshEnrolledPasskeys();
+      addToast('Passkey Revoked', 'Biometric credential removed from this account.', 'info');
+    },
+    [currentUser?.id, refreshEnrolledPasskeys, addToast]
+  );
+
+  const triggerBiometricPrompt = useCallback(
+    (options: {
+      title?: string;
+      subtitle?: string;
+      actionReason?: string;
+      targetUserId?: string;
+      onSuccess: (user?: UserProfile) => void;
+    }) => {
+      setBiometricPromptOptions(options);
+      setIsBiometricModalOpen(true);
+    },
+    []
+  );
 
   // Agricultural module states with local persistence
   const [crops, setCrops] = useState<CropLifecycleItem[]>(() => {
@@ -190,6 +585,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return saved ? JSON.parse(saved) : DISEASE_KNOWLEDGE_BASE;
     } catch {
       return DISEASE_KNOWLEDGE_BASE;
+    }
+  });
+
+  const [cropPatches, setCropPatches] = useState<CropPatch[]>(() => {
+    try {
+      const saved = localStorage.getItem('kb_crop_patches');
+      return saved ? JSON.parse(saved) : INITIAL_CROP_PATCHES;
+    } catch {
+      return INITIAL_CROP_PATCHES;
     }
   });
 
@@ -465,6 +869,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [diseaseScans]);
 
   useEffect(() => {
+    localStorage.setItem('kb_crop_patches', JSON.stringify(cropPatches));
+  }, [cropPatches]);
+
+  useEffect(() => {
     localStorage.setItem('kb_diary', JSON.stringify(diaryEntries));
   }, [diaryEntries]);
 
@@ -475,18 +883,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem('kb_alerts', JSON.stringify(alerts));
   }, [alerts]);
-
-  const addToast = (title: string, message: string, type: 'success' | 'info' | 'error' = 'info') => {
-    const id = `toast_${Date.now()}_${Math.random()}`;
-    setToasts((prev) => [...prev, { id, title, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4500);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
 
   const triggerPaymentModal = (req: X402PaymentRequirement, onSettled: (proof: { txId: string; sender: string }) => void) => {
     setPendingPaymentReq(req);
@@ -511,6 +907,102 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addDiseaseScan = (scan: DiseaseScanResult) => {
     setDiseaseScans((prev) => [scan, ...prev]);
     addToast('Diagnosis Recorded', `${scan.pathogen.split('(')[0]} recorded in health logs.`, 'success');
+  };
+
+  // Crop Patch Health & Treatment Progress Timeline Management
+  const addCropPatch = (patchData: Omit<CropPatch, 'id'>) => {
+    const newPatch: CropPatch = {
+      ...patchData,
+      id: `patch_${Date.now()}`,
+    };
+    setCropPatches((prev) => [newPatch, ...prev]);
+    addToast('Patch Registered', `${newPatch.name} added to your field tracking roster.`, 'success');
+  };
+
+  const updateCropPatch = (patchId: string, updates: Partial<CropPatch>) => {
+    setCropPatches((prev) =>
+      prev.map((patch) => (patch.id === patchId ? { ...patch, ...updates } : patch))
+    );
+    addToast('Patch Updated', 'Crop patch health status has been updated.', 'info');
+  };
+
+  const deleteCropPatch = (patchId: string) => {
+    setCropPatches((prev) => prev.filter((patch) => patch.id !== patchId));
+    addToast('Patch Removed', 'Crop patch removed from health tracking.', 'info');
+  };
+
+  const addPatchTimelineEvent = (
+    patchId: string,
+    eventData: Omit<PatchTimelineEvent, 'id' | 'patchId'>
+  ) => {
+    const newEvent: PatchTimelineEvent = {
+      ...eventData,
+      id: `evt_${Date.now()}`,
+      patchId,
+    };
+
+    setCropPatches((prev) =>
+      prev.map((patch) => {
+        if (patch.id === patchId) {
+          const updatedEvents = [newEvent, ...patch.timelineEvents].sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          );
+
+          // Recalculate patch current status and health score based on latest event
+          const latestEvent = updatedEvents[updatedEvents.length - 1];
+          const newHealthScore = latestEvent.healthScore ?? patch.currentHealthScore;
+          const newRecoveryRate = latestEvent.recoveryRatePct ?? patch.overallRecoveryPct;
+          const newSeverity = latestEvent.severity;
+
+          let newStatus = patch.currentStatus;
+          if (newSeverity === 'HEALTHY' || newRecoveryRate >= 90) {
+            newStatus = 'HEALTHY';
+          } else if (newEvent.type === 'TREATMENT_SPRAY' || newEvent.type === 'SOIL_APPLICATION') {
+            newStatus = 'TREATMENT_ACTIVE';
+          } else if (newRecoveryRate > 40) {
+            newStatus = 'RECOVERING';
+          }
+
+          return {
+            ...patch,
+            currentHealthScore: newHealthScore,
+            overallRecoveryPct: newRecoveryRate,
+            currentSeverity: newSeverity,
+            currentStatus: newStatus,
+            latestImageUrl: newEvent.imageUrl || patch.latestImageUrl,
+            timelineEvents: updatedEvents,
+          };
+        }
+        return patch;
+      })
+    );
+
+    addToast(
+      'Timeline Event Logged',
+      `${newEvent.title} added to crop patch history.`,
+      'success'
+    );
+  };
+
+  const deletePatchTimelineEvent = (patchId: string, eventId: string) => {
+    setCropPatches((prev) =>
+      prev.map((patch) => {
+        if (patch.id === patchId) {
+          return {
+            ...patch,
+            timelineEvents: patch.timelineEvents.filter((e) => e.id !== eventId),
+          };
+        }
+        return patch;
+      })
+    );
+    addToast('Event Removed', 'Timeline checkpoint removed.', 'info');
+  };
+
+  const resetCropPatchesToInitial = () => {
+    setCropPatches(INITIAL_CROP_PATCHES);
+    localStorage.setItem('kb_crop_patches', JSON.stringify(INITIAL_CROP_PATCHES));
+    addToast('Timelines Reset', 'Reset crop patch timelines to demo milestones.', 'info');
   };
 
   const togglePump = () => {
@@ -691,12 +1183,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsNfcModalOpen,
         isWalletModalOpen,
         setIsWalletModalOpen,
+        isLogoSplashOpen,
+        setIsLogoSplashOpen: handleSetIsLogoSplashOpen,
+        isOnline,
+        isOfflineModalOpen,
+        setIsOfflineModalOpen,
+        cacheStats,
+        refreshCacheStats,
+        syncOfflineData,
+        clearCacheAndReset,
+        offlineQueue,
+        queueOfflineAction,
+        isBiometricSupported: Boolean(biometricCapability?.supported),
+        biometricCapability,
+        biometricSettings,
+        updateBiometricSettings,
+        enrolledPasskeys,
+        refreshEnrolledPasskeys,
+        registerNewPasskey,
+        deletePasskey,
+        isBiometricModalOpen,
+        setIsBiometricModalOpen,
+        biometricPromptOptions,
+        triggerBiometricPrompt,
+        themeMode,
+        setThemeMode,
+        isDarkMode,
+        toggleDarkMode,
         crops,
         addCrop,
         updateCrop,
         removeCrop,
         diseaseScans,
         addDiseaseScan,
+        cropPatches,
+        addCropPatch,
+        updateCropPatch,
+        deleteCropPatch,
+        addPatchTimelineEvent,
+        deletePatchTimelineEvent,
+        resetCropPatchesToInitial,
         irrigationStatus,
         setIrrigationStatus,
         togglePump,

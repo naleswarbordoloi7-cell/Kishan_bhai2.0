@@ -1,24 +1,44 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
     --font-display: 'Outfit', 'DM Sans', sans-serif;
     --font-serif: 'Fraunces', Georgia, serif;
     --font-mono: 'JetBrains Mono', monospace;
+
+    --color-forest: #1B3B1B;
+    --color-leaf: #2D5A27;
+    --color-sage: #4D7C40;
+    --color-earth: #F4F1EA;
+    --color-warm-gray: #78716C;
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: #FBFBFA;
+    background-color: #F9F8F5;
     background-image: 
-      radial-gradient(at 15% 10%, #F1F6EE 0px, transparent 40%),
-      radial-gradient(at 85% 90%, #F8F5EC 0px, transparent 45%);
+      radial-gradient(at 12% 10%, #EFF5EC 0px, transparent 45%),
+      radial-gradient(at 88% 88%, #F7F3E8 0px, transparent 50%);
     background-attachment: fixed;
     min-height: 100vh;
     color: #1c1c1a;
     letter-spacing: -0.011em;
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  :root.dark body,
+  .dark body {
+    background-color: #0d120c;
+    background-image: 
+      radial-gradient(at 12% 10%, #152214 0px, transparent 50%),
+      radial-gradient(at 88% 88%, #171d15 0px, transparent 55%);
+    color: #f1f3ee;
   }
 
   h1, h2, h3, h4, .font-display {
@@ -39,22 +59,56 @@
   }
 }
 
-/* Crisp, solid surface utilities (replacing generic glassmorphism) */
-.glass-panel {
+/* Crisp tactile cards and surface utilities */
+.surface-card {
   background: #ffffff;
-  border: 1px solid rgba(231, 229, 228, 0.85);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(229, 231, 235, 0.85);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dark .surface-card,
+:root.dark .surface-card {
+  background: #171e16;
+  border-color: rgba(68, 85, 64, 0.6);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+  color: #f1f3ee;
 }
 
-.glass-panel-subtle {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(231, 229, 228, 0.6);
+.surface-card-interactive {
+  background: #ffffff;
+  border: 1px solid rgba(229, 231, 235, 0.85);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dark .surface-card-interactive,
+:root.dark .surface-card-interactive {
+  background: #171e16;
+  border-color: rgba(68, 85, 64, 0.6);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+  color: #f1f3ee;
 }
 
-.glass-panel-solid {
+.surface-card-interactive:hover {
+  transform: translateY(-1px);
+  border-color: rgba(45, 90, 39, 0.3);
+  box-shadow: 0 8px 20px -4px rgba(27, 59, 27, 0.08), 0 2px 6px -2px rgba(27, 59, 27, 0.04);
+}
+.dark .surface-card-interactive:hover,
+:root.dark .surface-card-interactive:hover {
+  border-color: rgba(74, 222, 128, 0.4);
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+}
+
+.surface-pill {
   background: #ffffff;
-  border: 1px solid #e7e5e4;
-  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+}
+.dark .surface-pill,
+:root.dark .surface-pill {
+  background: #1f291d;
+  border-color: rgba(68, 85, 64, 0.8);
+  color: #e5e7eb;
 }
 
 /* Refined typography scale utilities */
@@ -77,13 +131,35 @@
 ::-webkit-scrollbar-track {
   background: #f5f5f4;
 }
+.dark ::-webkit-scrollbar-track,
+:root.dark ::-webkit-scrollbar-track {
+  background: #121711;
+}
 
 ::-webkit-scrollbar-thumb {
   background: #d6d3d1;
   border-radius: 9999px;
 }
+.dark ::-webkit-scrollbar-thumb,
+:root.dark ::-webkit-scrollbar-thumb {
+  background: #2e3d2a;
+}
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a29e;
+}
+.dark ::-webkit-scrollbar-thumb:hover,
+:root.dark ::-webkit-scrollbar-thumb:hover {
+  background: #455a40;
+}
+
+/* Subtle focus rings for accessibility */
+*:focus-visible {
+  outline: 2px solid #2D5A27;
+  outline-offset: 2px;
+}
+.dark *:focus-visible,
+:root.dark *:focus-visible {
+  outline: 2px solid #4ade80;
 }
 

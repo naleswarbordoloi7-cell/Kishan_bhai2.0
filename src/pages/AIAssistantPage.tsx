@@ -29,6 +29,8 @@ import { AIFarmContextBadge } from '../components/ai/AIFarmContextBadge';
 import { AIChatMessageItem } from '../components/ai/AIChatMessageItem';
 import { AIQuickPrompts } from '../components/ai/AIQuickPrompts';
 import { AIHistoryDrawer } from '../components/ai/AIHistoryDrawer';
+import { HandsFreeAssistantModal } from '../components/speech/HandsFreeAssistantModal';
+import { INDIAN_SPEECH_LANGUAGES } from '../services/webSpeechService';
 
 export const AIAssistantPage: React.FC = () => {
   const {
@@ -45,15 +47,19 @@ export const AIAssistantPage: React.FC = () => {
     setPendingAiQuery,
   } = useApp();
 
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.7-flash');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
   const [activeSessionId, setActiveSessionId] = useState<string>('sess_wheat_irrigation_01');
   const [sessions, setSessions] = useState<AIConversationSession[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isHandsFreeOpen, setIsHandsFreeOpen] = useState(false);
+  const [speechLanguageCode, setSpeechLanguageCode] = useState<string>(
+    language === 'hi' ? 'hi-IN' : 'en-IN'
+  );
 
   const initialWelcomeMessage: AIChatMessage = {
     id: 'msg_welcome',
     role: 'assistant',
-    modelUsed: 'gemini-3.7-flash',
+    modelUsed: 'gemini-2.5-flash',
     language: language || 'en',
     content: language === 'hi'
       ? `🌱 **Recommendation: नमस्ते ${currentUser?.fullName || 'किसान भाई'}! मैं आपका 24/7 स्मार्ट कृषि साथी हूँ**
@@ -93,6 +99,7 @@ export const AIAssistantPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [interimVoiceSpeech, setInterimVoiceSpeech] = useState('');
   const [isTypingAnimation, setIsTypingAnimation] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -147,43 +154,64 @@ export const AIAssistantPage: React.FC = () => {
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
+      setInterimVoiceSpeech('');
       return;
     }
 
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+      recognition.lang = speechLanguageCode || (language === 'hi' ? 'hi-IN' : 'en-IN');
       recognition.continuous = false;
-      recognition.interimResults = false;
+      recognition.interimResults = true;
 
       recognition.onstart = () => {
         setIsListening(true);
+        setInterimVoiceSpeech('');
         addToast(
-          'Listening...',
+          'Listening in Field...',
           language === 'hi' ? 'बोलिए, किसान भाई AI सुन रहा है...' : 'Speak now, Kisan Bhai AI is listening...',
           'info'
         );
       };
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputPrompt((prev) => (prev ? `${prev} ${transcript}` : transcript));
-        setIsListening(false);
-        addToast('Voice Captured', transcript, 'success');
+        let interim = '';
+        let finalChunk = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const res = event.results[i];
+          if (res.isFinal) {
+            finalChunk += res[0].transcript;
+          } else {
+            interim += res[0].transcript;
+          }
+        }
+
+        if (finalChunk) {
+          setInputPrompt((prev) => (prev ? `${prev} ${finalChunk.trim()}` : finalChunk.trim()));
+          setInterimVoiceSpeech('');
+          setIsListening(false);
+          addToast('Voice Captured', finalChunk, 'success');
+        } else {
+          setInterimVoiceSpeech(interim);
+        }
       };
 
       recognition.onerror = () => {
         setIsListening(false);
+        setInterimVoiceSpeech('');
       };
 
       recognition.onend = () => {
         setIsListening(false);
+        setInterimVoiceSpeech('');
       };
 
       recognitionRef.current = recognition;
       recognition.start();
     } catch {
       setIsListening(false);
+      setInterimVoiceSpeech('');
     }
   };
 
@@ -200,11 +228,11 @@ export const AIAssistantPage: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSend = async (customPrompt?: string, customImage?: string) => {
+  const handleSend = async (customPrompt?: string, customImage?: string): Promise<string | undefined> => {
     const promptToSend = customPrompt || inputPrompt;
     const imageToSend = customImage || selectedImage;
 
-    if (!promptToSend.trim() && !imageToSend) return;
+    if (!promptToSend.trim() && !imageToSend) return undefined;
 
     const userMsg: AIChatMessage = {
       id: `msg_${Date.now()}`,
@@ -217,6 +245,7 @@ export const AIAssistantPage: React.FC = () => {
     setMessages((prev) => [...prev, userMsg]);
     setInputPrompt('');
     setSelectedImage(null);
+    setInterimVoiceSpeech('');
     setIsProcessing(true);
     setIsTypingAnimation(true);
 
@@ -316,7 +345,7 @@ export const AIAssistantPage: React.FC = () => {
           triggerPaymentModal(paymentReq, async (proof) => {
             handleExecutePaidService(paymentReq, proof);
           });
-          return;
+          return paymentNoticeMsg.content;
         }
       }
 
@@ -336,19 +365,22 @@ export const AIAssistantPage: React.FC = () => {
 
       setMessages((prev) => [...prev, botMsg]);
       fetchSessions();
+      return aiData.text;
     } catch (err: any) {
+      const errMsg = language === 'hi'
+        ? 'क्षमा करें, कनेक्शन में रुकावट आई है। कृपया दोबारा प्रयास करें।'
+        : 'I experienced a connection issue. Please verify your connection and try again.';
       setMessages((prev) => [
         ...prev,
         {
           id: `msg_err_${Date.now()}`,
           role: 'assistant',
           modelUsed: selectedModel,
-          content: language === 'hi'
-            ? 'क्षमा करें, कनेक्शन में रुकावट आई है। कृपया दोबारा प्रयास करें।'
-            : 'I experienced a connection issue. Please verify your connection and try again.',
+          content: errMsg,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
+      return errMsg;
     } finally {
       setIsProcessing(false);
       setIsTypingAnimation(false);
@@ -508,13 +540,51 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
           </div>
         </div>
 
-        {/* Right Action Controls: Language, History, Clear */}
+        {/* Right Action Controls: Hands-Free Field Mode, Dialect, History, Clear */}
         <div className="flex items-center gap-2 relative z-10 w-full md:w-auto justify-end flex-wrap">
+          {/* Hands-Free Assistant Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsHandsFreeOpen(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-stone-950 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer border border-emerald-200/50 active:scale-95 shrink-0"
+            title="Open Hands-Free Field Conversation Loop"
+          >
+            <Mic className="w-3.5 h-3.5 text-stone-950 animate-pulse" />
+            <span>{language === 'hi' ? 'बोलकर बात करें (Hands-Free)' : 'Hands-Free Field Mode'}</span>
+          </button>
+
+          {/* Voice Dialect Selector */}
+          <div className="relative">
+            <select
+              value={speechLanguageCode}
+              onChange={(e) => setSpeechLanguageCode(e.target.value)}
+              className="bg-white/15 hover:bg-white/25 text-white text-[11px] font-medium px-2.5 py-1.5 rounded-xl border border-white/20 backdrop-blur-xs cursor-pointer focus:outline-none"
+              title="Voice Recognition Language"
+            >
+              {INDIAN_SPEECH_LANGUAGES.map((opt) => (
+                <option key={opt.code} value={opt.code} className="text-stone-900 bg-white">
+                  🎙️ {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Language Selector */}
           <div className="relative">
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value as any)}
+              onChange={(e) => {
+                const newLang = e.target.value as any;
+                setLanguage(newLang);
+                if (newLang === 'hi') setSpeechLanguageCode('hi-IN');
+                else if (newLang === 'gu') setSpeechLanguageCode('gu-IN');
+                else if (newLang === 'pa') setSpeechLanguageCode('pa-IN');
+                else if (newLang === 'mr') setSpeechLanguageCode('mr-IN');
+                else if (newLang === 'bn') setSpeechLanguageCode('bn-IN');
+                else if (newLang === 'ta') setSpeechLanguageCode('ta-IN');
+                else if (newLang === 'te') setSpeechLanguageCode('te-IN');
+                else setSpeechLanguageCode('en-IN');
+              }}
               className="bg-white/15 hover:bg-white/25 text-white text-xs font-medium px-3 py-1.5 rounded-xl border border-white/20 backdrop-blur-xs cursor-pointer focus:outline-none"
             >
               {languageOptions.map((opt) => (
@@ -617,6 +687,17 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
             </div>
           )}
 
+          {/* Live Interim Speech Preview Banner */}
+          {interimVoiceSpeech && (
+            <div className="flex items-center gap-2 bg-emerald-50 text-emerald-900 border border-emerald-300/80 px-3.5 py-2 rounded-xl text-xs animate-in fade-in">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping shrink-0"></span>
+              <span className="font-semibold text-emerald-800 shrink-0">
+                {language === 'hi' ? 'सुनाई दे रहा है:' : 'Hearing:'}
+              </span>
+              <span className="italic text-emerald-900 truncate">"{interimVoiceSpeech}"</span>
+            </div>
+          )}
+
           {/* Large Input Box */}
           <div className="flex items-center gap-2 bg-stone-50 border border-stone-200/90 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-[#2D4F1E]/30 focus-within:border-[#2D4F1E] transition-all shadow-inner">
             <input
@@ -702,6 +783,20 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
         onNewChat={handleNewChat}
         onDeleteSession={handleDeleteSession}
         language={language}
+      />
+
+      {/* 7. Fullscreen Continuous Hands-Free Voice Assistant Modal */}
+      <HandsFreeAssistantModal
+        isOpen={isHandsFreeOpen}
+        onClose={() => setIsHandsFreeOpen(false)}
+        language={language}
+        farmerName={currentUser?.fullName || 'Farmer Brother'}
+        crops={currentUser?.crops || ['BT Cotton', 'Sharbati Wheat']}
+        village={currentUser?.village || 'Anandpur'}
+        onSendQuery={async (query) => {
+          const res = await handleSend(query);
+          return res || 'Processed your farm query.';
+        }}
       />
     </div>
   );

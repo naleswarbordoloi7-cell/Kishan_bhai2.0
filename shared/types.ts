@@ -4,6 +4,28 @@
 
 export type UserRole = 'FARMER' | 'CHAMPION' | 'BUYER' | 'ADMIN';
 
+export interface BiometricSecuritySettings {
+  biometricsEnabled: boolean;
+  requireForProfileEdits: boolean;
+  requireForTransactions: boolean;
+  requireForLandRecords: boolean;
+  autoLockTimeoutMinutes: number; // 0 = immediate, 5, 15, -1 = never
+}
+
+export interface BiometricCredential {
+  id: string;
+  userId: string;
+  userEmail?: string;
+  userFullName?: string;
+  userRole?: UserRole;
+  deviceName: string;
+  authenticatorType: 'fingerprint' | 'face_id' | 'touch_id' | 'windows_hello' | 'android_biometric' | 'passkey';
+  credentialPublicKey?: string;
+  transports?: string[];
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -17,6 +39,8 @@ export interface UserProfile {
   crops?: string[];
   preferredLanguage?: 'en' | 'hi';
   walletAddress?: string;
+  biometricSettings?: BiometricSecuritySettings;
+  enrolledBiometricsCount?: number;
   createdAt: string;
 }
 
@@ -370,6 +394,8 @@ export interface DiseaseDifferentialPossibility {
 export interface DiseaseScanResult {
   id: string;
   cropName: string;
+  patchId?: string;
+  patchName?: string;
   detectedCrop?: string;
   pathogen: string;
   possibleDisease?: string;
@@ -391,6 +417,72 @@ export interface DiseaseScanResult {
   sampleImageUrl?: string;
   isDemo?: boolean;
   farmerId?: string;
+}
+
+export type PatchHealthStatus = 'HEALTHY' | 'UNDER_OBSERVATION' | 'TREATMENT_ACTIVE' | 'RECOVERING' | 'CRITICAL';
+
+export type PatchTimelineEventType = 
+  | 'INITIAL_SCAN' 
+  | 'FOLLOWUP_SCAN' 
+  | 'TREATMENT_SPRAY' 
+  | 'SOIL_APPLICATION' 
+  | 'IRRIGATION_FLUSH' 
+  | 'EXPERT_ADVISORY' 
+  | 'RECOVERY_VERIFIED';
+
+export interface PatchTimelineEvent {
+  id: string;
+  patchId: string;
+  date: string;
+  time?: string;
+  type: PatchTimelineEventType;
+  title: string;
+  hindiTitle?: string;
+  description: string;
+  hindiDescription?: string;
+  severity: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL' | 'HEALTHY';
+  healthScore: number; // 0-100
+  recoveryRatePct?: number; // 0-100%
+  pathogenOrIssue?: string;
+  treatmentDetails?: {
+    productName: string;
+    treatmentType: 'Chemical' | 'Organic' | 'Biological' | 'Cultural';
+    dosage: string;
+    costInr?: number;
+    applicator?: string;
+    weatherCondition?: string;
+  };
+  imageUrl?: string;
+  imageThumbnailUrl?: string;
+  scanResultId?: string;
+  recordedBy: 'AI_SCANNER' | 'FARMER' | 'AGRONOMIST_KVK';
+  notes?: string;
+  nextScheduledFollowUpDate?: string;
+}
+
+export interface CropPatch {
+  id: string;
+  name: string;
+  hindiName?: string;
+  cropName: string;
+  variety: string;
+  areaAcres: number;
+  locationLabel: string;
+  soilType: string;
+  sowingDate: string;
+  currentStatus: PatchHealthStatus;
+  currentHealthScore: number; // 0-100
+  initialInfectionDate?: string;
+  activePathogen?: string;
+  activePathogenHindi?: string;
+  baselineSeverity?: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
+  currentSeverity?: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL' | 'HEALTHY';
+  overallRecoveryPct: number; // 0-100%
+  nextActionDate?: string;
+  nextActionTitle?: string;
+  initialImageUrl?: string;
+  latestImageUrl?: string;
+  timelineEvents: PatchTimelineEvent[];
 }
 
 // 3. Smart Irrigation & IoT Sensors

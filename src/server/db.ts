@@ -18,6 +18,7 @@ import {
   CropRecommendationResult,
   SoilHealthData,
   SoilRecordHistoryItem,
+  BiometricCredential,
 } from '../../shared/types.js';
 import {
   CROP_RECOMMENDATIONS_DATABASE,
@@ -27,6 +28,8 @@ import {
 
 class InMemoryDB {
   users: Map<string, UserProfile> = new Map();
+  biometricCredentials: Map<string, BiometricCredential> = new Map();
+  biometricChallenges: Map<string, { challenge: string; expiresAt: number; userId?: string }> = new Map();
   clusters: Map<string, VirtualCluster> = new Map();
   bulkRequirements: Map<string, BulkOrderRequirement> = new Map();
   machinery: Map<string, MachineryItem> = new Map();
@@ -61,6 +64,8 @@ class InMemoryDB {
 
   public clearAllData() {
     this.users.clear();
+    this.biometricCredentials.clear();
+    this.biometricChallenges.clear();
     this.clusters.clear();
     this.bulkRequirements.clear();
     this.machinery.clear();
@@ -115,6 +120,14 @@ class InMemoryDB {
       farmSizeAcres: 4.5,
       crops: ['Cotton (Bt)', 'Groundnut (TG-37A)', 'Wheat (Sharbati)'],
       preferredLanguage: 'hi',
+      biometricSettings: {
+        biometricsEnabled: true,
+        requireForProfileEdits: true,
+        requireForTransactions: true,
+        requireForLandRecords: true,
+        autoLockTimeoutMinutes: 15,
+      },
+      enrolledBiometricsCount: 1,
       createdAt: '2026-06-15T08:30:00Z',
     };
 
@@ -130,6 +143,14 @@ class InMemoryDB {
       farmSizeAcres: 8.0,
       crops: ['Cotton', 'Cumin', 'Wheat'],
       preferredLanguage: 'hi',
+      biometricSettings: {
+        biometricsEnabled: true,
+        requireForProfileEdits: false,
+        requireForTransactions: true,
+        requireForLandRecords: false,
+        autoLockTimeoutMinutes: 30,
+      },
+      enrolledBiometricsCount: 1,
       createdAt: '2026-05-10T11:00:00Z',
     };
 
@@ -143,12 +164,46 @@ class InMemoryDB {
       state: 'Gujarat',
       verified: true,
       preferredLanguage: 'en',
+      biometricSettings: {
+        biometricsEnabled: false,
+        requireForProfileEdits: false,
+        requireForTransactions: false,
+        requireForLandRecords: false,
+        autoLockTimeoutMinutes: -1,
+      },
+      enrolledBiometricsCount: 0,
       createdAt: '2026-05-20T14:15:00Z',
     };
 
     this.users.set(u1.id, u1);
     this.users.set(u2.id, u2);
     this.users.set(u3.id, u3);
+
+    // Initial Enrolled Biometric Passkeys
+    const bioCred1: BiometricCredential = {
+      id: 'bio_cred_ramesh_pixel',
+      userId: u1.id,
+      userEmail: u1.email,
+      userFullName: u1.fullName,
+      userRole: u1.role,
+      deviceName: 'Pixel Biometrics (Fingerprint Sensor & Face Unlock)',
+      authenticatorType: 'fingerprint',
+      createdAt: '2026-06-16T10:00:00Z',
+      lastUsedAt: '2026-08-30T14:20:00Z',
+    };
+    const bioCred2: BiometricCredential = {
+      id: 'bio_cred_vikram_tab',
+      userId: u2.id,
+      userEmail: u2.email,
+      userFullName: u2.fullName,
+      userRole: u2.role,
+      deviceName: 'Samsung Galaxy Tab Active (Knox Touch ID)',
+      authenticatorType: 'touch_id',
+      createdAt: '2026-05-11T09:30:00Z',
+      lastUsedAt: '2026-08-28T16:45:00Z',
+    };
+    this.biometricCredentials.set(bioCred1.id, bioCred1);
+    this.biometricCredentials.set(bioCred2.id, bioCred2);
 
     // 2. Verified Active Virtual Clusters
     const c1: VirtualCluster = {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Sprout,
@@ -18,14 +18,50 @@ import {
   AlertCircle,
   HelpCircle,
   Wheat,
+  Layers,
+  Coins,
+  Cpu,
+  Fingerprint,
+  ScanFace,
+  KeyRound,
+  Smartphone,
 } from 'lucide-react';
 import { UserRole, UserProfile } from '../../shared/types';
+import { AnimatedKishanLogo } from '../components/AnimatedKishanLogo';
+import {
+  checkBiometricCapability,
+  authenticateWithBiometrics,
+  getLocalPasskeys,
+  BiometricDeviceCapability,
+} from '../services/biometricAuth';
 
 export const LoginPage: React.FC = () => {
-  const { setCurrentUser, setUserRole, setCurrentView, addToast, language, setIsNfcModalOpen } = useApp();
+  const {
+    setCurrentUser,
+    setUserRole,
+    setCurrentView,
+    addToast,
+    language,
+    setIsNfcModalOpen,
+    setIsLogoSplashOpen,
+    triggerBiometricPrompt,
+    enrolledPasskeys,
+  } = useApp();
 
-  // Mode: 'login' | 'register' | 'nfc' | 'roles'
-  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'nfc' | 'roles'>('login');
+  // Mode: 'login' | 'biometric' | 'register' | 'nfc' | 'roles'
+  const [activeTab, setActiveTab] = useState<'login' | 'biometric' | 'register' | 'nfc' | 'roles'>('login');
+  const [deviceCap, setDeviceCap] = useState<BiometricDeviceCapability | null>(null);
+  const [isBiometricScanning, setIsBiometricScanning] = useState(false);
+  const [bioScanType, setBioScanType] = useState<'fingerprint' | 'face'>('fingerprint');
+
+  useEffect(() => {
+    checkBiometricCapability().then((cap) => {
+      setDeviceCap(cap);
+      if (cap.deviceType === 'face_id') {
+        setBioScanType('face');
+      }
+    });
+  }, []);
 
   // Sign In Form States
   const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
@@ -233,6 +269,34 @@ export const LoginPage: React.FC = () => {
     navigateToRoleDashboard(chosenRole);
   };
 
+  const handleBiometricAuth = async () => {
+    setIsBiometricScanning(true);
+    setErrorMessage('');
+
+    try {
+      const result = await authenticateWithBiometrics({
+        identifier: loginIdentifier.trim() || undefined,
+      });
+
+      if (result.success && result.user) {
+        setCurrentUser(result.user);
+        setUserRole(result.user.role);
+        addToast(
+          'Biometric Verification Passed',
+          `Authenticated via ${result.credential?.deviceName || 'Biometric Sensor'}. Welcome, ${result.user.fullName}!`,
+          'success'
+        );
+        navigateToRoleDashboard(result.user.role);
+      } else {
+        setErrorMessage(result.error || 'Biometric authentication failed. Please try passwordless sign in or register.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Biometric verification error.');
+    } finally {
+      setIsBiometricScanning(false);
+    }
+  };
+
   const handleNfcCardScan = () => {
     setIsNfcScanning(true);
     setTimeout(async () => {
@@ -267,97 +331,211 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-8 sm:py-12">
-      <div className="w-full max-w-xl space-y-6">
-        {/* Brand & Title Banner */}
-        <div className="text-center space-y-2.5">
-          <div className="inline-flex items-center gap-2 bg-[#2D4F1E]/10 text-[#2D4F1E] text-xs px-3.5 py-1 rounded-full font-mono border border-[#2D4F1E]/20 font-semibold">
-            <Sprout className="w-3.5 h-3.5 text-[#2D4F1E]" />
-            <span>Kishan Bhai Portal</span>
+    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-6 sm:py-10 max-w-6xl mx-auto">
+      <div className="w-full space-y-6">
+        {/* Brand Banner */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-2 border-b border-stone-200/60">
+          <div className="flex items-center gap-3">
+            <AnimatedKishanLogo
+              size="md"
+              showText={true}
+              interactive={true}
+              withSound={true}
+              subtitle={language === 'hi' ? 'किसान प्रमाणीकरण पोर्टल' : 'Official Stakeholder Portal'}
+              onClick={() => setIsLogoSplashOpen(true)}
+            />
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-bold font-serif-display text-stone-900 tracking-tight">
-            {activeTab === 'login' && 'Sign in to Kishan Bhai'}
-            {activeTab === 'register' && 'Create your farm account'}
-            {activeTab === 'nfc' && 'Smart NFC card sign in'}
-            {activeTab === 'roles' && 'Stakeholder demo access'}
-          </h1>
-
-          <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto">
-            {activeTab === 'login' && 'Access your farm holdings, active clusters, and x402 AI advisory.'}
-            {activeTab === 'register' && 'Join the digital network of smallholder farmers and verified buyers.'}
-            {activeTab === 'nfc' && 'Tap your physical Kisan Smart Card to login without typing.'}
-            {activeTab === 'roles' && 'Select an authentic persona to explore the complete stakeholder suite.'}
-          </p>
-        </div>
-
-        {/* Top Navigation Tabs */}
-        <div className="flex justify-center">
-          <div className="bg-stone-100/90 p-1 rounded-2xl border border-stone-200/80 flex flex-wrap justify-center gap-1 shadow-2xs">
+          {/* Action Buttons: Animatic Logo */}
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                setActiveTab('login');
-                setErrorMessage('');
-              }}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'login'
-                  ? 'bg-[#2D4F1E] text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
-              }`}
+              onClick={() => setIsLogoSplashOpen(true)}
+              className="group flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 px-3.5 py-2 rounded-2xl border border-amber-500/30 text-xs font-semibold transition-all shadow-xs cursor-pointer active:scale-95"
+              title="Play Animatic Brand Logo Intro"
             >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('register');
-                setErrorMessage('');
-              }}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'register'
-                  ? 'bg-[#2D4F1E] text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
-              }`}
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Register</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('nfc');
-                setErrorMessage('');
-              }}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'nfc'
-                  ? 'bg-[#2D4F1E] text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
-              }`}
-            >
-              <Radio className="w-3.5 h-3.5 text-emerald-600" />
-              <span>NFC Tap</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('roles');
-                setErrorMessage('');
-              }}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'roles'
-                  ? 'bg-[#2D4F1E] text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Quick Roles</span>
+              <Sparkles className="w-4 h-4 text-amber-600 group-hover:rotate-12 transition-transform" />
+              <span>{language === 'hi' ? '✨ लोगो इंट्रो' : '✨ Animatic Logo'}</span>
             </button>
           </div>
         </div>
 
-        {/* Main Card Container */}
-        <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-6 sm:p-8 border border-white/90 shadow-xl space-y-6">
+        {/* Main Grid: Left Column Platform Info + Right Column Login Forms */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* LEFT COLUMN: Agricultural Ecosystem Highlights */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="bg-white/90 backdrop-blur-md rounded-[28px] p-6 border border-stone-200/80 shadow-sm space-y-5">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 bg-[#2D4F1E]/10 text-[#2D4F1E] text-xs px-3 py-1 rounded-full font-semibold border border-[#2D4F1E]/20">
+                  <Sprout className="w-3.5 h-3.5 text-[#2D4F1E]" />
+                  <span>{language === 'hi' ? 'स्मार्ट एग्री नेटवर्क' : 'Virtual Farm Cluster Network'}</span>
+                </div>
+                <h2 className="text-xl font-bold font-serif-display text-stone-900 tracking-tight">
+                  {language === 'hi' ? 'छोटे किसान, एक शक्तिशाली नेटवर्क' : 'Empowering Smallholder Farmers'}
+                </h2>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  {language === 'hi'
+                    ? 'किसान भाई भारतीय छोटे किसानों को डिजिटल क्लस्टर्स में जोड़कर भारी छूट, सीधी मंडी पहुंच और स्वायत्त एआई परामर्श उपलब्ध कराता है।'
+                    : 'Uniting local farming communities into scalable virtual clusters with bulk procurement discounts, collective grain pooling, and Algorand micropayments.'}
+                </p>
+              </div>
+
+              {/* Feature Highlights */}
+              <div className="space-y-2.5 pt-1">
+                <div className="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-100 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-[#2D4F1E] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <Layers className="w-4 h-4 text-emerald-200" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-stone-900">Virtual Farm Clusters</h3>
+                    <p className="text-[11px] text-stone-600">20–30% bulk savings on high-yield seeds and NPK fertilizers</p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-100 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <Coins className="w-4 h-4 text-amber-100" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-stone-900">x402 Micropayments</h3>
+                    <p className="text-[11px] text-stone-600">Frictionless 0.001 ALGO sub-cent queries on Algorand Testnet</p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <Cpu className="w-4 h-4 text-blue-100" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-stone-900">Autonomous Agronomist AI</h3>
+                    <p className="text-[11px] text-stone-600">Instant multi-lingual pest diagnostics and soil health insights</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick 1-Click Login Personas Card */}
+            <div className="bg-white/80 backdrop-blur-md rounded-2xl p-4 border border-stone-200/80 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>One-Click Instant Access</span>
+                </span>
+                <span className="text-[10px] text-emerald-700 font-mono font-semibold">Testnet Ready</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleInstantRoleInit('FARMER', 'Ramesh Patel')}
+                  className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/80 text-left transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <span className="text-xs font-bold text-emerald-900 block truncate">Ramesh P.</span>
+                  <span className="text-[10px] text-emerald-700 font-medium">Farmer</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleInstantRoleInit('CHAMPION', 'Anita Devi')}
+                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200/80 border border-stone-200 text-left transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <span className="text-xs font-bold text-stone-900 block truncate">Anita Devi</span>
+                  <span className="text-[10px] text-stone-600 font-medium">Champion</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleInstantRoleInit('BUYER', 'Vikram Mehta')}
+                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200/80 border border-stone-200 text-left transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <span className="text-xs font-bold text-stone-900 block truncate">Vikram M.</span>
+                  <span className="text-[10px] text-stone-600 font-medium">Buyer</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: Sign In / Register / NFC Form */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* Top Navigation Tabs */}
+            <div className="bg-stone-100/90 p-1.5 rounded-2xl border border-stone-200/80 flex flex-wrap gap-1 shadow-2xs">
+              <button
+                onClick={() => {
+                  setActiveTab('login');
+                  setErrorMessage('');
+                }}
+                className={`flex-1 min-w-[70px] py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  activeTab === 'login'
+                    ? 'bg-[#2D4F1E] text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
+                }`}
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('biometric');
+                  setErrorMessage('');
+                }}
+                className={`flex-1 min-w-[75px] py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  activeTab === 'biometric'
+                    ? 'bg-[#2D4F1E] text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
+                }`}
+              >
+                <Fingerprint className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Biometrics</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('register');
+                  setErrorMessage('');
+                }}
+                className={`flex-1 min-w-[70px] py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  activeTab === 'register'
+                    ? 'bg-[#2D4F1E] text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
+                }`}
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Register</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('nfc');
+                  setErrorMessage('');
+                }}
+                className={`flex-1 min-w-[70px] py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  activeTab === 'nfc'
+                    ? 'bg-[#2D4F1E] text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5 text-emerald-600" />
+                <span>NFC Card</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('roles');
+                  setErrorMessage('');
+                }}
+                className={`flex-1 min-w-[70px] py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  activeTab === 'roles'
+                    ? 'bg-[#2D4F1E] text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>All Roles</span>
+              </button>
+            </div>
+
+            {/* Main Card Container */}
+            <div className="bg-white/80 backdrop-blur-xl rounded-[28px] p-5 sm:p-7 border border-white/90 shadow-xl space-y-5">
           {/* Error Message Display */}
           {errorMessage && (
             <div className="bg-rose-500/10 border border-rose-500/20 text-rose-900 p-3.5 rounded-2xl text-xs flex items-start gap-2.5">
@@ -470,6 +648,16 @@ export const LoginPage: React.FC = () => {
                 )}
 
                 <button
+                  type="button"
+                  onClick={handleBiometricAuth}
+                  disabled={isBiometricScanning}
+                  className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-semibold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 border border-emerald-300/80 shadow-xs transition-all cursor-pointer active:scale-[0.99]"
+                >
+                  <Fingerprint className="w-4 h-4 text-emerald-700" />
+                  <span>One-Touch Biometric Sign In (Passkey / Sensor)</span>
+                </button>
+
+                <button
                   type="submit"
                   disabled={isSubmitting}
                   className="w-full bg-white/80 hover:bg-white text-stone-700 font-medium py-2.5 rounded-2xl text-xs flex items-center justify-center gap-2 border border-stone-200 shadow-2xs transition-all cursor-pointer"
@@ -490,6 +678,140 @@ export const LoginPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          )}
+
+          {/* TAB 1.5: BIOMETRIC / PASSKEY AUTH */}
+          {activeTab === 'biometric' && (
+            <div className="space-y-5 text-center py-2">
+              {/* Header explanation */}
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-200">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Hardware-Backed Agricultural ID</span>
+                </div>
+                <h3 className="text-base font-bold text-stone-900">
+                  {language === 'hi' ? 'बायोमेट्रिक से तुरंत लॉगिन करें' : 'One-Touch Biometric Sign In'}
+                </h3>
+                <p className="text-xs text-stone-500 max-w-sm mx-auto">
+                  {language === 'hi'
+                    ? 'अपने फोन या कंप्यूटर के फिंगरप्रिंट / फेस अनलॉक से सुरक्षित और बिना पासवर्ड तुरंत प्रवेश करें।'
+                    : 'Authenticate instantly using your device hardware biometric sensor (Touch ID, Face ID, Android Biometrics, or Windows Hello).'}
+                </p>
+              </div>
+
+              {/* Mode switch between Fingerprint & Face ID */}
+              <div className="flex bg-stone-100 p-1 rounded-xl max-w-xs mx-auto text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setBioScanType('fingerprint')}
+                  className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    bioScanType === 'fingerprint'
+                      ? 'bg-white text-stone-900 shadow-2xs font-bold'
+                      : 'text-stone-500 hover:text-stone-800'
+                  }`}
+                >
+                  <Fingerprint className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Fingerprint Sensor</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBioScanType('face')}
+                  className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    bioScanType === 'face'
+                      ? 'bg-white text-stone-900 shadow-2xs font-bold'
+                      : 'text-stone-500 hover:text-stone-800'
+                  }`}
+                >
+                  <ScanFace className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Face Unlock</span>
+                </button>
+              </div>
+
+              {/* Sensor Touch Target */}
+              <div className="py-2">
+                <div
+                  onClick={!isBiometricScanning ? handleBiometricAuth : undefined}
+                  className={`relative mx-auto w-36 h-36 rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-2 select-none ${
+                    isBiometricScanning
+                      ? 'bg-emerald-500/10 border-emerald-500 ring-8 ring-emerald-500/10 scale-105'
+                      : 'bg-stone-50 hover:bg-stone-100/90 border-stone-300 hover:border-emerald-600 hover:shadow-lg'
+                  }`}
+                >
+                  {isBiometricScanning && (
+                    <div className="absolute inset-x-2 top-0 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-pulse rounded-full" />
+                  )}
+
+                  {bioScanType === 'fingerprint' ? (
+                    <div className="space-y-2 text-center">
+                      <Fingerprint
+                        className={`w-16 h-16 mx-auto transition-all ${
+                          isBiometricScanning ? 'text-emerald-700 animate-pulse' : 'text-stone-700'
+                        }`}
+                      />
+                      <span className="text-[11px] font-bold text-stone-700 block">
+                        {isBiometricScanning ? 'Verifying Sensor...' : 'Touch to Authenticate'}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 text-center">
+                      <ScanFace
+                        className={`w-16 h-16 mx-auto transition-all ${
+                          isBiometricScanning ? 'text-blue-600 animate-pulse' : 'text-stone-700'
+                        }`}
+                      />
+                      <span className="text-[11px] font-bold text-stone-700 block">
+                        {isBiometricScanning ? 'Aligning Biometrics...' : 'Look at Sensor'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Detected Hardware Info */}
+              <div className="bg-stone-50 rounded-2xl p-3 border border-stone-200/80 text-left space-y-1.5 max-w-sm mx-auto">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-stone-500 font-medium flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 text-stone-600" />
+                    <span>Active Hardware:</span>
+                  </span>
+                  <span className="font-semibold text-stone-800 font-mono text-[11px]">
+                    {deviceCap?.deviceName || 'Platform Biometrics'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-stone-500 font-medium flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-stone-600" />
+                    <span>Passkey Security:</span>
+                  </span>
+                  <span className="font-semibold text-emerald-700 text-[11px]">
+                    FIDO2 / WebAuthn Level 3
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 max-w-sm mx-auto pt-1">
+                <button
+                  type="button"
+                  disabled={isBiometricScanning}
+                  onClick={handleBiometricAuth}
+                  className="w-full bg-[#2D4F1E] hover:bg-[#223d16] text-white font-semibold py-3.5 rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border border-white/20 active:scale-[0.99] disabled:opacity-50"
+                >
+                  <Fingerprint className="w-4 h-4 text-emerald-300" />
+                  <span>
+                    {isBiometricScanning ? 'Reading Biometric Sensor...' : 'Scan Biometrics to Sign In'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('login')}
+                  className="w-full bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium py-2 rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Use Mobile Number & OTP Instead
+                </button>
+              </div>
+            </div>
           )}
 
           {/* TAB 2: REGISTER */}
@@ -698,6 +1020,8 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
           )}
+            </div>
+          </div>
         </div>
 
         {/* Security / Algorand Note */}

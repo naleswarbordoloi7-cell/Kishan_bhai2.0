@@ -14,13 +14,18 @@ import {
   FileSpreadsheet,
   Download,
   Trash2,
+  Mic,
+  Sparkles,
 } from 'lucide-react';
 import { FarmDiaryRecord } from '../../shared/types';
+import { FieldVoiceDictatorModal } from '../components/speech/FieldVoiceDictatorModal';
+import { InlineMicButton } from '../components/speech/InlineMicButton';
 
 export const FarmDiaryPage: React.FC = () => {
-  const { farmDiary, addDiaryEntry, deleteDiaryEntry, language, addToast } = useApp();
+  const { farmDiary, addDiaryEntry, deleteDiaryEntry, language, addToast, currentUser } = useApp();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   // New Record State
@@ -97,7 +102,17 @@ export const FarmDiaryPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* Hands-Free Field Voice Dictator Button */}
+          <button
+            type="button"
+            onClick={() => setIsVoiceModalOpen(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-stone-950 px-4 py-3 rounded-2xl shadow-lg transition-all cursor-pointer text-xs font-bold shrink-0 border border-emerald-300/40 active:scale-95"
+          >
+            <Mic className="w-4 h-4 text-stone-950 animate-pulse" />
+            <span>{language === 'hi' ? 'बोलकर डायरी लिखें (Hands-Free)' : 'Dictate Farm Note (Field Voice)'}</span>
+          </button>
+
           <button
             onClick={handleExportData}
             className="flex items-center gap-2 bg-emerald-950/60 hover:bg-emerald-950/90 text-emerald-200 border border-emerald-500/30 px-4 py-3 rounded-2xl transition-all cursor-pointer text-xs font-bold shrink-0"
@@ -277,7 +292,14 @@ export const FarmDiaryPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Crop</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-stone-700">Crop</label>
+                    <InlineMicButton
+                      lang={language === 'hi' ? 'hi-IN' : 'en-IN'}
+                      onTranscript={(text) => setCrop(text)}
+                      tooltip="Dictate crop name"
+                    />
+                  </div>
                   <input
                     type="text"
                     value={crop}
@@ -312,7 +334,14 @@ export const FarmDiaryPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Activity Title</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-stone-700">Activity Title</label>
+                  <InlineMicButton
+                    lang={language === 'hi' ? 'hi-IN' : 'en-IN'}
+                    onTranscript={(text) => setTitle(text)}
+                    tooltip="Dictate activity title"
+                  />
+                </div>
                 <input
                   type="text"
                   value={title}
@@ -324,7 +353,14 @@ export const FarmDiaryPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Detailed Field Notes</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-stone-700">Detailed Field Notes</label>
+                  <InlineMicButton
+                    lang={language === 'hi' ? 'hi-IN' : 'en-IN'}
+                    onTranscript={(text) => setNotes((prev) => (prev ? `${prev} ${text}` : text))}
+                    tooltip="Dictate detailed field notes"
+                  />
+                </div>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -353,6 +389,22 @@ export const FarmDiaryPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Field Voice Dictator Modal */}
+      <FieldVoiceDictatorModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        defaultCrop={currentUser?.crops?.[0] || 'BT Cotton'}
+        language={language}
+        onSaveEntry={(entry) => {
+          addDiaryEntry(entry);
+          addToast(
+            'Voice Entry Saved',
+            `Recorded "${entry.title}" in Farm Diary ledger.`,
+            'success'
+          );
+        }}
+      />
     </div>
   );
 };

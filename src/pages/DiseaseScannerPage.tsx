@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Scan,
+  Activity,
   Upload,
   Camera,
   CheckCircle2,
@@ -30,6 +31,7 @@ import { DiseaseScanAnimation } from '../components/disease/DiseaseScanAnimation
 import { ImageQualityCheckCard } from '../components/disease/ImageQualityCheckCard';
 import { DiseaseResultCard } from '../components/disease/DiseaseResultCard';
 import { DiseaseScanHistory } from '../components/disease/DiseaseScanHistory';
+import { CropPatchTimelineCard } from '../components/disease/CropPatchTimelineCard';
 
 const CROP_OPTIONS = [
   'Auto-detect crop',
@@ -102,6 +104,7 @@ export const DiseaseScannerPage: React.FC = () => {
   const {
     diseaseScans,
     addDiseaseScan,
+    cropPatches,
     addDiaryEntry,
     language,
     setCurrentView,
@@ -109,6 +112,7 @@ export const DiseaseScannerPage: React.FC = () => {
     askAiWithPrompt,
   } = useApp();
 
+  const [activeViewTab, setActiveViewTab] = useState<'scanner' | 'timeline' | 'history'>('scanner');
   const [selectedCrop, setSelectedCrop] = useState<string>('Auto-detect crop');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFileSize, setImageFileSize] = useState<string | null>(null);
@@ -352,8 +356,110 @@ export const DiseaseScannerPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Interactive Workspace Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* 2. MODE NAVIGATION TABS */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2 sm:p-2.5 rounded-3xl border border-stone-200 shadow-xs">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <button
+            onClick={() => setActiveViewTab('scanner')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeViewTab === 'scanner'
+                ? 'bg-[#2D4F1E] text-white shadow-sm'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+            }`}
+          >
+            <Scan className="w-4 h-4" />
+            <span>{language === 'hi' ? '🔬 नया एआई स्कैन' : '🔬 AI Disease Scanner'}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveViewTab('timeline')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeViewTab === 'timeline'
+                ? 'bg-[#2D4F1E] text-white shadow-sm'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>
+              {language === 'hi' ? '🌾 पैच स्वास्थ्य व उपचार टाइमलाइन' : '🌾 Patch Health Timelines'}
+            </span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                activeViewTab === 'timeline'
+                  ? 'bg-emerald-800 text-emerald-100'
+                  : 'bg-emerald-100 text-[#2D4F1E]'
+              }`}
+            >
+              {cropPatches.length} {language === 'hi' ? 'भूखंड' : 'Plots'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveViewTab('history')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeViewTab === 'history'
+                ? 'bg-[#2D4F1E] text-white shadow-sm'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            <span>{language === 'hi' ? '📜 स्कैन इतिहास' : '📜 Diagnostic History'}</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                activeViewTab === 'history'
+                  ? 'bg-emerald-800 text-emerald-100'
+                  : 'bg-stone-200 text-stone-700'
+              }`}
+            >
+              {diseaseScans.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Quick helper tip */}
+        <div className="hidden md:flex items-center gap-2 text-xs text-stone-500 pr-2">
+          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <span>
+            {language === 'hi'
+              ? 'प्रत्येक फसल भूखंड के उपचार व सुधार का ऐतिहासिक रिकॉर्ड रखें'
+              : 'Track disease progress & spray dosages per crop plot'}
+          </span>
+        </div>
+      </div>
+
+      {/* VIEW: TIMELINE TAB */}
+      {activeViewTab === 'timeline' && (
+        <CropPatchTimelineCard
+          language={language}
+          onAskAiWithContext={(prompt) => askAiWithPrompt(prompt)}
+          onOpenScannerForPatch={(patch) => {
+            setSelectedCrop(patch.cropName);
+            setActiveViewTab('scanner');
+          }}
+        />
+      )}
+
+      {/* VIEW: HISTORY TAB */}
+      {activeViewTab === 'history' && (
+        <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-8 shadow-sm">
+          <DiseaseScanHistory
+            scans={diseaseScans}
+            onSelectScan={(scan) => {
+              setActiveResult(scan);
+              if (scan.sampleImageUrl) setSelectedImage(scan.sampleImageUrl);
+              setActiveViewTab('scanner');
+              window.scrollTo({ top: 120, behavior: 'smooth' });
+            }}
+            language={language}
+          />
+        </div>
+      )}
+
+      {/* VIEW: SCANNER TAB */}
+      {activeViewTab === 'scanner' && (
+        <div className="space-y-8">
+          {/* Main Interactive Workspace Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Upload Area, Crop Selector & Scan Controls */}
         <div className="lg:col-span-5 space-y-6">
           {/* 2. UPLOAD AREA CARD */}
@@ -606,20 +712,44 @@ export const DiseaseScannerPage: React.FC = () => {
             </div>
           )}
 
-          {/* 17. PREVIOUS SCANS HISTORY */}
-          <div className="pt-4">
-            <DiseaseScanHistory
-              scans={diseaseScans}
-              onSelectScan={(scan) => {
-                setActiveResult(scan);
-                if (scan.sampleImageUrl) setSelectedImage(scan.sampleImageUrl);
-                window.scrollTo({ top: 120, behavior: 'smooth' });
-              }}
-              language={language}
-            />
-          </div>
+          {/* Quick Tab Switcher Footer */}
+          {diseaseScans.length > 1 && (
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 p-4 bg-stone-50/80 rounded-2xl border border-stone-200 text-xs">
+              <div className="flex items-center gap-2 text-stone-600 font-medium">
+                <Clock className="w-4 h-4 text-emerald-700" />
+                <span>
+                  {language === 'hi'
+                    ? `${diseaseScans.length} स्कैन का इतिहास सुरक्षित है`
+                    : `${diseaseScans.length} past diagnostic scans archived`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setActiveViewTab('history');
+                    window.scrollTo({ top: 120, behavior: 'smooth' });
+                  }}
+                  className="font-bold text-emerald-800 hover:text-emerald-950 underline cursor-pointer"
+                >
+                  {language === 'hi' ? 'पूरा इतिहास देखें →' : 'View Full History →'}
+                </button>
+                <span className="text-stone-300">|</span>
+                <button
+                  onClick={() => {
+                    setActiveViewTab('timeline');
+                    window.scrollTo({ top: 120, behavior: 'smooth' });
+                  }}
+                  className="font-bold text-emerald-800 hover:text-emerald-950 underline cursor-pointer"
+                >
+                  {language === 'hi' ? 'प्लॉट टाइमलाइन देखें →' : 'View Plot Timelines →'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
-  );
+  )}
+</div>
+);
 };

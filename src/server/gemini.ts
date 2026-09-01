@@ -263,7 +263,7 @@ export async function askKishanAI(
   base64Image?: string,
   mimeType: string = 'image/jpeg',
   userId?: string,
-  modelName: string = 'gemini-3.7-flash',
+  modelName: string = 'gemini-2.5-flash',
   language: string = 'en',
   farmContextOverride?: FarmContextInput
 ): Promise<{
@@ -279,7 +279,7 @@ export async function askKishanAI(
   diseaseAnalysis?: DiseaseAnalysisResult;
   conversationId?: string;
 }> {
-  const activeModel = modelName || 'gemini-3.7-flash';
+  const activeModel = modelName || 'gemini-2.5-flash';
   const currentUser = userId ? db.users.get(userId) : Array.from(db.users.values())[0];
   const userCluster = Array.from(db.clusters.values())[0];
 

@@ -14,9 +14,15 @@ import {
   LogIn,
   LogOut,
   User,
+  Wifi,
+  WifiOff,
+  PhoneCall,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { UserRole } from '../../shared/types';
 import { NotificationCenter } from './NotificationCenter';
+import { AnimatedKishanLogo } from './AnimatedKishanLogo';
 
 export const Navbar: React.FC = () => {
   const {
@@ -31,7 +37,12 @@ export const Navbar: React.FC = () => {
     setCurrentView,
     setIsWalletModalOpen,
     setIsNfcModalOpen,
+    setIsLogoSplashOpen,
+    isOnline,
+    setIsOfflineModalOpen,
     addToast,
+    isDarkMode,
+    toggleDarkMode,
   } = useApp();
 
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
@@ -39,7 +50,7 @@ export const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const roles: { role: UserRole; label: string; desc: string }[] = [
-    { role: 'FARMER', label: 'Farmer (किसान)', desc: 'Farm management, clusters & AI' },
+    { role: 'FARMER', label: 'Farmer (किसान भाई)', desc: 'Farm management, clusters & AI' },
     { role: 'CHAMPION', label: 'Village Champion (ग्राम प्रधान)', desc: 'Coordinate village clusters' },
     { role: 'BUYER', label: 'Institutional Buyer (क्रेता)', desc: 'Procure bulk cluster harvests' },
     { role: 'ADMIN', label: 'Admin & System Ops', desc: 'x402 protocol & API budget' },
@@ -62,41 +73,70 @@ export const Navbar: React.FC = () => {
   };
 
   const navLinks = [
-    { id: 'farmer-dashboard', labelEn: 'Dashboard', labelHi: 'डैशबोर्ड' },
-    { id: 'ai-assistant', labelEn: 'Kisan AI', labelHi: 'किसान AI' },
-    { id: 'disease-scanner', labelEn: 'Disease Scanner', labelHi: 'रोग स्कैनर' },
-    { id: 'smart-irrigation', labelEn: 'Smart Irrigation', labelHi: 'स्मार्ट सिंचाई' },
+    { id: 'farmer-dashboard', labelEn: 'Home', labelHi: 'होम' },
+    { id: 'ai-assistant', labelEn: 'Kisan AI', labelHi: 'किसान AI मित्र' },
+    { id: 'disease-scanner', labelEn: 'Crop Doctor', labelHi: 'रोग पहचान' },
+    { id: 'smart-irrigation', labelEn: 'Irrigation', labelHi: 'स्मार्ट सिंचाई' },
     { id: 'market-prices', labelEn: 'Mandi Rates', labelHi: 'मंडी भाव' },
     { id: 'government-schemes', labelEn: 'Govt Schemes', labelHi: 'सरकारी योजनाएं' },
-    { id: 'clusters', labelEn: 'Virtual Clusters', labelHi: 'फार्म क्लस्टर' },
+    { id: 'clusters', labelEn: 'Farm Clusters', labelHi: 'फार्म क्लस्टर' },
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-stone-200/60 shadow-xs">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#121810]/95 backdrop-blur-xl border-b border-stone-200/80 dark:border-stone-800 shadow-xs transition-colors">
+      {/* Official Government of India / Agricultural Ministry Top Ribbon */}
+      <div className="bg-[#122e0c] dark:bg-[#081506] text-white text-[11px] font-medium border-b border-emerald-900/60 px-3 sm:px-6 lg:px-8 py-1">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          {/* Official Emblem & Ministry Text */}
+          <div className="flex items-center gap-2 text-emerald-200/90 truncate">
+            <span className="inline-flex items-center gap-1 font-bold text-amber-300">
+              <span className="text-sm">🇮🇳</span> {language === 'hi' ? 'भारत सरकार' : 'Govt of India'}
+            </span>
+            <span className="text-emerald-500/80 hidden sm:inline">•</span>
+            <span className="hidden sm:inline truncate text-emerald-100">
+              {language === 'hi' ? 'कृषि एवं किसान कल्याण मंत्रालय (ICAR संरेखित)' : 'Ministry of Agriculture & Farmers Welfare (ICAR Aligned)'}
+            </span>
+          </div>
+
+          {/* National Kisan Call Centre 1800-180-1551 Toll Free Helpline */}
+          <div className="flex items-center gap-3 shrink-0">
+            <a
+              href="tel:18001801551"
+              className="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 font-bold transition-colors bg-emerald-950/80 px-2.5 py-0.5 rounded-md border border-emerald-700/50 text-[11px]"
+              title="Click to call National Kisan Call Centre"
+            >
+              <PhoneCall className="w-3 h-3 text-amber-400 animate-pulse" />
+              <span>1800-180-1551</span>
+              <span className="hidden md:inline text-[10px] text-emerald-300 font-normal">({language === 'hi' ? 'निःशुल्क हेल्पलाइन' : 'Toll Free'})</span>
+            </a>
+
+            {/* Quick Dark Mode Switch */}
+            <button
+              onClick={toggleDarkMode}
+              className="p-1 text-emerald-300 hover:text-white rounded-md hover:bg-emerald-900/60 transition-colors"
+              title={isDarkMode ? 'Switch to Day Light Mode' : 'Switch to Field Night Mode'}
+            >
+              {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-300" /> : <Moon className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Brand Logo */}
+          {/* Brand Logo with Animatic Vector Engine */}
           <div
             onClick={() => setCurrentView('landing')}
-            className="flex items-center gap-2.5 cursor-pointer group"
+            className="flex items-center cursor-pointer"
           >
-            <div className="w-10 h-10 rounded-2xl bg-[#2D4F1E] flex items-center justify-center text-white shadow-md group-hover:bg-[#223d16] transition-colors border border-white/20">
-              <Sprout className="w-5 h-5 text-emerald-200" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold font-display text-xl tracking-tight text-stone-900">
-                  KISAN BHAI
-                </span>
-                <span className="text-[10px] font-mono font-bold bg-emerald-500/15 text-[#2D4F1E] border border-emerald-600/20 px-2 py-0.5 rounded-full">
-                  किसान भाई
-                </span>
-              </div>
-              <p className="text-[11px] text-stone-500 hidden sm:block -mt-0.5">
-                Your AI Farming Partner — From Seed to Sale
-              </p>
-            </div>
+            <AnimatedKishanLogo
+              size="sm"
+              showText={true}
+              interactive={true}
+              withSound={true}
+              subtitle={language === 'hi' ? 'स्मार्ट कृषि नेटवर्क' : 'Seed to Sale Platform'}
+            />
           </div>
 
           {/* Desktop Navigation Links */}
@@ -120,7 +160,42 @@ export const Navbar: React.FC = () => {
           </nav>
 
           {/* Right Controls: Language, Role Selector, Notifications, Wallet */}
-          <div className="hidden md:flex items-center space-x-2.5">
+          <div className="hidden md:flex items-center space-x-2">
+            {/* Offline / Online Service Worker Indicator */}
+            <button
+              onClick={() => setIsOfflineModalOpen(true)}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-xl border backdrop-blur-md transition-all cursor-pointer shadow-2xs ${
+                isOnline
+                  ? 'bg-emerald-50/80 hover:bg-emerald-100/90 text-emerald-900 border-emerald-200/80'
+                  : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-950 border-amber-500/40 animate-pulse'
+              }`}
+              title={isOnline ? 'Service Worker Active • Online Mode' : 'Offline Mode Active • Running from Cache'}
+            >
+              {isOnline ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <Wifi className="w-3.5 h-3.5 text-emerald-700" />
+                  <span className="hidden xl:inline font-mono text-[11px]">Online</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                  <WifiOff className="w-3.5 h-3.5 text-amber-700" />
+                  <span className="font-mono text-[11px] text-amber-900 font-bold">Offline Active</span>
+                </>
+              )}
+            </button>
+
+            {/* Animatic Logo Reveal Button */}
+            <button
+              onClick={() => setIsLogoSplashOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-500/30 px-2.5 py-1.5 rounded-xl backdrop-blur-md transition-all cursor-pointer shadow-2xs group"
+              title="Play Kisan Bhai Animatic Logo Intro"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 group-hover:rotate-12 transition-transform" />
+              <span className="hidden xl:inline">{language === 'hi' ? 'लोगो इंट्रो' : 'Logo Intro'}</span>
+            </button>
+
             {/* Notification Center */}
             <NotificationCenter />
 
@@ -255,7 +330,18 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="flex md:hidden items-center space-x-2">
+          <div className="flex md:hidden items-center space-x-1.5">
+            <button
+              onClick={() => setIsOfflineModalOpen(true)}
+              className={`p-2 rounded-xl border text-xs font-semibold flex items-center justify-center ${
+                isOnline
+                  ? 'bg-emerald-50/80 text-emerald-900 border-emerald-200'
+                  : 'bg-amber-500/20 text-amber-950 border-amber-500 animate-pulse'
+              }`}
+              title="Offline Field Hub"
+            >
+              {isOnline ? <Wifi className="w-4 h-4 text-emerald-700" /> : <WifiOff className="w-4 h-4 text-amber-700" />}
+            </button>
             <button
               onClick={() => setCurrentView('login')}
               className="p-2 text-stone-700 bg-white/60 backdrop-blur-md rounded-xl border border-stone-200/80 text-xs font-semibold flex items-center gap-1"
@@ -317,6 +403,16 @@ export const Navbar: React.FC = () => {
             )}
           </div>
           <div className="grid grid-cols-2 gap-2 pb-3 border-b border-stone-200/80">
+            <button
+              onClick={() => {
+                setIsLogoSplashOpen(true);
+                setIsMobileMenuOpen(false);
+              }}
+              className="col-span-2 text-xs text-center py-2 bg-amber-50 text-amber-900 font-semibold rounded-xl border border-amber-300/60 flex items-center justify-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+              <span>{language === 'hi' ? '✨ एनिमेटेड लोगो इंट्रो देखें' : '✨ Play Animatic Logo Intro'}</span>
+            </button>
             <button
               onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
               className="text-xs text-center py-2 bg-white/70 rounded-xl font-medium border border-stone-200/60"

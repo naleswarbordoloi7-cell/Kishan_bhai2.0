@@ -6,7 +6,11 @@ import { PaymentModal } from './components/PaymentModal';
 import { WalletConnect } from './components/WalletConnect';
 import { NfcModal } from './components/NfcModal';
 import { ToastContainer } from './components/ToastContainer';
+import { ApiRetryNotification } from './components/ApiRetryNotification';
+import { LogoIntroSplash } from './components/LogoIntroSplash';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { OfflineManagerModal } from './components/OfflineManagerModal';
+import { BiometricPromptModal } from './components/BiometricPromptModal';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
@@ -41,7 +45,14 @@ import { AlertsPage } from './pages/AlertsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 const AppContent: React.FC = () => {
-  const { currentView } = useApp();
+  const {
+    currentView,
+    isLogoSplashOpen,
+    setIsLogoSplashOpen,
+    isBiometricModalOpen,
+    setIsBiometricModalOpen,
+    biometricPromptOptions,
+  } = useApp();
 
   const renderCurrentView = () => {
     switch (currentView) {
@@ -124,9 +135,28 @@ const AppContent: React.FC = () => {
       </div>
 
       {/* Global Modals & Notifications */}
+      <ApiRetryNotification />
       <PaymentModal />
       <WalletConnect />
       <NfcModal />
+      <OfflineManagerModal />
+      <BiometricPromptModal
+        isOpen={isBiometricModalOpen}
+        onClose={() => setIsBiometricModalOpen(false)}
+        title={biometricPromptOptions.title}
+        subtitle={biometricPromptOptions.subtitle}
+        actionReason={biometricPromptOptions.actionReason}
+        targetUserId={biometricPromptOptions.targetUserId}
+        onSuccess={(user) => {
+          if (biometricPromptOptions.onSuccess) {
+            biometricPromptOptions.onSuccess(user);
+          }
+        }}
+      />
+      <LogoIntroSplash
+        isOpen={isLogoSplashOpen}
+        onClose={() => setIsLogoSplashOpen(false)}
+      />
       <ToastContainer />
       {!isLanding && <MobileBottomNav />}
     </div>
