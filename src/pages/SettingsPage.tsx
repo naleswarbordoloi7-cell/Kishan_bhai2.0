@@ -24,7 +24,7 @@ import {
   Eye,
   Zap,
 } from 'lucide-react';
-import { SUPPORTED_LANGUAGES } from '../data/agriData';
+import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 
 export const SettingsPage: React.FC = () => {
   const {
@@ -273,22 +273,28 @@ export const SettingsPage: React.FC = () => {
           Choose your native tongue for AI agronomist voice synthesis and advisory summaries.
         </p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-1">
           {SUPPORTED_LANGUAGES.map((lang) => (
             <button
               key={lang.code}
               onClick={() => {
                 setLanguage(lang.code as any);
-                addToast('Language Changed', `Switched interface to ${lang.nativeName}`, 'info');
+                addToast('Language Changed', `Switched interface to ${lang.nativeName} (${lang.name})`, 'info');
               }}
               className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                 language === lang.code
-                  ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/50 ring-2 ring-emerald-600/20'
+                  ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/50 ring-2 ring-emerald-600/20 shadow-xs'
                   : 'border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 bg-stone-50/50 dark:bg-[#1a2218]/40'
               }`}
             >
-              <div className="text-base font-bold text-stone-900 dark:text-stone-100">{lang.nativeName}</div>
-              <div className="text-xs text-stone-500 dark:text-stone-400 font-medium">{lang.name}</div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xl">{lang.flag}</span>
+                {language === lang.code && (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                )}
+              </div>
+              <div className="text-base font-bold text-stone-900 dark:text-stone-100 leading-tight">{lang.nativeName}</div>
+              <div className="text-xs text-stone-500 dark:text-stone-400 font-medium mt-0.5">{lang.name}</div>
             </button>
           ))}
         </div>

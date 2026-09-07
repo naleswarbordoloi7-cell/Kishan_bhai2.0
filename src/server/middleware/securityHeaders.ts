@@ -18,8 +18,8 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   // Referrer Policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Permissions Policy
-  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(self)');
+  // Permissions Policy: Enable camera, microphone, and geolocation for farming tools and voice navigation
+  res.setHeader('Permissions-Policy', 'camera=*, microphone=*, geolocation=*');
 
   // Strict Transport Security (HSTS in production)
   if (process.env.NODE_ENV === 'production') {

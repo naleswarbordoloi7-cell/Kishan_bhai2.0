@@ -9,6 +9,7 @@ import { config } from '../core/config.js';
 import { db } from '../db.js';
 import { AppError, ExternalServiceError, RateLimitError } from '../core/errors.js';
 import { FarmingActionCard } from '../../../shared/types.js';
+import { generateWithModelFallback } from '../gemini.js';
 
 export interface AIChatOptions {
   userId?: string;
@@ -108,15 +109,19 @@ AGRICULTURAL SAFETY & ACCURACY RULES:
 
     try {
       const ai = this.getClient();
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: cleanPrompt,
-        config: {
-          systemInstruction,
-          temperature: 0.4,
-          maxOutputTokens: 1000,
-        },
-      });
+      const { response } = await generateWithModelFallback(
+        ai,
+        'gemini-2.5-flash',
+        (m) => ({
+          model: m,
+          contents: cleanPrompt,
+          config: {
+            systemInstruction,
+            temperature: 0.4,
+            maxOutputTokens: 1000,
+          },
+        })
+      );
 
       const reply = response.text || 'राम राम किसान भाई! मैं आपकी क्या सहायता कर सकता हूँ?';
       const tokensEst = Math.ceil((cleanPrompt.length + reply.length) / 4);

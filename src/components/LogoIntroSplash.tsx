@@ -68,19 +68,17 @@ export const LogoIntroSplash: React.FC<LogoIntroSplashProps> = ({ isOpen, onClos
   useEffect(() => {
     if (!isOpen || isPaused) return;
 
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onClose();
-          return 0;
-        }
-        return prev - 1;
-      });
+    if (countdown <= 0) {
+      onClose();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [isOpen, isPaused, onClose]);
+    return () => clearTimeout(timer);
+  }, [isOpen, isPaused, countdown, onClose]);
 
   const handleReplay = () => {
     setAnimStage(0);

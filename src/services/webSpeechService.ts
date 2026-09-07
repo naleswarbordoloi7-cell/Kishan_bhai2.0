@@ -6,18 +6,22 @@ export interface SpeechLanguageOption {
   label: string;
   nativeName: string;
   speechCode: string;
+  recognitionCodes?: string[];
 }
 
 export const INDIAN_SPEECH_LANGUAGES: SpeechLanguageOption[] = [
-  { code: 'hi', label: 'Hindi', nativeName: 'हिन्दी', speechCode: 'hi-IN' },
-  { code: 'en', label: 'English (India)', nativeName: 'English (IN)', speechCode: 'en-IN' },
-  { code: 'gu', label: 'Gujarati', nativeName: 'ગુજરાતી', speechCode: 'gu-IN' },
-  { code: 'mr', label: 'Marathi', nativeName: 'मराठी', speechCode: 'mr-IN' },
-  { code: 'pa', label: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', speechCode: 'pa-IN' },
-  { code: 'te', label: 'Telugu', nativeName: 'తెలుగు', speechCode: 'te-IN' },
-  { code: 'ta', label: 'Tamil', nativeName: 'தமிழ்', speechCode: 'ta-IN' },
-  { code: 'bn', label: 'Bengali', nativeName: 'বাংলা', speechCode: 'bn-IN' },
-  { code: 'kn', label: 'Kannada', nativeName: 'ಕನ್ನಡ', speechCode: 'kn-IN' },
+  { code: 'hi', label: 'Hindi', nativeName: 'हिन्दी', speechCode: 'hi-IN', recognitionCodes: ['hi-IN', 'en-IN'] },
+  { code: 'en', label: 'English (India)', nativeName: 'English (IN)', speechCode: 'en-IN', recognitionCodes: ['en-IN', 'en-US'] },
+  { code: 'gu', label: 'Gujarati', nativeName: 'ગુજરાતી', speechCode: 'gu-IN', recognitionCodes: ['gu-IN', 'hi-IN', 'en-IN'] },
+  { code: 'pa', label: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', speechCode: 'pa-IN', recognitionCodes: ['pa-IN', 'pa-Guru-IN', 'hi-IN', 'en-IN'] },
+  { code: 'as', label: 'Assamese', nativeName: 'অসমীয়া', speechCode: 'as-IN', recognitionCodes: ['as-IN', 'bn-IN', 'hi-IN', 'en-IN'] },
+  { code: 'bn', label: 'Bengali', nativeName: 'বাংলা', speechCode: 'bn-IN', recognitionCodes: ['bn-IN', 'hi-IN', 'en-IN'] },
+  { code: 'mr', label: 'Marathi', nativeName: 'मराठी', speechCode: 'mr-IN', recognitionCodes: ['mr-IN', 'hi-IN', 'en-IN'] },
+  { code: 'te', label: 'Telugu', nativeName: 'తెలుగు', speechCode: 'te-IN', recognitionCodes: ['te-IN', 'en-IN', 'hi-IN'] },
+  { code: 'ta', label: 'Tamil', nativeName: 'தமிழ்', speechCode: 'ta-IN', recognitionCodes: ['ta-IN', 'en-IN'] },
+  { code: 'kn', label: 'Kannada', nativeName: 'ಕನ್ನಡ', speechCode: 'kn-IN', recognitionCodes: ['kn-IN', 'en-IN', 'hi-IN'] },
+  { code: 'ml', label: 'Malayalam', nativeName: 'മലയാളം', speechCode: 'ml-IN', recognitionCodes: ['ml-IN', 'en-IN'] },
+  { code: 'or', label: 'Odia', nativeName: 'ଓଡ଼ିଆ', speechCode: 'or-IN', recognitionCodes: ['or-IN', 'hi-IN', 'bn-IN', 'en-IN'] },
 ];
 
 export function isSpeechRecognitionSupported(): boolean {
@@ -211,7 +215,115 @@ export function parseFarmVoiceDictation(transcript: string, defaultCrop: string 
 }
 
 /**
- * Cleanly speak text using Web SpeechSynthesis API with Hindi/English voice pairing
+ * Cache and retrieve browser synthesis voices with auto-reload listener
+ */
+let cachedVoices: SpeechSynthesisVoice[] = [];
+
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  const updateVoices = () => {
+    try {
+      cachedVoices = window.speechSynthesis.getVoices();
+    } catch {
+      // ignore
+    }
+  };
+  updateVoices();
+  if (window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = updateVoices;
+  }
+}
+
+/**
+ * Resolves the best natural speaking voice for a given Indian regional language.
+ * Falls back gracefully to phonetically compatible regional or Indian English voices.
+ */
+export function findBestVoiceForLanguage(langCode: string): SpeechSynthesisVoice | null {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+
+  let voices = cachedVoices;
+  if (!voices || voices.length === 0) {
+    voices = window.speechSynthesis.getVoices();
+    cachedVoices = voices;
+  }
+
+  if (!voices || voices.length === 0) return null;
+
+  const code = (langCode || 'en-IN').toLowerCase().trim().replace('_', '-');
+  const shortCode = code.split('-')[0];
+
+  // Language fallback hierarchy for Indian regional tongues
+  const fallbackPreferences: Record<string, string[]> = {
+    as: ['as-in', 'bn-in', 'bn', 'hi-in', 'en-in', 'en'], // Assamese -> Bengali/Hindi/Indian English
+    or: ['or-in', 'hi-in', 'bn-in', 'en-in', 'en'],       // Odia -> Hindi/Bengali/Indian English
+    pa: ['pa-in', 'pa', 'hi-in', 'en-in', 'en'],          // Punjabi -> Hindi/Indian English
+    gu: ['gu-in', 'gu', 'hi-in', 'en-in', 'en'],          // Gujarati -> Hindi/Indian English
+    mr: ['mr-in', 'mr', 'hi-in', 'en-in', 'en'],          // Marathi -> Hindi/Indian English
+    bn: ['bn-in', 'bn', 'hi-in', 'en-in', 'en'],          // Bengali -> Hindi/Indian English
+    te: ['te-in', 'te', 'hi-in', 'en-in', 'en'],          // Telugu -> Hindi/Indian English
+    ta: ['ta-in', 'ta', 'en-in', 'en'],                   // Tamil -> Indian English
+    kn: ['kn-in', 'kn', 'hi-in', 'en-in', 'en'],          // Kannada -> Indian English
+    ml: ['ml-in', 'ml', 'en-in', 'en'],                   // Malayalam -> Indian English
+    hi: ['hi-in', 'hi', 'en-in', 'en'],                   // Hindi -> Indian English
+    en: ['en-in', 'en-gb', 'en-us', 'en'],
+  };
+
+  const candidates = [
+    code,
+    ...(fallbackPreferences[shortCode] || []),
+    'en-in',
+    'hi-in',
+    'en-us',
+  ];
+
+  for (const cand of candidates) {
+    // 1. Exact match
+    const exact = voices.find((v) => v.lang.toLowerCase() === cand);
+    if (exact) return exact;
+
+    // 2. Prefix match
+    const prefix = voices.find((v) => v.lang.toLowerCase().startsWith(cand.slice(0, 2)));
+    if (prefix) return prefix;
+  }
+
+  // 3. Any Indian dialect voice
+  const indianVoice = voices.find(
+    (v) =>
+      v.lang.toLowerCase().includes('-in') ||
+      v.name.toLowerCase().includes('india') ||
+      v.name.toLowerCase().includes('hindi')
+  );
+  if (indianVoice) return indianVoice;
+
+  // 4. Default browser voice
+  const defaultVoice = voices.find((v) => v.default) || voices[0];
+  return defaultVoice || null;
+}
+
+/**
+ * Returns prioritized speech recognition codes for a given language.
+ */
+export function getSupportedRecognitionCodes(lang: string): string[] {
+  const short = lang.toLowerCase().trim().replace('_', '-').split('-')[0];
+  const item = INDIAN_SPEECH_LANGUAGES.find((l) => l.code === short);
+  if (item?.recognitionCodes && item.recognitionCodes.length > 0) {
+    return item.recognitionCodes;
+  }
+  return [lang.includes('-') ? lang : `${lang}-IN`, 'hi-IN', 'en-IN'];
+}
+
+// Retain active utterance references to prevent Chromium garbage collection bug
+declare global {
+  interface Window {
+    __kisanActiveUtterances?: SpeechSynthesisUtterance[];
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.__kisanActiveUtterances = window.__kisanActiveUtterances || [];
+}
+
+/**
+ * Cleanly speak text using Web SpeechSynthesis API with dialect pairing and audio resilience
  */
 export function speakText(
   text: string,
@@ -219,41 +331,109 @@ export function speakText(
     lang?: string;
     rate?: number;
     pitch?: number;
+    volume?: number;
     onStart?: () => void;
     onEnd?: () => void;
     onError?: (err: any) => void;
   } = {}
 ): SpeechSynthesisUtterance | null {
-  if (!isSpeechSynthesisSupported()) return null;
+  if (!isSpeechSynthesisSupported()) {
+    options.onError?.(new Error('Speech synthesis is not supported on this browser.'));
+    return null;
+  }
 
-  window.speechSynthesis.cancel();
+  try {
+    window.speechSynthesis.cancel();
+  } catch {
+    // ignore
+  }
 
-  // Strip Markdown markers, emojis, and code formatting for speech
+  // Strip Markdown markers, emojis, web URLs and brackets for clear speech output
   const clean = text
     .replace(/[*_#`[\]()~]/g, ' ')
     .replace(/http\S+/g, '')
-    .replace(/[🌱🌾💰🛡️⚠️✅⚡👉🎙️]/g, '')
+    .replace(/[🌱🌾💰🛡️⚠️✅⚡👉🎙️🤖📦📊🏷️🔗🛒💡]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  if (!clean) return null;
+  if (!clean) {
+    options.onEnd?.();
+    return null;
+  }
 
   const utterance = new SpeechSynthesisUtterance(clean);
-  const langCode = options.lang === 'hi' ? 'hi-IN' : options.lang || 'en-IN';
-  utterance.lang = langCode;
+  const targetLang = options.lang || 'en-IN';
+
+  // Pair with best matching voice installed on user's system
+  const matchedVoice = findBestVoiceForLanguage(targetLang);
+  if (matchedVoice) {
+    utterance.voice = matchedVoice;
+    utterance.lang = matchedVoice.lang;
+  } else {
+    utterance.lang = targetLang.includes('-') ? targetLang : `${targetLang}-IN`;
+  }
+
   utterance.rate = options.rate ?? 0.95;
   utterance.pitch = options.pitch ?? 1.0;
+  utterance.volume = options.volume ?? 1.0;
 
-  if (options.onStart) utterance.onstart = options.onStart;
-  if (options.onEnd) utterance.onend = options.onEnd;
-  if (options.onError) utterance.onerror = options.onError;
+  const cleanup = () => {
+    if (typeof window !== 'undefined' && window.__kisanActiveUtterances) {
+      const arr = window.__kisanActiveUtterances;
+      const idx = arr.indexOf(utterance);
+      if (idx !== -1) arr.splice(idx, 1);
+    }
+  };
 
-  window.speechSynthesis.speak(utterance);
+  utterance.onstart = () => {
+    options.onStart?.();
+  };
+
+  utterance.onend = () => {
+    cleanup();
+    options.onEnd?.();
+  };
+
+  utterance.onerror = (e) => {
+    cleanup();
+    console.warn('Speech synthesis utterance notice:', e);
+    // If error is canceled due to new speech request, do not treat as fatal
+    if ((e as any)?.error !== 'canceled') {
+      options.onError?.(e);
+    }
+  };
+
+  // Hold strong reference against Chrome GC
+  if (typeof window !== 'undefined' && window.__kisanActiveUtterances) {
+    window.__kisanActiveUtterances.push(utterance);
+  }
+
+  // Tiny delay of 40ms to avoid Chrome audio race condition when cancel() is followed by speak()
+  setTimeout(() => {
+    try {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn('Failed to start speech synthesis:', err);
+      cleanup();
+      options.onError?.(err);
+    }
+  }, 40);
+
   return utterance;
 }
 
 export function stopSpeech(): void {
   if (isSpeechSynthesisSupported()) {
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
+      if (typeof window !== 'undefined' && window.__kisanActiveUtterances) {
+        window.__kisanActiveUtterances = [];
+      }
+    } catch {
+      // ignore
+    }
   }
 }

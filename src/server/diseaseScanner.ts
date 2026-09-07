@@ -7,6 +7,7 @@
 import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
 import { DiseaseScanResult, DiseaseScanImageQuality, DiseaseDifferentialPossibility } from '../../shared/types.js';
 import { db } from './db.js';
+import { generateWithModelFallback } from './gemini.js';
 
 let aiInstance: GoogleGenAI | null = null;
 
@@ -816,14 +817,18 @@ Important: Use safe, practical, non-hazardous steps. Output pure JSON without ma
       },
     ];
 
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
-      contents: { parts: contents },
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.2,
-      },
-    });
+    const { response } = await generateWithModelFallback(
+      ai,
+      'gemini-2.5-flash',
+      (m) => ({
+        model: m,
+        contents: { parts: contents },
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.2,
+        },
+      })
+    );
 
     const parsed = JSON.parse(response.text || '{}');
 

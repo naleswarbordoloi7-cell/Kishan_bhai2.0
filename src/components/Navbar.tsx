@@ -16,13 +16,13 @@ import {
   User,
   Wifi,
   WifiOff,
-  PhoneCall,
   Sun,
   Moon,
 } from 'lucide-react';
 import { UserRole } from '../../shared/types';
 import { NotificationCenter } from './NotificationCenter';
 import { AnimatedKishanLogo } from './AnimatedKishanLogo';
+import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 
 export const Navbar: React.FC = () => {
   const {
@@ -32,6 +32,7 @@ export const Navbar: React.FC = () => {
     setUserRole,
     language,
     setLanguage,
+    t,
     wallet,
     currentView,
     setCurrentView,
@@ -46,8 +47,12 @@ export const Navbar: React.FC = () => {
   } = useApp();
 
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const currentLangObj =
+    SUPPORTED_LANGUAGES.find((l) => l.code === language) || SUPPORTED_LANGUAGES[0];
 
   const roles: { role: UserRole; label: string; desc: string }[] = [
     { role: 'FARMER', label: 'Farmer (किसान भाई)', desc: 'Farm management, clusters & AI' },
@@ -73,55 +78,17 @@ export const Navbar: React.FC = () => {
   };
 
   const navLinks = [
-    { id: 'farmer-dashboard', labelEn: 'Home', labelHi: 'होम' },
-    { id: 'ai-assistant', labelEn: 'Kisan AI', labelHi: 'किसान AI मित्र' },
-    { id: 'disease-scanner', labelEn: 'Crop Doctor', labelHi: 'रोग पहचान' },
-    { id: 'smart-irrigation', labelEn: 'Irrigation', labelHi: 'स्मार्ट सिंचाई' },
-    { id: 'market-prices', labelEn: 'Mandi Rates', labelHi: 'मंडी भाव' },
-    { id: 'government-schemes', labelEn: 'Govt Schemes', labelHi: 'सरकारी योजनाएं' },
-    { id: 'clusters', labelEn: 'Farm Clusters', labelHi: 'फार्म क्लस्टर' },
+    { id: 'farmer-dashboard', label: t('dashboard', 'डैशबोर्ड') },
+    { id: 'ai-assistant', label: t('voiceAssistant', 'किसान AI') },
+    { id: 'disease-scanner', label: t('diseaseScanner', 'रोग पहचान') },
+    { id: 'smart-irrigation', label: t('smartIrrigation', 'स्मार्ट सिंचाई') },
+    { id: 'market-prices', label: t('marketPrices', 'मंडी भाव') },
+    { id: 'government-schemes', label: t('schemes', 'सरकारी योजनाएं') },
+    { id: 'clusters', label: t('virtualClusters', 'फार्म क्लस्टर') },
   ];
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#121810]/95 backdrop-blur-xl border-b border-stone-200/80 dark:border-stone-800 shadow-xs transition-colors">
-      {/* Official Government of India / Agricultural Ministry Top Ribbon */}
-      <div className="bg-[#122e0c] dark:bg-[#081506] text-white text-[11px] font-medium border-b border-emerald-900/60 px-3 sm:px-6 lg:px-8 py-1">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-          {/* Official Emblem & Ministry Text */}
-          <div className="flex items-center gap-2 text-emerald-200/90 truncate">
-            <span className="inline-flex items-center gap-1 font-bold text-amber-300">
-              <span className="text-sm">🇮🇳</span> {language === 'hi' ? 'भारत सरकार' : 'Govt of India'}
-            </span>
-            <span className="text-emerald-500/80 hidden sm:inline">•</span>
-            <span className="hidden sm:inline truncate text-emerald-100">
-              {language === 'hi' ? 'कृषि एवं किसान कल्याण मंत्रालय (ICAR संरेखित)' : 'Ministry of Agriculture & Farmers Welfare (ICAR Aligned)'}
-            </span>
-          </div>
-
-          {/* National Kisan Call Centre 1800-180-1551 Toll Free Helpline */}
-          <div className="flex items-center gap-3 shrink-0">
-            <a
-              href="tel:18001801551"
-              className="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 font-bold transition-colors bg-emerald-950/80 px-2.5 py-0.5 rounded-md border border-emerald-700/50 text-[11px]"
-              title="Click to call National Kisan Call Centre"
-            >
-              <PhoneCall className="w-3 h-3 text-amber-400 animate-pulse" />
-              <span>1800-180-1551</span>
-              <span className="hidden md:inline text-[10px] text-emerald-300 font-normal">({language === 'hi' ? 'निःशुल्क हेल्पलाइन' : 'Toll Free'})</span>
-            </a>
-
-            {/* Quick Dark Mode Switch */}
-            <button
-              onClick={toggleDarkMode}
-              className="p-1 text-emerald-300 hover:text-white rounded-md hover:bg-emerald-900/60 transition-colors"
-              title={isDarkMode ? 'Switch to Day Light Mode' : 'Switch to Field Night Mode'}
-            >
-              {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-300" /> : <Moon className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -153,7 +120,7 @@ export const Navbar: React.FC = () => {
                       : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
                   }`}
                 >
-                  {language === 'hi' ? link.labelHi : link.labelEn}
+                  {link.label}
                 </button>
               );
             })}
@@ -199,15 +166,63 @@ export const Navbar: React.FC = () => {
             {/* Notification Center */}
             <NotificationCenter />
 
-            {/* Language Toggle */}
+            {/* Dark Mode Toggle */}
             <button
-              onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
-              className="flex items-center gap-1.5 text-xs font-medium bg-white/60 hover:bg-white/90 text-stone-700 px-3 py-1.5 rounded-xl border border-stone-200/80 backdrop-blur-md transition-all cursor-pointer shadow-2xs"
-              title="Toggle English / Hindi"
+              onClick={toggleDarkMode}
+              className="p-1.5 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white rounded-xl bg-white/60 dark:bg-stone-800/60 hover:bg-white/90 border border-stone-200/80 dark:border-stone-700 transition-colors shadow-2xs cursor-pointer"
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
-              <Globe className="w-3.5 h-3.5 text-stone-500" />
-              <span>{language === 'en' ? 'हिन्दी' : 'English'}</span>
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-stone-600" />}
             </button>
+
+            {/* Language Selector Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsLangMenuOpen(!isLangMenuOpen);
+                  setIsRoleMenuOpen(false);
+                  setIsUserMenuOpen(false);
+                }}
+                className="flex items-center gap-1.5 text-xs font-semibold bg-white/70 dark:bg-stone-800/70 hover:bg-white dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 px-3 py-1.5 rounded-xl border border-stone-200/80 dark:border-stone-700 backdrop-blur-md transition-all cursor-pointer shadow-2xs"
+                title="Change Application Language"
+              >
+                <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{currentLangObj.flag} {currentLangObj.nativeName}</span>
+                <ChevronDown className="w-3 h-3 text-stone-400" />
+              </button>
+
+              {isLangMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#161c14] rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 py-2 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-80 overflow-y-auto">
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider text-stone-400 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                    <span>भाषा / Language</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-normal">12 Languages</span>
+                  </div>
+                  <div className="p-1 grid grid-cols-1 gap-0.5">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          setLanguage(lang.code);
+                          setIsLangMenuOpen(false);
+                          addToast('Language Changed', `Switched to ${lang.nativeName} (${lang.name})`, 'info');
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                          language === lang.code
+                            ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-bold border-l-2 border-emerald-600'
+                            : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{lang.flag}</span>
+                          <span className="font-semibold">{lang.nativeName}</span>
+                        </span>
+                        <span className="text-[11px] text-stone-400 font-normal">{lang.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Role Switcher */}
             <div className="relative">
@@ -332,6 +347,13 @@ export const Navbar: React.FC = () => {
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center space-x-1.5">
             <button
+              onClick={toggleDarkMode}
+              className="p-2 text-stone-700 dark:text-stone-300 bg-white/60 dark:bg-stone-800/60 backdrop-blur-md rounded-xl border border-stone-200/80 dark:border-stone-700"
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
               onClick={() => setIsOfflineModalOpen(true)}
               className={`p-2 rounded-xl border text-xs font-semibold flex items-center justify-center ${
                 isOnline
@@ -413,15 +435,33 @@ export const Navbar: React.FC = () => {
               <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" />
               <span>{language === 'hi' ? '✨ एनिमेटेड लोगो इंट्रो देखें' : '✨ Play Animatic Logo Intro'}</span>
             </button>
-            <button
-              onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
-              className="text-xs text-center py-2 bg-white/70 rounded-xl font-medium border border-stone-200/60"
-            >
-              Language: {language === 'en' ? 'English' : 'हिन्दी'}
-            </button>
+            <div className="col-span-2 pt-1 pb-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block px-1 mb-1.5">
+                {t('settings', 'भाषा')} / Language
+              </span>
+              <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto p-1 bg-stone-50 dark:bg-stone-900/50 rounded-xl border border-stone-200/60 dark:border-stone-800">
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      setLanguage(lang.code);
+                      addToast('Language Changed', `Switched to ${lang.nativeName}`, 'info');
+                    }}
+                    className={`py-1.5 px-2 rounded-lg text-xs flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
+                      language === lang.code
+                        ? 'bg-[#2D4F1E] text-white font-bold shadow-xs'
+                        : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 border border-stone-200/50 dark:border-stone-700/50'
+                    }`}
+                  >
+                    <span className="text-sm leading-tight">{lang.flag}</span>
+                    <span className="text-[11px] font-medium leading-tight">{lang.nativeName}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <button
               onClick={() => setIsNfcModalOpen(true)}
-              className="text-xs text-center py-2 bg-white/70 rounded-xl font-medium flex items-center justify-center gap-1 border border-stone-200/60"
+              className="col-span-2 text-xs text-center py-2 bg-white/70 rounded-xl font-medium flex items-center justify-center gap-1 border border-stone-200/60"
             >
               <Radio className="w-3.5 h-3.5 text-emerald-700" />
               NFC ID
@@ -443,7 +483,7 @@ export const Navbar: React.FC = () => {
                   currentView === link.id ? 'bg-[#2D4F1E]/10 text-[#2D4F1E] font-semibold' : 'text-stone-700'
                 }`}
               >
-                {language === 'hi' ? link.labelHi : link.labelEn}
+                {link.label}
               </button>
             ))}
           </div>

@@ -670,6 +670,23 @@ app.get('/api/weather', async (req, res) => {
   res.json(result.data);
 });
 
+// 8b. MANDI MARKET RATES (LIVE APMC AGMARKNET SYNCHRONIZATION)
+app.get('/api/mandi/prices', (req, res) => {
+  const { commodity, state, district, limit } = req.query;
+  const result = marketService.getPrices({
+    commodity: commodity as string,
+    state: state as string,
+    district: district as string,
+    limit: limit ? Number(limit) : undefined,
+  });
+  res.json(result);
+});
+
+app.get('/api/mandi/commodities', (req, res) => {
+  const meta = marketService.getCommodityList();
+  res.json(meta);
+});
+
 app.get('/api/weather/current', async (req, res) => {
   const location = (req.query.location as string) || 'Anandpur, Gujarat';
   const result = await getWeatherData(location);
@@ -812,13 +829,14 @@ app.post('/api/sensors/simulate', (req, res) => {
 
 // 9. AI FARMING ASSISTANT (KISHAN BHAI AI FLAGSHIP ENGINE)
 app.post('/api/ai/chat', async (req, res) => {
-  const { prompt, userRole, cropContext, imageBase64, userId, modelName, language, farmContext, conversationId } = req.body;
-  if (!prompt && !imageBase64) {
+  const { prompt, message, userRole, cropContext, imageBase64, userId, modelName, language, farmContext, conversationId } = req.body;
+  const effectivePrompt = prompt || message;
+  if (!effectivePrompt && !imageBase64) {
     return res.status(400).json({ error: 'Prompt or image is required.' });
   }
 
   const result = await askKishanAI(
-    prompt || 'Analyze this crop image.',
+    effectivePrompt || 'Analyze this crop image.',
     userRole || 'FARMER',
     cropContext,
     imageBase64,

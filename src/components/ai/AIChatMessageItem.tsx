@@ -23,6 +23,7 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { AIChatMessage, FarmingActionCard, DiseaseAnalysisResult } from '../../../shared/types';
+import { speakText, stopSpeech, isSpeechSynthesisSupported } from '../../services/webSpeechService';
 
 interface Props {
   message: AIChatMessage;
@@ -51,24 +52,24 @@ export const AIChatMessageItem: React.FC<Props> = ({
   };
 
   const handleSpeak = () => {
-    if (!('speechSynthesis' in window)) return;
+    if (!isSpeechSynthesisSupported()) return;
 
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      stopSpeech();
       setIsSpeaking(false);
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const cleanText = message.content.replace(/[*_#`[\]()]/g, ' ');
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = message.language === 'hi' || language === 'hi' ? 'hi-IN' : 'en-IN';
-    utterance.rate = 0.95;
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
+    const targetLang = message.language || language || 'en';
     setIsSpeaking(true);
-    window.speechSynthesis.speak(utterance);
+
+    speakText(message.content, {
+      lang: targetLang,
+      rate: 0.95,
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
   };
 
   const handleFeedback = (type: 'like' | 'dislike') => {

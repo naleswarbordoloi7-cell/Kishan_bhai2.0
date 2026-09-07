@@ -30,7 +30,9 @@ import { AIChatMessageItem } from '../components/ai/AIChatMessageItem';
 import { AIQuickPrompts } from '../components/ai/AIQuickPrompts';
 import { AIHistoryDrawer } from '../components/ai/AIHistoryDrawer';
 import { HandsFreeAssistantModal } from '../components/speech/HandsFreeAssistantModal';
-import { INDIAN_SPEECH_LANGUAGES } from '../services/webSpeechService';
+import { INDIAN_SPEECH_LANGUAGES, isSpeechRecognitionSupported } from '../services/webSpeechService';
+import { SUPPORTED_LANGUAGES } from '../i18n/translations';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 export const AIAssistantPage: React.FC = () => {
   const {
@@ -52,9 +54,18 @@ export const AIAssistantPage: React.FC = () => {
   const [sessions, setSessions] = useState<AIConversationSession[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isHandsFreeOpen, setIsHandsFreeOpen] = useState(false);
-  const [speechLanguageCode, setSpeechLanguageCode] = useState<string>(
-    language === 'hi' ? 'hi-IN' : 'en-IN'
-  );
+  const [speechLanguageCode, setSpeechLanguageCode] = useState<string>(() => {
+    const matched = INDIAN_SPEECH_LANGUAGES.find((l) => l.code === language);
+    return matched?.speechCode || 'hi-IN';
+  });
+
+  // Keep speech language synchronized with global application language
+  useEffect(() => {
+    const matched = INDIAN_SPEECH_LANGUAGES.find((l) => l.code === language);
+    if (matched) {
+      setSpeechLanguageCode(matched.speechCode);
+    }
+  }, [language]);
 
   const initialWelcomeMessage: AIChatMessage = {
     id: 'msg_welcome',
@@ -98,13 +109,57 @@ export const AIAssistantPage: React.FC = () => {
   const [inputPrompt, setInputPrompt] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [interimVoiceSpeech, setInterimVoiceSpeech] = useState('');
   const [isTypingAnimation, setIsTypingAnimation] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
+
+  // Hook for resilient speech recognition with Indian regional fallbacks
+  const {
+    isSupported: isVoiceSupported,
+    isListening,
+    startListening,
+    stopListening,
+    resetTranscript,
+    activeRecognitionLang,
+  } = useSpeechRecognition({
+    lang: speechLanguageCode,
+    continuous: false,
+    interimResults: true,
+    onResult: (text, isFinal) => {
+      if (isFinal && text.trim()) {
+        setInputPrompt((prev) => (prev ? `${prev} ${text.trim()}` : text.trim()));
+        setInterimVoiceSpeech('');
+        addToast(
+          'Voice Captured',
+          text.trim().length > 45 ? `${text.trim().slice(0, 45)}...` : text.trim(),
+          'success'
+        );
+      } else {
+        setInterimVoiceSpeech(text);
+      }
+    },
+    onError: (err) => {
+      setInterimVoiceSpeech('');
+      if (err?.error === 'not-allowed' || err?.error === 'permission-denied') {
+        addToast(
+          'Microphone Permission Blocked',
+          'Please allow microphone permission in your browser address bar to use voice.',
+          'error'
+        );
+      } else if (err?.error === 'no-speech') {
+        addToast(
+          'No Voice Detected',
+          'Please speak closer to the microphone and try again.',
+          'info'
+        );
+      }
+    },
+    onEnd: () => {
+      setInterimVoiceSpeech('');
+    },
+  });
 
   // Fetch initial seeded conversation sessions from server
   useEffect(() => {
@@ -139,79 +194,37 @@ export const AIAssistantPage: React.FC = () => {
     }
   }, [pendingAiQuery]);
 
-  // Voice speech recognition setup
+  // Voice speech recognition toggle
   const toggleVoiceInput = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    if (!isVoiceSupported) {
       addToast(
         'Voice Input Unavailable',
-        'Your browser does not support Web Speech Recognition. Please type your query.',
+        'Web Speech Recognition is not supported on this browser. Please type your query.',
         'info'
       );
       return;
     }
 
     if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
+      stopListening();
       setInterimVoiceSpeech('');
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = speechLanguageCode || (language === 'hi' ? 'hi-IN' : 'en-IN');
-      recognition.continuous = false;
-      recognition.interimResults = true;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-        setInterimVoiceSpeech('');
-        addToast(
-          'Listening in Field...',
-          language === 'hi' ? 'बोलिए, किसान भाई AI सुन रहा है...' : 'Speak now, Kisan Bhai AI is listening...',
-          'info'
-        );
-      };
-
-      recognition.onresult = (event: any) => {
-        let interim = '';
-        let finalChunk = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const res = event.results[i];
-          if (res.isFinal) {
-            finalChunk += res[0].transcript;
-          } else {
-            interim += res[0].transcript;
-          }
-        }
-
-        if (finalChunk) {
-          setInputPrompt((prev) => (prev ? `${prev} ${finalChunk.trim()}` : finalChunk.trim()));
-          setInterimVoiceSpeech('');
-          setIsListening(false);
-          addToast('Voice Captured', finalChunk, 'success');
-        } else {
-          setInterimVoiceSpeech(interim);
-        }
-      };
-
-      recognition.onerror = () => {
-        setIsListening(false);
-        setInterimVoiceSpeech('');
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-        setInterimVoiceSpeech('');
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch {
-      setIsListening(false);
+    } else {
+      resetTranscript();
       setInterimVoiceSpeech('');
+      startListening({
+        lang: speechLanguageCode,
+        continuous: false,
+        interimResults: true,
+      });
+      const activeLanguageOption = INDIAN_SPEECH_LANGUAGES.find((l) => l.speechCode === speechLanguageCode);
+      const displayLabel = activeLanguageOption ? activeLanguageOption.label : speechLanguageCode;
+      addToast(
+        'Listening in Field...',
+        language === 'hi'
+          ? 'बोलिए, किसान भाई AI सुन रहा है...'
+          : `Listening in ${displayLabel}. Speak now...`,
+        'info'
+      );
     }
   };
 
@@ -504,17 +517,6 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
     );
   };
 
-  const languageOptions = [
-    { code: 'en', label: 'English' },
-    { code: 'hi', label: 'हिन्दी (Hindi)' },
-    { code: 'gu', label: 'ગુજરાતી (Gujarati)' },
-    { code: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)' },
-    { code: 'mr', label: 'मराठी (Marathi)' },
-    { code: 'bn', label: 'বাংলা (Bengali)' },
-    { code: 'ta', label: 'தமிழ் (Tamil)' },
-    { code: 'te', label: 'తెలుగు (Telugu)' },
-  ];
-
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
       {/* 1. Header Banner */}
@@ -562,8 +564,8 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
               title="Voice Recognition Language"
             >
               {INDIAN_SPEECH_LANGUAGES.map((opt) => (
-                <option key={opt.code} value={opt.code} className="text-stone-900 bg-white">
-                  🎙️ {opt.label}
+                <option key={opt.code} value={opt.speechCode} className="text-stone-900 bg-white">
+                  🎙️ {opt.nativeName} ({opt.label})
                 </option>
               ))}
             </select>
@@ -576,20 +578,13 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
               onChange={(e) => {
                 const newLang = e.target.value as any;
                 setLanguage(newLang);
-                if (newLang === 'hi') setSpeechLanguageCode('hi-IN');
-                else if (newLang === 'gu') setSpeechLanguageCode('gu-IN');
-                else if (newLang === 'pa') setSpeechLanguageCode('pa-IN');
-                else if (newLang === 'mr') setSpeechLanguageCode('mr-IN');
-                else if (newLang === 'bn') setSpeechLanguageCode('bn-IN');
-                else if (newLang === 'ta') setSpeechLanguageCode('ta-IN');
-                else if (newLang === 'te') setSpeechLanguageCode('te-IN');
-                else setSpeechLanguageCode('en-IN');
               }}
               className="bg-white/15 hover:bg-white/25 text-white text-xs font-medium px-3 py-1.5 rounded-xl border border-white/20 backdrop-blur-xs cursor-pointer focus:outline-none"
+              title="Change Chat Language"
             >
-              {languageOptions.map((opt) => (
+              {SUPPORTED_LANGUAGES.map((opt) => (
                 <option key={opt.code} value={opt.code} className="text-stone-900 bg-white">
-                  {opt.label}
+                  {opt.flag} {opt.nativeName} ({opt.name})
                 </option>
               ))}
             </select>

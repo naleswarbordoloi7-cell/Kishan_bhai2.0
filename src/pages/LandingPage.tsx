@@ -72,41 +72,43 @@ export const LandingPage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <button
               onClick={() => {
-                setCurrentView('login');
+                setUserRole('FARMER');
+                setCurrentView('farmer-dashboard');
               }}
-              className="bg-[#2D5A27] hover:bg-[#1B3B1B] text-white font-semibold px-6 py-3.5 rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer border border-white/20 active:scale-[0.98]"
+              className="bg-[#2D5A27] hover:bg-[#1B3B1B] text-white font-extrabold text-base px-7 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2.5 cursor-pointer border border-white/20 active:scale-[0.98]"
             >
-              <LogIn className="w-4 h-4 text-emerald-200" />
-              <span>{language === 'hi' ? 'खाता बनाएं / लॉगिन करें' : 'Sign In / Register Portal'}</span>
-            </button>
-
-            <button
-              onClick={() => setIsLogoSplashOpen(true)}
-              className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 font-semibold px-5 py-3.5 rounded-2xl border border-amber-500/30 shadow-xs hover:shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-[0.98]"
-            >
-              <Sparkles className="w-4 h-4 text-amber-600 animate-spin" />
-              <span>{language === 'hi' ? '✨ एनिमेटेड लोगो' : '✨ Animatic Intro'}</span>
+              <Sprout className="w-5 h-5 text-amber-300" />
+              <span>{language === 'hi' ? '🌾 किसान होम पेज खोलें' : '🌾 Go to Farmer Home'}</span>
+              <ArrowRight className="w-4 h-4 text-emerald-200" />
             </button>
 
             <button
               onClick={() => {
-                setUserRole('FARMER');
-                setCurrentView('farmer-dashboard');
+                setCurrentView('disease-scanner');
               }}
-              className="bg-stone-100 hover:bg-stone-200 text-stone-900 font-semibold px-5 py-3.5 rounded-2xl border border-stone-200 shadow-xs hover:shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-[0.98]"
+              className="bg-emerald-50 hover:bg-emerald-100 text-[#1B3B1B] font-bold px-5 py-3.5 rounded-2xl border border-emerald-300 shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-[0.98]"
             >
-              <span>{language === 'hi' ? 'किसान डैशबोर्ड' : 'Launch Dashboard'}</span>
-              <ArrowRight className="w-4 h-4 text-stone-600" />
+              <span>📸 {language === 'hi' ? 'फसल रोग जांचें' : 'Scan Crop Disease'}</span>
             </button>
 
             <button
               onClick={() => {
                 setCurrentView('ai-assistant');
               }}
-              className="bg-emerald-50 hover:bg-emerald-100 text-[#1B3B1B] font-semibold px-5 py-3.5 rounded-2xl border border-emerald-200 shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-[0.98]"
+              className="bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold px-5 py-3.5 rounded-2xl border border-amber-300 shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-[0.98]"
             >
-              <Sparkles className="w-4 h-4 text-emerald-700" />
-              <span>{language === 'hi' ? 'किसान AI सलाहकार' : 'Kisan AI Advisor'}</span>
+              <Sparkles className="w-4 h-4 text-amber-700" />
+              <span>🎙️ {language === 'hi' ? 'बोलकर पूछें (AI)' : 'Voice AI'}</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setCurrentView('login');
+              }}
+              className="bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold px-4 py-3.5 rounded-2xl border border-stone-200 shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-[0.98]"
+            >
+              <LogIn className="w-4 h-4 text-stone-600" />
+              <span>{language === 'hi' ? 'लॉगिन' : 'Sign In'}</span>
             </button>
           </div>
 

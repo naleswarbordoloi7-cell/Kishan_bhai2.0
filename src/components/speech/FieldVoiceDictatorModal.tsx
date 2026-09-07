@@ -40,9 +40,17 @@ export const FieldVoiceDictatorModal: React.FC<FieldVoiceDictatorModalProps> = (
   defaultCrop = 'BT Cotton',
   language,
 }) => {
-  const [selectedVoiceLang, setSelectedVoiceLang] = useState(
-    language === 'hi' ? 'hi-IN' : 'en-IN'
-  );
+  const [selectedVoiceLang, setSelectedVoiceLang] = useState(() => {
+    const matched = INDIAN_SPEECH_LANGUAGES.find((l) => l.code === language);
+    return matched?.speechCode || 'hi-IN';
+  });
+
+  useEffect(() => {
+    const matched = INDIAN_SPEECH_LANGUAGES.find((l) => l.code === language);
+    if (matched) {
+      setSelectedVoiceLang(matched.speechCode);
+    }
+  }, [language]);
   const [parsedResult, setParsedResult] = useState<ParsedFarmDiaryVoice | null>(null);
   const [liveSpokenText, setLiveSpokenText] = useState('');
 

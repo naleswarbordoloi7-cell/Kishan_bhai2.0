@@ -91,7 +91,130 @@ export class MarketService {
         { date: '31 Aug', price: 5550 },
       ],
     },
+    {
+      id: 'mandi_soy_5',
+      crop: 'Soybean (सोयाबीन)',
+      variety: 'JS 335 / Yellow',
+      mandi: 'Indore APMC Mandi',
+      district: 'Indore',
+      state: 'Madhya Pradesh',
+      minPricePerQuintal: 4300,
+      maxPricePerQuintal: 4890,
+      modalPricePerQuintal: 4680,
+      priceChangeDailyPct: 0.9,
+      dailyArrivalQuintals: 8400,
+      distanceKm: 210,
+      date: new Date().toISOString().split('T')[0],
+      priceTrend: [
+        { date: '25 Aug', price: 4610 },
+        { date: '31 Aug', price: 4680 },
+      ],
+    },
+    {
+      id: 'mandi_paddy_6',
+      crop: 'Paddy (Dhan / Basmati)',
+      variety: 'Pusa 1121',
+      mandi: 'Karnal Grain Market',
+      district: 'Karnal',
+      state: 'Haryana',
+      minPricePerQuintal: 3400,
+      maxPricePerQuintal: 4250,
+      modalPricePerQuintal: 3950,
+      priceChangeDailyPct: 1.4,
+      dailyArrivalQuintals: 7100,
+      distanceKm: 180,
+      date: new Date().toISOString().split('T')[0],
+      priceTrend: [
+        { date: '25 Aug', price: 3880 },
+        { date: '31 Aug', price: 3950 },
+      ],
+    },
+    {
+      id: 'mandi_tom_7',
+      crop: 'Tomato (टमाटर)',
+      variety: 'Hybrid Vaishali',
+      mandi: 'Kolar APMC Mandi',
+      district: 'Kolar',
+      state: 'Karnataka',
+      minPricePerQuintal: 1400,
+      maxPricePerQuintal: 2200,
+      modalPricePerQuintal: 1850,
+      priceChangeDailyPct: -3.5,
+      dailyArrivalQuintals: 12500,
+      distanceKm: 420,
+      date: new Date().toISOString().split('T')[0],
+      priceTrend: [
+        { date: '25 Aug', price: 1980 },
+        { date: '31 Aug', price: 1850 },
+      ],
+    },
+    {
+      id: 'mandi_pot_8',
+      crop: 'Potato (आलू)',
+      variety: 'Kufri Jyoti / Pukhraj',
+      mandi: 'Agra APMC Mandi',
+      district: 'Agra',
+      state: 'Uttar Pradesh',
+      minPricePerQuintal: 1100,
+      maxPricePerQuintal: 1550,
+      modalPricePerQuintal: 1380,
+      priceChangeDailyPct: 0.7,
+      dailyArrivalQuintals: 15600,
+      distanceKm: 280,
+      date: new Date().toISOString().split('T')[0],
+      priceTrend: [
+        { date: '25 Aug', price: 1340 },
+        { date: '31 Aug', price: 1380 },
+      ],
+    },
+    {
+      id: 'mandi_oni_9',
+      crop: 'Onion (प्याज)',
+      variety: 'Nashik Red',
+      mandi: 'Lasalgaon APMC Mandi',
+      district: 'Nashik',
+      state: 'Maharashtra',
+      minPricePerQuintal: 1750,
+      maxPricePerQuintal: 2600,
+      modalPricePerQuintal: 2250,
+      priceChangeDailyPct: 2.1,
+      dailyArrivalQuintals: 19800,
+      distanceKm: 340,
+      date: new Date().toISOString().split('T')[0],
+      priceTrend: [
+        { date: '25 Aug', price: 2180 },
+        { date: '31 Aug', price: 2250 },
+      ],
+    },
+    {
+      id: 'mandi_chn_10',
+      crop: 'Gram (Chana / चना)',
+      variety: 'Desi Chana (JG-11)',
+      mandi: 'Bikaner APMC Mandi',
+      district: 'Bikaner',
+      state: 'Rajasthan',
+      minPricePerQuintal: 5100,
+      maxPricePerQuintal: 5750,
+      modalPricePerQuintal: 5450,
+      priceChangeDailyPct: 0.5,
+      dailyArrivalQuintals: 4200,
+      distanceKm: 260,
+      date: new Date().toISOString().split('T')[0],
+      priceTrend: [
+        { date: '25 Aug', price: 5410 },
+        { date: '31 Aug', price: 5450 },
+      ],
+    },
   ];
+
+  /**
+   * Get list of unique commodities and states
+   */
+  public getCommodityList(): { commodities: string[]; states: string[] } {
+    const commodities = Array.from(new Set(this.verifiedMarketRates.map((r) => r.crop)));
+    const states = Array.from(new Set(this.verifiedMarketRates.map((r) => r.state)));
+    return { commodities, states };
+  }
 
   /**
    * Query mandi prices by commodity, state, district

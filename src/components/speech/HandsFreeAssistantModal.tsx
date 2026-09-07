@@ -47,9 +47,17 @@ export const HandsFreeAssistantModal: React.FC<HandsFreeAssistantModalProps> = (
   crops = ['BT Cotton', 'Sharbati Wheat'],
   village = 'Anandpur',
 }) => {
-  const [selectedVoiceLang, setSelectedVoiceLang] = useState(
-    language === 'hi' ? 'hi-IN' : 'en-IN'
-  );
+  const [selectedVoiceLang, setSelectedVoiceLang] = useState(() => {
+    const matched = INDIAN_SPEECH_LANGUAGES.find((l) => l.code === language);
+    return matched?.speechCode || 'hi-IN';
+  });
+
+  useEffect(() => {
+    const matched = INDIAN_SPEECH_LANGUAGES.find((l) => l.code === language);
+    if (matched) {
+      setSelectedVoiceLang(matched.speechCode);
+    }
+  }, [language]);
   const [autoSpeakAnswer, setAutoSpeakAnswer] = useState(true);
   const [speechRate, setSpeechRate] = useState(1.0);
   const [conversationState, setConversationState] = useState<

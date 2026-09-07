@@ -38,6 +38,7 @@ import {
   INITIAL_COMMUNITY_POSTS,
   INITIAL_FARM_ALERTS,
 } from '../data/agriData';
+import { getTranslation } from '../i18n/translations';
 import {
   CacheStats,
   OfflineSyncQueueItem,
@@ -91,6 +92,7 @@ interface AppContextType {
   setUserRole: (role: UserRole) => void;
   language: string;
   setLanguage: (lang: string) => void;
+  t: (key: string, fallback?: string) => string;
   wallet: WalletState;
   setWallet: React.Dispatch<React.SetStateAction<WalletState>>;
   connectDemoWallet: () => Promise<void>;
@@ -246,7 +248,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [userRole, setUserRole] = useState<UserRole>('FARMER');
-  const [language, setLanguage] = useState<string>('hi');
+  const [language, setLanguageState] = useState<string>(() => {
+    try {
+      return localStorage.getItem('kb_language') || 'hi';
+    } catch {
+      return 'hi';
+    }
+  });
+
+  const setLanguage = useCallback((lang: string) => {
+    setLanguageState(lang);
+    try {
+      localStorage.setItem('kb_language', lang);
+    } catch {}
+  }, []);
+
+  const t = useCallback(
+    (key: string, fallback?: string) => getTranslation(language, key, fallback),
+    [language]
+  );
+
   const [currentView, setCurrentView] = useState<string>('farmer-dashboard');
   const [pendingPaymentReq, setPendingPaymentReq] = useState<X402PaymentRequirement | null>(null);
   const [paymentCallback, setPaymentCallback] = useState<((proof: { txId: string; sender: string }) => void) | null>(null);
@@ -266,13 +287,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [isNfcModalOpen, setIsNfcModalOpen] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [isLogoSplashOpen, setIsLogoSplashOpen] = useState(() => {
-    try {
-      return sessionStorage.getItem('kb_logo_splash_seen') !== 'true';
-    } catch {
-      return true;
-    }
-  });
+  const [isLogoSplashOpen, setIsLogoSplashOpen] = useState(false);
 
   // Theme & Low-Light Field Display State
   const [themeMode, setThemeModeState] = useState<'light' | 'dark' | 'system'>(() => {
@@ -761,6 +776,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const [mandiPrices, setMandiPrices] = useState<MandiPriceRecord[]>(INITIAL_MANDI_PRICES);
 
+  useEffect(() => {
+    fetch('/api/mandi/prices')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.prices) && data.prices.length > 0) {
+          setMandiPrices(data.prices);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [diaryEntries, setDiaryEntries] = useState<FarmDiaryEntry[]>(() => {
     try {
       const saved = localStorage.getItem('kb_diary');
@@ -1164,6 +1190,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUserRole,
         language,
         setLanguage,
+        t,
         wallet,
         setWallet,
         connectDemoWallet,

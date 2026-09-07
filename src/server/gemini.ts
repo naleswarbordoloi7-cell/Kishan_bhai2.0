@@ -25,6 +25,61 @@ function getGeminiClient(): GoogleGenAI {
   return aiInstance;
 }
 
+export const CANDIDATE_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-2.5-flash',
+  'gemini-3.1-flash-lite',
+  'gemini-flash-latest',
+];
+
+/**
+ * Executes a Gemini generateContent call with automatic failover to alternative models
+ * if a specific tier experiences high-demand spikes (503), rate limits (429), or temporary outages.
+ */
+export async function generateWithModelFallback(
+  ai: GoogleGenAI,
+  preferredModel: string,
+  paramsBuilder: (model: string) => any
+): Promise<{ response: GenerateContentResponse; modelUsed: string }> {
+  const modelsToTry = [
+    preferredModel,
+    ...CANDIDATE_MODELS.filter((m) => m !== preferredModel),
+  ];
+
+  let lastError: any = null;
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const model = modelsToTry[i];
+    try {
+      const response: GenerateContentResponse = await ai.models.generateContent(paramsBuilder(model));
+      return { response, modelUsed: model };
+    } catch (err: any) {
+      lastError = err;
+      const statusCode = err?.status || err?.code || (typeof err?.message === 'string' && err.message.includes('503') ? 503 : undefined);
+      const isTransient =
+        statusCode === 503 ||
+        statusCode === 429 ||
+        statusCode === 500 ||
+        (typeof err?.message === 'string' && (err.message.includes('high demand') || err.message.includes('spikes') || err.message.includes('UNAVAILABLE')));
+
+      console.warn(
+        `[Gemini Service] Model "${model}" reported ${statusCode || err?.message || 'issue'}. ${
+          isTransient && i < modelsToTry.length - 1 ? 'Switching to fallback model...' : ''
+        }`
+      );
+
+      if (isTransient && i < modelsToTry.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        continue;
+      }
+
+      if (i === modelsToTry.length - 1) {
+        break;
+      }
+    }
+  }
+  throw lastError;
+}
+
 // Function Declarations for Gemini LLM to modify app state
 const modifyFarmProfileDeclaration: FunctionDeclaration = {
   name: 'modify_farm_profile',
@@ -263,7 +318,7 @@ export async function askKishanAI(
   base64Image?: string,
   mimeType: string = 'image/jpeg',
   userId?: string,
-  modelName: string = 'gemini-2.5-flash',
+  modelName: string = 'gemini-3.8-flash',
   language: string = 'en',
   farmContextOverride?: FarmContextInput
 ): Promise<{
@@ -279,7 +334,8 @@ export async function askKishanAI(
   diseaseAnalysis?: DiseaseAnalysisResult;
   conversationId?: string;
 }> {
-  const activeModel = modelName || 'gemini-2.5-flash';
+  const preferredModel = modelName || 'gemini-3.8-flash';
+  let activeModel = preferredModel;
   const currentUser = userId ? db.users.get(userId) : Array.from(db.users.values())[0];
   const userCluster = Array.from(db.clusters.values())[0];
 
@@ -356,15 +412,20 @@ IMPORTANT INSTRUCTIONS:
 
     contents.push({ text: contextHeader });
 
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: activeModel,
-      contents: contents.length === 1 && typeof contents[0].text === 'string' ? contents[0].text : { parts: contents },
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        tools: toolsList,
-        temperature: 0.5,
-      },
-    });
+    const { response, modelUsed: resolvedModel } = await generateWithModelFallback(
+      ai,
+      preferredModel,
+      (m) => ({
+        model: m,
+        contents: contents.length === 1 && typeof contents[0].text === 'string' ? contents[0].text : { parts: contents },
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          tools: toolsList,
+          temperature: 0.5,
+        },
+      })
+    );
+    activeModel = resolvedModel;
 
     // Check if the LLM called a tool
     let executedAction: AIModificationResult | undefined = undefined;
@@ -985,14 +1046,18 @@ Provide a comprehensive diagnosis formatted with:
       },
     ];
 
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
-      contents: { parts: contents },
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.3,
-      },
-    });
+    const { response, modelUsed } = await generateWithModelFallback(
+      ai,
+      'gemini-3.8-flash',
+      (m) => ({
+        model: m,
+        contents: { parts: contents },
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          temperature: 0.3,
+        },
+      })
+    );
 
     const isWheat = cropName.toLowerCase().includes('wheat');
     const diseaseName = isWheat ? 'Yellow Leaf Rust (Puccinia triticina)' : 'Alternaria Leaf Spot & Marginal Chlorosis';
@@ -1098,13 +1163,17 @@ Provide:
 5. Integrated Pest Management (IPM) Schedule
 6. Expected Harvest Impact & Prevention for Cluster`;
 
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are the Chief Agronomist Engine for Kishan Bhai. Output a structured, elite agricultural analysis report.',
-      },
-    });
+    const { response } = await generateWithModelFallback(
+      ai,
+      'gemini-2.5-flash',
+      (m) => ({
+        model: m,
+        contents: prompt,
+        config: {
+          systemInstruction: 'You are the Chief Agronomist Engine for Kishan Bhai. Output a structured, elite agricultural analysis report.',
+        },
+      })
+    );
 
     return {
       success: true,
