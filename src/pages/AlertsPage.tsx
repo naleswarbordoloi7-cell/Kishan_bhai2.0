@@ -57,7 +57,7 @@ export const AlertsPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1B3B11] to-[#2D4F1E] text-white p-6 sm:p-8 rounded-3xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#1B3B11] to-green-700 text-white p-6 sm:p-8 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
             <Bell className="w-4 h-4" />
@@ -90,7 +90,7 @@ export const AlertsPage: React.FC = () => {
             onClick={() => setSelectedCategory(cat)}
             className={`text-xs font-semibold px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
               selectedCategory === cat
-                ? 'bg-[#2D4F1E] text-white shadow-xs'
+                ? 'bg-green-700 text-white shadow-xs'
                 : 'bg-white hover:bg-stone-100 text-stone-700 border border-stone-200'
             }`}
           >
@@ -105,7 +105,7 @@ export const AlertsPage: React.FC = () => {
           filteredAlerts.map((alert) => (
             <div
               key={alert.id}
-              className={`bg-white rounded-3xl border transition-all p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs ${
+              className={`bg-white rounded-2xl border transition-all p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs ${
                 alert.isRead ? 'border-stone-200 opacity-80' : 'border-emerald-500/40 ring-1 ring-emerald-500/20'
               }`}
             >
@@ -154,7 +154,7 @@ export const AlertsPage: React.FC = () => {
                       markAlertAsRead(alert.id);
                       handleActionClick(alert.actionUrl);
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
                   >
                     <span>{alert.actionLabel || 'Take Action'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -174,7 +174,7 @@ export const AlertsPage: React.FC = () => {
             </div>
           ))
         ) : (
-          <div className="bg-white rounded-3xl border border-stone-200 p-12 text-center text-stone-500">
+          <div className="bg-white rounded-2xl border border-stone-200 p-12 text-center text-stone-500">
             <Bell className="w-10 h-10 text-stone-300 mx-auto mb-2" />
             <p className="text-xs">No active alerts in this category.</p>
           </div>

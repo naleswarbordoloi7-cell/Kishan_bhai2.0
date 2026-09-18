@@ -49,7 +49,7 @@ export const AIHistoryDrawer: React.FC<Props> = ({
         {/* Header */}
         <div className="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#2D4F1E] text-white flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-xl bg-green-700 text-white flex items-center justify-center font-bold">
               <History className="w-4 h-4 text-emerald-200" />
             </div>
             <div>
@@ -77,7 +77,7 @@ export const AIHistoryDrawer: React.FC<Props> = ({
               onNewChat();
               onClose();
             }}
-            className="w-full flex items-center justify-center gap-2 bg-[#2D4F1E] hover:bg-[#233f17] text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-xs transition-all cursor-pointer active:scale-[0.99]"
+            className="w-full flex items-center justify-center gap-2 bg-green-700 hover:bg-[#233f17] text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-xs transition-all cursor-pointer active:scale-[0.99]"
           >
             <Plus className="w-4 h-4" />
             <span>{language === 'hi' ? 'नई सलाह शुरू करें' : 'Start New Farming Chat'}</span>

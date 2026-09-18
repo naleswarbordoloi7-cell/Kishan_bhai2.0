@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Settings,
   User,
@@ -25,24 +26,14 @@ import {
   Zap,
 } from 'lucide-react';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
+import {
+  INDIAN_STATES_AND_DISTRICTS,
+  getDistrictsForState,
+} from '../data/indianStatesAndDistricts';
 
 export const SettingsPage: React.FC = () => {
-  const {
-    farmerProfile,
-    updateProfile,
-    language,
-    setLanguage,
-    wallet,
-    addToast,
-    isOnline,
-    cacheStats,
-    syncOfflineData,
-    setIsOfflineModalOpen,
-    themeMode,
-    setThemeMode,
-    isDarkMode,
-    toggleDarkMode,
-  } = useApp();
+  const { farmerProfile, updateProfile } = useUserStore();
+  const { language, setLanguage, wallet, addToast, isOnline, cacheStats, syncOfflineData, setIsOfflineModalOpen, themeMode, setThemeMode, isDarkMode, toggleDarkMode } = useApp();
 
   const [isSyncingOffline, setIsSyncingOffline] = useState(false);
 
@@ -87,7 +78,7 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1B3B11] via-[#244218] to-[#2D4F1E] dark:from-[#0d1b0d] dark:via-[#152714] dark:to-[#1c331a] text-white p-6 sm:p-8 rounded-3xl shadow-md border border-emerald-900/30">
+      <div className="bg-gradient-to-r from-[#1B3B11] via-[#244218] to-green-700 dark:from-[#0d1b0d] dark:via-[#152714] dark:to-[#1c331a] text-white p-6 sm:p-8 rounded-2xl shadow-md border border-emerald-900/30">
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
@@ -118,7 +109,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* 1. DARK MODE & LOW-LIGHT FIELD DISPLAY CARD */}
-      <div className="bg-white dark:bg-[#161c14] rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-5 transition-colors">
+      <div className="bg-white dark:bg-[#161c14] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-5 transition-colors">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-100 dark:border-stone-800/80">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-emerald-800 dark:text-emerald-300">
@@ -264,9 +255,9 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Language Preference Card */}
-      <div className="bg-white dark:bg-[#161c14] rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
+      <div className="bg-white dark:bg-[#161c14] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
         <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base flex items-center gap-2">
-          <Globe className="w-5 h-5 text-[#2D4F1E] dark:text-emerald-400" />
+          <Globe className="w-5 h-5 text-green-700 dark:text-emerald-400" />
           <span>{language === 'hi' ? 'भाषा का चयन (Preferred Language)' : 'Select Application Language'}</span>
         </h3>
         <p className="text-xs text-stone-500 dark:text-stone-400">
@@ -301,10 +292,10 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Profile Form */}
-      <form onSubmit={handleSaveProfile} className="bg-white dark:bg-[#161c14] rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 sm:p-8 space-y-6 transition-colors">
+      <form onSubmit={handleSaveProfile} className="bg-white dark:bg-[#161c14] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 sm:p-8 space-y-6 transition-colors">
         <div className="flex items-center justify-between pb-4 border-b border-stone-100 dark:border-stone-800">
           <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base flex items-center gap-2">
-            <User className="w-5 h-5 text-[#2D4F1E] dark:text-emerald-400" />
+            <User className="w-5 h-5 text-green-700 dark:text-emerald-400" />
             <span>{language === 'hi' ? 'कृषक और खेत की जानकारी' : 'Farmer & Land Ownership Details'}</span>
           </h3>
           <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
@@ -336,30 +327,50 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">State (राज्य)</label>
+            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">State (राज्य - All India)</label>
             <select
               value={state}
-              onChange={(e) => setState(e.target.value)}
+              onChange={(e) => {
+                const newState = e.target.value;
+                setState(newState);
+                const dists = getDistrictsForState(newState);
+                if (dists.length > 0) setDistrict(dists[0]);
+              }}
               className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
             >
-              <option value="Gujarat">Gujarat (गुजरात)</option>
-              <option value="Rajasthan">Rajasthan (राजस्थान)</option>
-              <option value="Madhya Pradesh">Madhya Pradesh (मध्य प्रदेश)</option>
-              <option value="Maharashtra">Maharashtra (महाराष्ट्र)</option>
-              <option value="Punjab">Punjab (पंजाब)</option>
-              <option value="Haryana">Haryana (हरियाणा)</option>
+              <optgroup label="🇮🇳 States (28)">
+                {INDIAN_STATES_AND_DISTRICTS.filter((s) => s.type === 'state').map((s) => (
+                  <option key={s.state} value={s.state}>
+                    {s.state} ({s.hindiName})
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="🏛️ Union Territories (8)">
+                {INDIAN_STATES_AND_DISTRICTS.filter((s) => s.type === 'ut').map((s) => (
+                  <option key={s.state} value={s.state}>
+                    {s.state} ({s.hindiName})
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
 
           <div>
-            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">District (जिला)</label>
-            <input
-              type="text"
+            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">District / City (जिला / शहर)</label>
+            <select
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
               className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
-              required
-            />
+            >
+              {getDistrictsForState(state).map((dist) => (
+                <option key={dist} value={dist}>
+                  {dist}
+                </option>
+              ))}
+              {!getDistrictsForState(state).includes(district) && district && (
+                <option value={district}>{district}</option>
+              )}
+            </select>
           </div>
 
           <div>
@@ -414,7 +425,7 @@ export const SettingsPage: React.FC = () => {
         <div className="pt-2 flex justify-end">
           <button
             type="submit"
-            className="flex items-center gap-2 bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-bold px-6 py-3 rounded-2xl shadow-md transition-all cursor-pointer"
+            className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-xs font-bold px-6 py-3 rounded-2xl shadow-md transition-all cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>{language === 'hi' ? 'विवरण सुरक्षित करें' : 'Save Farm Profile'}</span>
@@ -423,9 +434,9 @@ export const SettingsPage: React.FC = () => {
       </form>
 
       {/* Notifications & Alert Toggles */}
-      <div className="bg-white dark:bg-[#161c14] rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
+      <div className="bg-white dark:bg-[#161c14] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
         <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base flex items-center gap-2">
-          <Bell className="w-5 h-5 text-[#2D4F1E] dark:text-emerald-400" />
+          <Bell className="w-5 h-5 text-green-700 dark:text-emerald-400" />
           <span>Automated Advisory & Notification Channels</span>
         </h3>
 
@@ -482,7 +493,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Offline Mode & Service Worker Cache Engine */}
-      <div className="bg-white dark:bg-[#161c14] rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
+      <div className="bg-white dark:bg-[#161c14] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-800 dark:text-emerald-300">
@@ -552,7 +563,7 @@ export const SettingsPage: React.FC = () => {
               setIsSyncingOffline(false);
             }}
             disabled={isSyncingOffline}
-            className="flex items-center gap-2 bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingOffline ? 'animate-spin' : ''}`} />
             <span>{isSyncingOffline ? 'Caching Farm Intelligence...' : 'Sync Offline Farm Pack Now'}</span>
@@ -569,9 +580,9 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Algorand Wallet & System Diagnostics */}
-      <div className="bg-white dark:bg-[#161c14] rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
+      <div className="bg-white dark:bg-[#161c14] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
         <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base flex items-center gap-2">
-          <Wallet className="w-5 h-5 text-[#2D4F1E] dark:text-emerald-400" />
+          <Wallet className="w-5 h-5 text-green-700 dark:text-emerald-400" />
           <span>Algorand x402 Micropayment Wallet & Diagnostics</span>
         </h3>
 

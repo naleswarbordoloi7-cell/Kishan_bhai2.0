@@ -371,11 +371,11 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
   return (
     <div id="crop-patch-timeline-section" className="space-y-6">
       {/* 1. Header & Patch Selection Bar */}
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6 sm:p-7 space-y-6">
+      <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 sm:p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-100 pb-5">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-xl bg-emerald-100 text-[#2D4F1E]">
+              <span className="p-1.5 rounded-xl bg-emerald-100 text-green-700">
                 <Activity className="w-5 h-5" />
               </span>
               <h2 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
@@ -395,7 +395,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => setIsAddEventModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#2D4F1E] hover:bg-[#233f17] text-white text-xs font-bold rounded-2xl shadow-xs transition-all cursor-pointer hover:shadow-md"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-700 hover:bg-[#233f17] text-white text-xs font-bold rounded-2xl shadow-xs transition-all cursor-pointer hover:shadow-md"
             >
               <Plus className="w-4 h-4" />
               <span>{language === 'hi' ? '+ नया चेकपॉइंट जोड़ें' : '+ Log Treatment / Check'}</span>
@@ -496,7 +496,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
                     >
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
-                          isSelected ? 'bg-emerald-400' : 'bg-[#2D4F1E]'
+                          isSelected ? 'bg-emerald-400' : 'bg-green-700'
                         }`}
                         style={{ width: `${patch.overallRecoveryPct}%` }}
                       />
@@ -510,7 +510,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
 
         {/* 2. Active Patch Summary Card & Health Index Dashboard */}
         {activePatch && (
-          <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-emerald-950 text-white rounded-3xl p-5 sm:p-7 shadow-lg relative overflow-hidden space-y-6">
+          <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-emerald-950 text-white rounded-2xl p-4 sm:p-6 shadow-lg relative overflow-hidden space-y-6">
             <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Top row: Patch title, Location & Status Badges */}
@@ -644,7 +644,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
 
             {/* 3. Before & After Visual Comparison Drawer (When toggled) */}
             {compareMode && (
-              <div className="bg-stone-950/80 border border-emerald-500/30 rounded-3xl p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="bg-stone-950/80 border border-emerald-500/30 rounded-2xl p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Scale className="w-4 h-4 text-emerald-400" />
@@ -793,7 +793,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
                 </div>
 
                 {/* Milestone Content Card */}
-                <div className="bg-stone-50/80 hover:bg-white rounded-3xl border border-stone-200/90 hover:border-emerald-500/80 hover:shadow-md transition-all p-5 sm:p-6 space-y-4">
+                <div className="bg-stone-50/80 hover:bg-white rounded-2xl border border-stone-200/90 hover:border-emerald-500/80 hover:shadow-md transition-all p-4 sm:p-6 space-y-4">
                   {/* Card Header: Type Badge, Date, Severity & Recovery */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200/60 pb-3.5">
                     <div className="flex flex-wrap items-center gap-2">
@@ -993,7 +993,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
       {/* 6. Modal: Add New Timeline Event */}
       {isAddEventModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-stone-200 space-y-5 my-8">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 sm:p-6 shadow-2xl border border-stone-200 space-y-5 my-8">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div className="space-y-0.5">
                 <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
@@ -1091,7 +1091,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
                     max="100"
                     value={newEventHealthScore}
                     onChange={(e) => setNewEventHealthScore(Number(e.target.value))}
-                    className="w-full accent-[#2D4F1E]"
+                    className="w-full accent-green-700"
                   />
                 </div>
 
@@ -1106,7 +1106,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
                     max="100"
                     value={newEventRecoveryPct}
                     onChange={(e) => setNewEventRecoveryPct(Number(e.target.value))}
-                    className="w-full accent-[#2D4F1E]"
+                    className="w-full accent-green-700"
                   />
                 </div>
               </div>
@@ -1164,7 +1164,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-[#2D4F1E] hover:bg-[#213a16] text-white font-bold rounded-xl shadow-md cursor-pointer"
+                  className="px-5 py-2.5 bg-green-700 hover:bg-[#213a16] text-white font-bold rounded-xl shadow-md cursor-pointer"
                 >
                   Commit Checkpoint
                 </button>
@@ -1177,7 +1177,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
       {/* 7. Modal: Register New Crop Patch */}
       {isAddPatchModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-stone-200 space-y-5 my-8">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-6 shadow-2xl border border-stone-200 space-y-5 my-8">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
                 <Layers className="w-5 h-5 text-emerald-700" />
@@ -1262,7 +1262,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-[#2D4F1E] hover:bg-[#213a16] text-white font-bold rounded-xl shadow-md cursor-pointer"
+                  className="px-5 py-2.5 bg-green-700 hover:bg-[#213a16] text-white font-bold rounded-xl shadow-md cursor-pointer"
                 >
                   Save Patch
                 </button>
@@ -1280,7 +1280,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-stone-900 border border-stone-700 rounded-3xl overflow-hidden max-w-3xl w-full shadow-2xl space-y-3 p-4"
+            className="bg-stone-900 border border-stone-700 rounded-2xl overflow-hidden max-w-3xl w-full shadow-2xl space-y-3 p-4"
           >
             <div className="flex items-center justify-between text-white border-b border-stone-800 pb-2">
               <span className="text-xs font-bold truncate">{lightboxImage.caption}</span>

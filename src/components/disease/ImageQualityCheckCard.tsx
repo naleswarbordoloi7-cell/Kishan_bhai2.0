@@ -15,7 +15,7 @@ export const ImageQualityCheckCard: React.FC<ImageQualityCheckCardProps> = ({
 }) => {
   if (!quality.passed) {
     return (
-      <div className="bg-rose-50 border-2 border-rose-300 rounded-3xl p-6 shadow-sm space-y-4 animate-in fade-in duration-300">
+      <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-6 shadow-sm space-y-4 animate-in fade-in duration-300">
         <div className="flex items-start gap-3.5">
           <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 shadow-xs">
             <AlertTriangle className="w-6 h-6" />

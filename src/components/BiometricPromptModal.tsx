@@ -106,9 +106,9 @@ export const BiometricPromptModal: React.FC<BiometricPromptModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl max-w-md w-full overflow-hidden relative">
+      <div className="bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-md w-full overflow-hidden relative">
         {/* Top Header Banner */}
-        <div className="bg-gradient-to-r from-emerald-900 to-stone-900 text-white p-5 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-emerald-900 to-stone-900 text-white p-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
               <ShieldCheck className="w-5 h-5" />
@@ -180,7 +180,7 @@ export const BiometricPromptModal: React.FC<BiometricPromptModalProps> = ({
           <div className="py-2">
             <div
               onClick={scanState !== 'scanning' && scanState !== 'success' ? handleStartScan : undefined}
-              className={`relative mx-auto w-32 h-32 rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-2 select-none ${
+              className={`relative mx-auto w-32 h-32 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-2 select-none ${
                 scanState === 'scanning'
                   ? 'bg-emerald-500/10 border-emerald-500 ring-8 ring-emerald-500/10 scale-105'
                   : scanState === 'success'
@@ -267,7 +267,7 @@ export const BiometricPromptModal: React.FC<BiometricPromptModalProps> = ({
                 type="button"
                 onClick={handleStartScan}
                 disabled={scanState === 'scanning'}
-                className="w-full bg-[#2D4F1E] hover:bg-[#223d16] text-white font-semibold py-3 rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.99]"
+                className="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.99]"
               >
                 {scanType === 'fingerprint' ? (
                   <Fingerprint className="w-4 h-4 text-emerald-300" />

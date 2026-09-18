@@ -9,8 +9,10 @@ import {
   FlaskConical,
   Sparkles,
   RefreshCw,
+  Cloud,
 } from 'lucide-react';
 import { SoilHealthData } from '../../../shared/types';
+import { uploadFileToStorage } from '../../services/storageService';
 
 interface SoilReportModalProps {
   isOpen: boolean;
@@ -22,6 +24,10 @@ export const SoilReportModal: React.FC<SoilReportModalProps> = ({ isOpen, onClos
   const [activeTab, setActiveTab] = useState<'upload' | 'manual'>('upload');
   const [isProcessing, setIsProcessing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [storageUploading, setStorageUploading] = useState(false);
+  const [storageProgress, setStorageProgress] = useState(0);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
   // Manual Form State
   const [formData, setFormData] = useState({
@@ -38,13 +44,36 @@ export const SoilReportModal: React.FC<SoilReportModalProps> = ({ isOpen, onClos
     phosphorusKgHa: soilHealth.phosphorusKgHa || 24,
     potassiumKgHa: soilHealth.potassiumKgHa || 340,
     electricalConductivityDsM: soilHealth.electricalConductivityDsM || 0.42,
+    documentUrl: soilHealth.documentUrl || '',
   });
 
   if (!isOpen) return null;
 
   const handleFileUpload = async (file: File) => {
     setIsProcessing(true);
+    setStorageUploading(true);
+    setStorageProgress(10);
+    setUploadedFileName(file.name);
+
     try {
+      // 1. Upload file to Firebase Storage bucket in production
+      let storageUrl = '';
+      try {
+        const storageResult = await uploadFileToStorage(file, 'soil-reports', (progressPercent) => {
+          setStorageProgress(progressPercent);
+        });
+        storageUrl = storageResult.downloadUrl;
+        setUploadedFileUrl(storageUrl);
+        addToast(
+          'Saved to Firebase Storage',
+          `File ${file.name} securely archived in production bucket.`,
+          'info'
+        );
+      } catch (storageErr) {
+        console.warn('Firebase storage upload notice:', storageErr);
+      }
+
+      // 2. Read base64 for OCR extraction
       const reader = new FileReader();
       reader.onload = async () => {
         const base64 = reader.result as string;
@@ -58,8 +87,10 @@ export const SoilReportModal: React.FC<SoilReportModalProps> = ({ isOpen, onClos
           phosphorusKgHa: extracted.phosphorusKgHa || prev.phosphorusKgHa,
           potassiumKgHa: extracted.potassiumKgHa || prev.potassiumKgHa,
           soilType: extracted.soilType || prev.soilType,
+          documentUrl: storageUrl || prev.documentUrl,
         }));
         setIsProcessing(false);
+        setStorageUploading(false);
         setActiveTab('manual');
         addToast('OCR Extraction Complete', 'Extracted metrics loaded into review form. Review and save.', 'success');
       };
@@ -67,6 +98,7 @@ export const SoilReportModal: React.FC<SoilReportModalProps> = ({ isOpen, onClos
     } catch (err) {
       console.error(err);
       setIsProcessing(false);
+      setStorageUploading(false);
       addToast('Upload Failed', 'Could not parse document. Please enter values manually.', 'error');
     }
   };
@@ -113,7 +145,7 @@ export const SoilReportModal: React.FC<SoilReportModalProps> = ({ isOpen, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-stone-200 space-y-6 my-8">
+      <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-stone-200 space-y-6 my-8">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
@@ -168,7 +200,7 @@ export const SoilReportModal: React.FC<SoilReportModalProps> = ({ isOpen, onClos
               }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all ${
+              className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
                 dragOver
                   ? 'border-emerald-600 bg-emerald-50/50'
                   : 'border-stone-300 bg-stone-50 hover:border-emerald-600'
@@ -181,7 +213,7 @@ export const SoilReportModal: React.FC<SoilReportModalProps> = ({ isOpen, onClos
               <div className="text-xs text-stone-500 mt-1">Supports PDF, JPG, PNG from Gov Soil Testing Labs (up to 10MB)</div>
 
               <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-                <label className="bg-[#1B3B11] hover:bg-[#2D4F1E] text-white text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer shadow-md inline-flex items-center gap-2">
+                <label className="bg-[#1B3B11] hover:bg-green-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer shadow-md inline-flex items-center gap-2">
                   <Upload className="w-4 h-4" />
                   <span>{language === 'hi' ? 'फ़ाइल चुनें' : 'Browse File'}</span>
                   <input
@@ -204,6 +236,48 @@ export const SoilReportModal: React.FC<SoilReportModalProps> = ({ isOpen, onClos
                   <span>{isProcessing ? 'Parsing...' : 'Load Sample ICAR / KVK Report'}</span>
                 </button>
               </div>
+
+              {/* Firebase Storage Upload Progress */}
+              {storageUploading && (
+                <div className="mt-4 space-y-1.5 bg-emerald-50/80 border border-emerald-200 p-3 rounded-2xl text-xs text-emerald-900 animate-in fade-in">
+                  <div className="flex items-center justify-between font-semibold">
+                    <span className="flex items-center gap-1.5">
+                      <Cloud className="w-3.5 h-3.5 text-emerald-700 animate-bounce" />
+                      <span>Uploading to Firebase Storage ({uploadedFileName})...</span>
+                    </span>
+                    <span className="font-mono">{storageProgress}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-emerald-200/60 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-600 transition-all duration-300"
+                      style={{ width: `${Math.max(5, storageProgress)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {uploadedFileUrl && (
+                <div className="mt-3 flex items-center justify-between bg-emerald-50 border border-emerald-200/80 px-3 py-2 rounded-xl text-xs text-emerald-900">
+                  <div className="flex items-center gap-2 truncate">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="font-semibold">Archived in Firebase Storage:</span>
+                    <span className="truncate text-stone-600 font-mono text-[11px]">{uploadedFileName}</span>
+                  </div>
+                  <span className="text-[10px] text-emerald-700 font-semibold uppercase shrink-0">Production Bucket</span>
+                </div>
+              )}
+            </div>
+
+            {/* Cloud Storage Status Banner */}
+            <div className="flex items-center justify-between px-3.5 py-2.5 bg-stone-50 border border-stone-200/80 rounded-2xl text-xs text-stone-600">
+              <div className="flex items-center gap-2">
+                <Cloud className="w-4 h-4 text-emerald-700 shrink-0" />
+                <span className="font-semibold text-stone-800">Firebase Storage:</span>
+                <span className="text-emerald-700 font-medium">Default Bucket Active</span>
+              </div>
+              <span className="font-mono text-[10px] text-stone-500 hidden sm:inline">
+                kishan-bhai-a1c8d.firebasestorage.app
+              </span>
             </div>
 
             <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 text-xs text-amber-900 flex items-start gap-2.5">
@@ -376,7 +450,7 @@ export const SoilReportModal: React.FC<SoilReportModalProps> = ({ isOpen, onClos
               <button
                 type="submit"
                 disabled={isProcessing}
-                className="flex-1 py-3 bg-[#1B3B11] hover:bg-[#2D4F1E] text-white font-bold rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 py-3 bg-[#1B3B11] hover:bg-green-700 text-white font-bold rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isProcessing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 <span>Calculate & Save Soil Record</span>

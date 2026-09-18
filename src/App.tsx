@@ -1,48 +1,48 @@
-import React from 'react';
-import { AppProvider, useApp } from './context/AppContext';
-import { Navbar } from './components/Navbar';
-import { Sidebar } from './components/Sidebar';
-import { PaymentModal } from './components/PaymentModal';
-import { WalletConnect } from './components/WalletConnect';
-import { NfcModal } from './components/NfcModal';
-import { ToastContainer } from './components/ToastContainer';
-import { ApiRetryNotification } from './components/ApiRetryNotification';
-import { LogoIntroSplash } from './components/LogoIntroSplash';
-import { MobileBottomNav } from './components/MobileBottomNav';
-import { OfflineManagerModal } from './components/OfflineManagerModal';
-import { BiometricPromptModal } from './components/BiometricPromptModal';
+import React from "react";
+import { AppProvider, useApp } from "./context/AppContext";
+import { Navbar } from "./components/Navbar";
+import { Sidebar } from "./components/Sidebar";
+import { PaymentModal } from "./components/PaymentModal";
+import { WalletConnect } from "./components/WalletConnect";
+import { NfcModal } from "./components/NfcModal";
+import { ToastContainer } from "./components/ToastContainer";
+import { ApiRetryNotification } from "./components/ApiRetryNotification";
+import { LogoIntroSplash } from "./components/LogoIntroSplash";
+import { MobileBottomNav } from "./components/MobileBottomNav";
+import { OfflineManagerModal } from "./components/OfflineManagerModal";
+import { BiometricPromptModal } from "./components/BiometricPromptModal";
 
 // Pages
-import { LandingPage } from './pages/LandingPage';
-import { FarmerDashboard } from './pages/FarmerDashboard';
-import { ChampionDashboard } from './pages/ChampionDashboard';
-import { BuyerDashboard } from './pages/BuyerDashboard';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { AdminX402Analytics } from './pages/AdminX402Analytics';
-import { VirtualFarmClustersPage } from './pages/VirtualFarmClusters';
-import { BulkBuyingPage } from './pages/BulkBuying';
-import { HarvestPoolingPage } from './pages/HarvestPooling';
-import { BuyerMarketplacePage } from './pages/BuyerMarketplace';
-import { MachineryPage } from './pages/Machinery';
-import { AIAssistantPage } from './pages/AIAssistantPage';
-import { WeatherModule } from './pages/WeatherModule';
-import { TransactionsPage } from './pages/TransactionsPage';
-import { FarmProfilePage } from './pages/FarmProfile';
-import { AuthPage } from './pages/AuthPage';
-import { LoginPage } from './pages/LoginPage';
-import { MyCropsPage } from './pages/MyCropsPage';
-import { DiseaseScannerPage } from './pages/DiseaseScannerPage';
-import { SmartIrrigationPage } from './pages/SmartIrrigationPage';
-import { SoilHealthPage } from './pages/SoilHealthPage';
-import { MarketPricesPage } from './pages/MarketPricesPage';
-import { ProfitCalculatorPage } from './pages/ProfitCalculatorPage';
-import { CropRecommendationPage } from './pages/CropRecommendationPage';
-import { GovernmentSchemesPage } from './pages/GovernmentSchemesPage';
-import { FarmDiaryPage } from './pages/FarmDiaryPage';
-import { CommunityPage } from './pages/CommunityPage';
-import { TalkToExpertPage } from './pages/TalkToExpertPage';
-import { AlertsPage } from './pages/AlertsPage';
-import { SettingsPage } from './pages/SettingsPage';
+import { LandingPage } from "./pages/LandingPage";
+import { FarmerDashboard } from "./pages/FarmerDashboard";
+import { ChampionDashboard } from "./pages/ChampionDashboard";
+import { BuyerDashboard } from "./pages/BuyerDashboard";
+import { AdminDashboard } from "./pages/AdminDashboard";
+import { AdminX402Analytics } from "./pages/AdminX402Analytics";
+import { VirtualFarmClustersPage } from "./pages/VirtualFarmClusters";
+import { BulkBuyingPage } from "./pages/BulkBuying";
+import { HarvestPoolingPage } from "./pages/HarvestPooling";
+import { BuyerMarketplacePage } from "./pages/BuyerMarketplace";
+import { MachineryPage } from "./pages/Machinery";
+import { AIAssistantPage } from "./pages/AIAssistantPage";
+import { WeatherModule } from "./pages/WeatherModule";
+import { TransactionsPage } from "./pages/TransactionsPage";
+import { FarmProfilePage } from "./pages/FarmProfile";
+import { AuthPage } from "./pages/AuthPage";
+import { LoginPage } from "./pages/LoginPage";
+import { MyCropsPage } from "./pages/MyCropsPage";
+import { DiseaseScannerPage } from "./pages/DiseaseScannerPage";
+import { SmartIrrigationPage } from "./pages/SmartIrrigationPage";
+import { SoilHealthPage } from "./pages/SoilHealthPage";
+import { MarketPricesPage } from "./pages/MarketPrices/MarketPricesPage";
+import { ProfitCalculatorPage } from "./pages/ProfitCalculatorPage";
+import { CropRecommendationPage } from "./pages/CropRecommendationPage";
+import { GovernmentSchemesPage } from "./pages/GovernmentSchemesPage";
+import { FarmDiaryPage } from "./pages/FarmDiaryPage";
+import { CommunityPage } from "./pages/CommunityPage";
+import { TalkToExpertPage } from "./pages/TalkToExpertPage";
+import { AlertsPage } from "./pages/AlertsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 const AppContent: React.FC = () => {
   const {
@@ -56,80 +56,83 @@ const AppContent: React.FC = () => {
 
   const renderCurrentView = () => {
     switch (currentView) {
-      case 'landing':
+      case "landing":
         return <LandingPage />;
-      case 'farmer-dashboard':
+      case "farmer-dashboard":
         return <FarmerDashboard />;
-      case 'champion-dashboard':
+      case "champion-dashboard":
         return <ChampionDashboard />;
-      case 'buyer-dashboard':
+      case "buyer-dashboard":
         return <BuyerDashboard />;
-      case 'admin-dashboard':
+      case "admin-dashboard":
         return <AdminDashboard />;
-      case 'admin-x402':
+      case "admin-x402":
         return <AdminX402Analytics />;
-      case 'clusters':
+      case "clusters":
         return <VirtualFarmClustersPage />;
-      case 'bulk-buying':
+      case "bulk-buying":
         return <BulkBuyingPage />;
-      case 'harvest':
+      case "harvest":
         return <HarvestPoolingPage />;
-      case 'marketplace':
+      case "marketplace":
         return <BuyerMarketplacePage />;
-      case 'machinery':
+      case "machinery":
         return <MachineryPage />;
-      case 'ai-assistant':
+      case "ai-assistant":
         return <AIAssistantPage />;
-      case 'weather':
+      case "weather":
         return <WeatherModule />;
-      case 'transactions':
+      case "transactions":
         return <TransactionsPage />;
-      case 'profile':
+      case "profile":
         return <FarmProfilePage />;
-      case 'my-crops':
+      case "my-crops":
         return <MyCropsPage />;
-      case 'disease-scanner':
+      case "disease-scanner":
         return <DiseaseScannerPage />;
-      case 'smart-irrigation':
+      case "smart-irrigation":
         return <SmartIrrigationPage />;
-      case 'soil-health':
+      case "soil-health":
         return <SoilHealthPage />;
-      case 'market-prices':
+      case "market-prices":
         return <MarketPricesPage />;
-      case 'profit-calculator':
+      case "profit-calculator":
         return <ProfitCalculatorPage />;
-      case 'crop-recommendation':
+      case "crop-recommendation":
         return <CropRecommendationPage />;
-      case 'government-schemes':
+      case "government-schemes":
         return <GovernmentSchemesPage />;
-      case 'farm-diary':
+      case "farm-diary":
         return <FarmDiaryPage />;
-      case 'community':
+      case "community":
         return <CommunityPage />;
-      case 'talk-to-expert':
+      case "talk-to-expert":
         return <TalkToExpertPage />;
-      case 'alerts':
+      case "alerts":
         return <AlertsPage />;
-      case 'settings':
+      case "settings":
         return <SettingsPage />;
-      case 'auth':
-      case 'login':
+      case "auth":
+      case "login":
         return <LoginPage />;
       default:
         return <LandingPage />;
     }
   };
 
-  const isLanding = currentView === 'landing' || currentView === 'auth' || currentView === 'login';
+  const isLanding =
+    currentView === "landing" ||
+    currentView === "auth" ||
+    currentView === "login";
 
   return (
-    <div className="min-h-screen bg-transparent flex flex-col text-stone-900 font-sans antialiased selection:bg-emerald-200">
-      <Navbar />
+    <div className="min-h-screen bg-transparent flex flex-col text-stone-900 font-sans antialiased selection:bg-green-200">
+      <div className="md:hidden">
+        <Navbar />
+      </div>
 
-      <div className="flex-1 flex w-full">
-        {!isLanding && <Sidebar />}
-
-        <main className="flex-1 overflow-y-auto min-h-[calc(100vh-4rem)]">
+      <div className="flex-1 flex w-full relative">
+        <main className="flex-1 overflow-y-auto min-h-[calc(100vh-4rem)] pb-20 scroll-smooth">
           {renderCurrentView()}
         </main>
       </div>

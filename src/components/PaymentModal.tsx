@@ -80,9 +80,9 @@ export const PaymentModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md transition-opacity animate-in fade-in duration-200">
-      <div className="bg-white/85 backdrop-blur-2xl rounded-[32px] max-w-md w-full border border-white/90 shadow-2xl overflow-hidden">
+      <div className="bg-white/85 backdrop-blur-2xl rounded-2xl max-w-md w-full border border-white/90 shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="bg-[#2D4F1E] p-6 text-white relative">
+        <div className="bg-green-700 p-6 text-white relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="bg-white/15 text-emerald-200 text-xs px-3 py-1 rounded-full font-mono font-medium border border-white/20 backdrop-blur-xs">
@@ -118,8 +118,8 @@ export const PaymentModal: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-stone-500 font-medium">Price:</span>
-                  <span className="text-[#2D4F1E] font-bold text-base flex items-center gap-1">
-                    <Coins className="w-4 h-4 text-[#2D4F1E]" />
+                  <span className="text-green-700 font-bold text-base flex items-center gap-1">
+                    <Coins className="w-4 h-4 text-green-700" />
                     {pendingPaymentReq.priceUsdc} USDC
                   </span>
                 </div>
@@ -132,7 +132,7 @@ export const PaymentModal: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-stone-500 font-medium">Payment Protocol:</span>
-                  <span className="font-mono text-xs bg-emerald-500/15 text-[#2D4F1E] border border-emerald-600/20 px-2.5 py-0.5 rounded-full font-semibold">
+                  <span className="font-mono text-xs bg-emerald-500/15 text-green-700 border border-emerald-600/20 px-2.5 py-0.5 rounded-full font-semibold">
                     x402 (GoPlausible)
                   </span>
                 </div>
@@ -144,8 +144,8 @@ export const PaymentModal: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-emerald-500/10 border border-emerald-600/20 backdrop-blur-xs rounded-2xl p-3.5 text-xs text-[#2D4F1E] flex items-start gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-[#2D4F1E] shrink-0 mt-0.5" />
+              <div className="bg-emerald-500/10 border border-emerald-600/20 backdrop-blur-xs rounded-2xl p-3.5 text-xs text-green-700 flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-green-700 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-stone-900">Autonomous Micropayment Settlement</p>
                   <p className="text-stone-600 mt-0.5">
@@ -156,7 +156,7 @@ export const PaymentModal: React.FC = () => {
 
               <button
                 onClick={handlePayWithAlgorand}
-                className="w-full bg-[#2D4F1E] hover:bg-[#223d16] text-white font-medium py-3 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer border border-white/20"
+                className="w-full bg-green-700 hover:bg-green-800 text-white font-medium py-3 px-4 rounded-2xl flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer border border-white/20"
               >
                 <Coins className="w-5 h-5 text-emerald-200" />
                 <span>Pay {pendingPaymentReq.priceUsdc} USDC with Algorand</span>
@@ -169,7 +169,7 @@ export const PaymentModal: React.FC = () => {
           {(step === 'APPROVAL' || step === 'SUBMITTED' || step === 'VERIFYING') && (
             <div className="py-6 text-center space-y-4">
               <div className="relative flex justify-center items-center">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border-2 border-emerald-600/30 flex items-center justify-center text-[#2D4F1E]">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border-2 border-emerald-600/30 flex items-center justify-center text-green-700">
                   <Loader2 className="w-8 h-8 animate-spin" />
                 </div>
               </div>
@@ -190,7 +190,7 @@ export const PaymentModal: React.FC = () => {
               <div className="bg-white/60 backdrop-blur-md p-3.5 rounded-2xl text-xs font-mono text-stone-600 border border-white/80">
                 <div className="flex justify-between items-center">
                   <span>Network:</span>
-                  <span className="font-semibold text-[#2D4F1E]">Algorand Testnet</span>
+                  <span className="font-semibold text-green-700">Algorand Testnet</span>
                 </div>
                 {txId && (
                   <div className="flex justify-between items-center mt-1">
@@ -206,7 +206,7 @@ export const PaymentModal: React.FC = () => {
           {step === 'SETTLED' && (
             <div className="py-4 space-y-4">
               <div className="text-center space-y-2">
-                <div className="w-14 h-14 bg-emerald-500/15 text-[#2D4F1E] rounded-2xl flex items-center justify-center mx-auto border border-emerald-600/30">
+                <div className="w-14 h-14 bg-emerald-500/15 text-green-700 rounded-2xl flex items-center justify-center mx-auto border border-emerald-600/30">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-bold text-stone-900">Payment Settled</h3>
@@ -216,15 +216,15 @@ export const PaymentModal: React.FC = () => {
               </div>
 
               <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 border border-white/80 space-y-2.5 text-xs">
-                <div className="flex items-center gap-2 text-[#2D4F1E] font-medium">
+                <div className="flex items-center gap-2 text-green-700 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>✓ x402 Protocol Header Verified</span>
                 </div>
-                <div className="flex items-center gap-2 text-[#2D4F1E] font-medium">
+                <div className="flex items-center gap-2 text-green-700 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>✓ Algorand Testnet Consensus Confirmed (Round #{confirmedRound})</span>
                 </div>
-                <div className="flex items-center gap-2 text-[#2D4F1E] font-medium">
+                <div className="flex items-center gap-2 text-green-700 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>✓ GoPlausible Facilitator Verification Passed</span>
                 </div>
@@ -251,7 +251,7 @@ export const PaymentModal: React.FC = () => {
 
               <button
                 onClick={handleClose}
-                className="w-full bg-[#2D4F1E] hover:bg-[#223d16] text-white font-medium py-3 px-4 rounded-2xl flex items-center justify-center gap-2 text-sm shadow cursor-pointer border border-white/20 active:scale-[0.99]"
+                className="w-full bg-green-700 hover:bg-green-800 text-white font-medium py-3 px-4 rounded-2xl flex items-center justify-center gap-2 text-sm shadow cursor-pointer border border-white/20 active:scale-[0.99]"
               >
                 <span>Access Protected Service Result</span>
                 <ArrowRight className="w-4 h-4" />
@@ -285,7 +285,7 @@ export const PaymentModal: React.FC = () => {
             <Lock className="w-3 h-3 text-stone-400" />
             Zero gas wasted • Micro-settlement
           </span>
-          <span className="font-mono text-[#2D4F1E] font-semibold">TESTNET DEMO</span>
+          <span className="font-mono text-green-700 font-semibold">TESTNET DEMO</span>
         </div>
       </div>
     </div>

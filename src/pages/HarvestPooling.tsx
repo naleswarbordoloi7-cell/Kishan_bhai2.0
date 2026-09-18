@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Package,
   TrendingUp,
@@ -14,7 +15,8 @@ import {
 import { HarvestPoolLot } from '../../shared/types';
 
 export const HarvestPoolingPage: React.FC = () => {
-  const { currentUser, addToast } = useApp();
+  const currentUser = useUserStore(state => state.currentUser);
+  const { addToast } = useApp();
   const [lots, setLots] = useState<HarvestPoolLot[]>([]);
   const [showAddLotModal, setShowAddLotModal] = useState(false);
 
@@ -73,7 +75,7 @@ export const HarvestPoolingPage: React.FC = () => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-amber-950 via-stone-900 to-emerald-950 text-white rounded-3xl p-6 sm:p-8 shadow-lg border border-amber-800/40 space-y-4">
+      <div className="bg-gradient-to-r from-amber-950 via-stone-900 to-emerald-950 text-white rounded-2xl p-6 sm:p-8 shadow-lg border border-amber-800/40 space-y-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="space-y-1">
             <span className="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-0.5 rounded-full font-mono border border-amber-400/30">
@@ -99,7 +101,7 @@ export const HarvestPoolingPage: React.FC = () => {
 
       {/* Grid of Lots */}
       {lots.length === 0 ? (
-        <div className="bg-white/60 backdrop-blur-lg rounded-[28px] p-8 border border-white/80 text-center space-y-4 shadow-xs">
+        <div className="bg-white/60 backdrop-blur-lg rounded-2xl p-8 border border-white/80 text-center space-y-4 shadow-xs">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-800 flex items-center justify-center mx-auto">
             <Package className="w-6 h-6" />
           </div>
@@ -111,7 +113,7 @@ export const HarvestPoolingPage: React.FC = () => {
           </div>
           <button
             onClick={() => setShowAddLotModal(true)}
-            className="bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-semibold px-5 py-2.5 rounded-2xl shadow transition-all inline-flex items-center gap-1.5 cursor-pointer active:scale-[0.99] border border-white/20"
+            className="bg-green-700 hover:bg-green-800 text-white text-xs font-semibold px-5 py-2.5 rounded-2xl shadow transition-all inline-flex items-center gap-1.5 cursor-pointer active:scale-[0.99] border border-white/20"
           >
             <Plus className="w-4 h-4" />
             <span>Pool First Harvest Lot</span>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Users,
   MessageSquare,
@@ -17,7 +18,8 @@ import {
 import { CommunityPostItem } from '../../shared/types';
 
 export const CommunityPage: React.FC = () => {
-  const { communityPosts, addCommunityPost, likeCommunityPost, language, farmerProfile, addToast } = useApp();
+  const farmerProfile = useUserStore(state => state.farmerProfile);
+  const { communityPosts, addCommunityPost, likeCommunityPost, language, addToast } = useApp();
 
   const [isNewPostModalOpen, setIsNewPostModalOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string>('All');
@@ -75,7 +77,7 @@ export const CommunityPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1B3B11] to-[#2D4F1E] text-white p-6 sm:p-8 rounded-3xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#1B3B11] to-green-700 text-white p-6 sm:p-8 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
             <Users className="w-4 h-4" />
@@ -108,7 +110,7 @@ export const CommunityPage: React.FC = () => {
             onClick={() => setSelectedTag(tag)}
             className={`text-xs font-semibold px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
               selectedTag === tag
-                ? 'bg-[#2D4F1E] text-white shadow-xs'
+                ? 'bg-green-700 text-white shadow-xs'
                 : 'bg-white hover:bg-stone-100 text-stone-700 border border-stone-200'
             }`}
           >
@@ -124,7 +126,7 @@ export const CommunityPage: React.FC = () => {
           {filteredPosts.map((post) => (
             <div
               key={post.id}
-              className="bg-white rounded-3xl border border-stone-200 shadow-xs p-6 sm:p-7 space-y-4"
+              className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 sm:p-6 space-y-4"
             >
               {/* Author Header */}
               <div className="flex items-start justify-between">
@@ -211,7 +213,7 @@ export const CommunityPage: React.FC = () => {
                 />
                 <button
                   onClick={() => handleCommentSubmit(post.id)}
-                  className="p-2 bg-[#2D4F1E] hover:bg-[#223d16] text-white rounded-xl transition-all cursor-pointer"
+                  className="p-2 bg-green-700 hover:bg-green-800 text-white rounded-xl transition-all cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -223,7 +225,7 @@ export const CommunityPage: React.FC = () => {
         {/* Right Column: Community Champions & Advisory Topics */}
         <div className="lg:col-span-4 space-y-6">
           {/* Champions Card */}
-          <div className="bg-white rounded-3xl border border-stone-200 shadow-xs p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 space-y-4">
             <h3 className="font-bold text-stone-900 text-sm flex items-center gap-2">
               <Award className="w-4 h-4 text-amber-500" />
               <span>Village Cluster Champions</span>
@@ -249,7 +251,7 @@ export const CommunityPage: React.FC = () => {
           </div>
 
           {/* Quick Discussion Guideline */}
-          <div className="bg-emerald-50/70 border border-emerald-200 rounded-3xl p-6 space-y-2 text-xs">
+          <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-6 space-y-2 text-xs">
             <div className="text-emerald-950 font-bold flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-emerald-700" />
               <span>Community Code of Honor</span>
@@ -264,9 +266,9 @@ export const CommunityPage: React.FC = () => {
       {/* New Post Modal */}
       {isNewPostModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-              <div className="flex items-center gap-2 text-[#2D4F1E] font-bold text-lg">
+              <div className="flex items-center gap-2 text-green-700 font-bold text-lg">
                 <Users className="w-5 h-5" />
                 <span>Create Community Post</span>
               </div>
@@ -327,7 +329,7 @@ export const CommunityPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-[#2D4F1E] hover:bg-[#223d16] text-white font-bold rounded-xl text-xs shadow-md cursor-pointer"
+                  className="flex-1 py-2.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer"
                 >
                   Publish Post
                 </button>

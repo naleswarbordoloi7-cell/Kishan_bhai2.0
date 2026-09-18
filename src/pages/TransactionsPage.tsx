@@ -36,7 +36,7 @@ export const TransactionsPage: React.FC = () => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-stone-900 via-emerald-950 to-stone-900 text-white rounded-3xl p-6 sm:p-8 shadow-lg border border-stone-800 space-y-3">
+      <div className="bg-gradient-to-r from-stone-900 via-emerald-950 to-stone-900 text-white rounded-2xl p-6 sm:p-8 shadow-lg border border-stone-800 space-y-3">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -66,7 +66,7 @@ export const TransactionsPage: React.FC = () => {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-6">
+      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h3 className="font-bold font-display text-lg text-stone-900">

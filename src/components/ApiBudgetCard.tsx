@@ -31,7 +31,7 @@ export const ApiBudgetCard: React.FC = () => {
   const percentageUsed = Math.min(100, Math.round((stats.currentUsageInr / stats.monthlyLimitInr) * 100));
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-stone-200 shadow-xs space-y-4">
+    <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-xs space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 font-bold">

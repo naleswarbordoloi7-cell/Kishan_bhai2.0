@@ -74,7 +74,7 @@ export const MyCropsPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#1B3B11] to-[#2D4F1E] text-white p-6 sm:p-8 rounded-3xl shadow-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#1B3B11] to-green-700 text-white p-6 sm:p-8 rounded-2xl shadow-md">
         <div>
           <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
             <Sprout className="w-4 h-4" />
@@ -101,7 +101,7 @@ export const MyCropsPage: React.FC = () => {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">{language === 'hi' ? 'कुल फसली रकबा' : 'Total Crop Area'}</div>
           <div className="text-2xl font-bold text-stone-900 font-display">
             {crops.reduce((acc, c) => acc + c.areaAcres, 0).toFixed(1)} <span className="text-sm font-normal text-stone-500">Acres</span>
@@ -109,13 +109,13 @@ export const MyCropsPage: React.FC = () => {
           <div className="text-[11px] text-emerald-700 font-medium mt-1">100% precision mapped</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">{language === 'hi' ? 'सक्रिय फसलें' : 'Active Crops'}</div>
           <div className="text-2xl font-bold text-stone-900 font-display">{crops.length}</div>
           <div className="text-[11px] text-stone-500 font-medium mt-1">Kharif & Rabi Season</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">{language === 'hi' ? 'औसत स्वास्थ्य' : 'Avg Crop Health'}</div>
           <div className="text-2xl font-bold text-emerald-700 font-display">
             {Math.round(crops.reduce((acc, c) => acc + c.healthScore, 0) / (crops.length || 1))}%
@@ -123,7 +123,7 @@ export const MyCropsPage: React.FC = () => {
           <div className="text-[11px] text-emerald-600 font-medium mt-1">Optimal vigor index</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">{language === 'hi' ? 'अनुमानित कुल पैदावार' : 'Est. Total Yield'}</div>
           <div className="text-2xl font-bold text-stone-900 font-display">
             {crops.reduce((acc, c) => acc + c.expectedYieldQuintals, 0)} <span className="text-sm font-normal text-stone-500">Quintals</span>
@@ -137,7 +137,7 @@ export const MyCropsPage: React.FC = () => {
         {crops.map((crop) => (
           <div
             key={crop.id}
-            className="bg-white rounded-3xl border border-stone-200/80 shadow-xs hover:shadow-md transition-all overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl border border-stone-200/80 shadow-xs hover:shadow-md transition-all overflow-hidden flex flex-col"
           >
             {/* Image Header */}
             <div className="relative h-44 w-full bg-stone-100 overflow-hidden">
@@ -160,12 +160,12 @@ export const MyCropsPage: React.FC = () => {
             </div>
 
             {/* Body Info */}
-            <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+            <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
               {/* Progress */}
               <div>
                 <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
                   <span className="text-stone-600">{language === 'hi' ? 'विकास प्रगति' : 'Growth Progress'}</span>
-                  <span className="text-[#2D4F1E] font-bold">{crop.stageProgressPct}%</span>
+                  <span className="text-green-700 font-bold">{crop.stageProgressPct}%</span>
                 </div>
                 <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden border border-stone-200/60">
                   <div
@@ -224,7 +224,7 @@ export const MyCropsPage: React.FC = () => {
 
                 <button
                   onClick={() => setCurrentView('smart-irrigation')}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-700 hover:bg-green-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
                 >
                   <Droplets className="w-4 h-4 text-emerald-200" />
                   <span>{language === 'hi' ? 'सिंचाई जांच' : 'Check Water'}</span>
@@ -238,9 +238,9 @@ export const MyCropsPage: React.FC = () => {
       {/* Add Crop Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-stone-100">
-              <div className="flex items-center gap-2 text-[#2D4F1E] font-bold text-lg">
+              <div className="flex items-center gap-2 text-green-700 font-bold text-lg">
                 <Sprout className="w-5 h-5" />
                 <span>{language === 'hi' ? 'नई फसल पंजीकृत करें' : 'Register New Crop'}</span>
               </div>
@@ -331,7 +331,7 @@ export const MyCropsPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-[#2D4F1E] hover:bg-[#223d16] text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer"
+                  className="flex-1 py-2.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer"
                 >
                   {language === 'hi' ? 'फसल जोड़ें' : 'Add Crop'}
                 </button>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Users,
   UserCheck,
@@ -19,7 +20,8 @@ import { VirtualCluster, BulkOrderRequirement, UserProfile, MachineryItem } from
 import { MandiTicker } from '../components/MandiTicker';
 
 export const ChampionDashboard: React.FC = () => {
-  const { currentUser, setCurrentView, addToast } = useApp();
+  const currentUser = useUserStore(state => state.currentUser);
+  const { setCurrentView, addToast } = useApp();
   const [clusters, setClusters] = useState<VirtualCluster[]>([]);
   const [farmers, setFarmers] = useState<UserProfile[]>([]);
   const [bulkOrders, setBulkOrders] = useState<BulkOrderRequirement[]>([]);
@@ -103,7 +105,7 @@ export const ChampionDashboard: React.FC = () => {
       <MandiTicker />
 
       {/* Header Banner */}
-      <div className="bg-[#2D4F1E] text-white rounded-[32px] p-6 sm:p-8 shadow-xl border border-white/20 space-y-3 relative overflow-hidden">
+      <div className="bg-green-700 text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-white/20 space-y-3 relative overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
           <div>
             <span className="bg-white/15 text-emerald-200 text-xs px-3 py-1 rounded-full font-mono border border-white/20 backdrop-blur-xs">
@@ -120,7 +122,7 @@ export const ChampionDashboard: React.FC = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setShowAddFarmerModal(true)}
-              className="bg-white hover:bg-emerald-50 text-[#2D4F1E] text-xs font-semibold px-4 py-2.5 rounded-2xl shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.99]"
+              className="bg-white hover:bg-emerald-50 text-green-700 text-xs font-semibold px-4 py-2.5 rounded-2xl shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.99]"
             >
               <Plus className="w-4 h-4" />
               <span>Onboard New Farmer</span>
@@ -137,27 +139,27 @@ export const ChampionDashboard: React.FC = () => {
 
       {/* KPI Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/60 backdrop-blur-lg p-5 rounded-[24px] border border-white/80 shadow-xs space-y-1">
+        <div className="bg-white/60 backdrop-blur-lg p-4 rounded-2xl border border-white/80 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Coordinated Farmers</div>
           <div className="text-3xl font-bold font-display text-stone-900">{farmers.length}</div>
-          <p className="text-[11px] text-[#2D4F1E] font-medium">{farmers.filter((f) => f.verified).length} Verified</p>
+          <p className="text-[11px] text-green-700 font-medium">{farmers.filter((f) => f.verified).length} Verified</p>
         </div>
 
-        <div className="bg-white/60 backdrop-blur-lg p-5 rounded-[24px] border border-white/80 shadow-xs space-y-1">
+        <div className="bg-white/60 backdrop-blur-lg p-4 rounded-2xl border border-white/80 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Active Village Clusters</div>
           <div className="text-3xl font-bold font-display text-stone-900">{clusters.length}</div>
           <p className="text-[11px] text-stone-500 font-medium">{totalVillageAcres.toFixed(1)} Total Acres</p>
         </div>
 
-        <div className="bg-white/60 backdrop-blur-lg p-5 rounded-[24px] border border-white/80 shadow-xs space-y-1">
+        <div className="bg-white/60 backdrop-blur-lg p-4 rounded-2xl border border-white/80 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Collective Harvest Pool</div>
-          <div className="text-3xl font-bold font-display text-[#2D4F1E]">
+          <div className="text-3xl font-bold font-display text-green-700">
             {(totalCollectiveKg / 1000).toFixed(1)} <span className="text-base text-stone-500 font-normal">Tons</span>
           </div>
           <p className="text-[11px] text-emerald-800 font-medium">Ready for Institutional Buyers</p>
         </div>
 
-        <div className="bg-white/60 backdrop-blur-lg p-5 rounded-[24px] border border-white/80 shadow-xs space-y-1">
+        <div className="bg-white/60 backdrop-blur-lg p-4 rounded-2xl border border-white/80 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Pending Bulk Demands</div>
           <div className="text-3xl font-bold font-display text-amber-700">{bulkOrders.length}</div>
           <p className="text-[11px] text-amber-800 font-medium">Avg. 22.5% Wholesale Margin</p>

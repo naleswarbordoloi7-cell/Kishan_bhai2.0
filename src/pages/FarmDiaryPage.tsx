@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   BookOpen,
   Plus,
@@ -22,7 +23,8 @@ import { FieldVoiceDictatorModal } from '../components/speech/FieldVoiceDictator
 import { InlineMicButton } from '../components/speech/InlineMicButton';
 
 export const FarmDiaryPage: React.FC = () => {
-  const { farmDiary, addDiaryEntry, deleteDiaryEntry, language, addToast, currentUser } = useApp();
+  const currentUser = useUserStore(state => state.currentUser);
+  const { farmDiary, addDiaryEntry, deleteDiaryEntry, language, addToast } = useApp();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
@@ -86,7 +88,7 @@ export const FarmDiaryPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1B3B11] to-[#2D4F1E] text-white p-6 sm:p-8 rounded-3xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#1B3B11] to-green-700 text-white p-6 sm:p-8 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
             <BookOpen className="w-4 h-4" />
@@ -133,7 +135,7 @@ export const FarmDiaryPage: React.FC = () => {
 
       {/* Financial Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">Total Recorded Expenses (कुल खर्च)</div>
           <div className="text-2xl font-bold text-rose-600 font-display">
             ₹{totalExpenses.toLocaleString()}
@@ -141,7 +143,7 @@ export const FarmDiaryPage: React.FC = () => {
           <div className="text-[11px] text-stone-500 mt-1">Inputs, labour, sprayings</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">Total Farm Income (कुल आमदनी)</div>
           <div className="text-2xl font-bold text-emerald-700 font-display">
             ₹{totalRevenue.toLocaleString()}
@@ -149,7 +151,7 @@ export const FarmDiaryPage: React.FC = () => {
           <div className="text-[11px] text-stone-500 mt-1">Harvest sales, subsidies</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">Net Seasonal Margin (शुद्ध शेष)</div>
           <div className={`text-2xl font-bold font-display ${netBalance >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
             ₹{netBalance.toLocaleString()}
@@ -166,7 +168,7 @@ export const FarmDiaryPage: React.FC = () => {
             onClick={() => setSelectedCategory(cat)}
             className={`text-xs font-semibold px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
               selectedCategory === cat
-                ? 'bg-[#2D4F1E] text-white shadow-xs'
+                ? 'bg-green-700 text-white shadow-xs'
                 : 'bg-white hover:bg-stone-100 text-stone-700 border border-stone-200'
             }`}
           >
@@ -176,8 +178,8 @@ export const FarmDiaryPage: React.FC = () => {
       </div>
 
       {/* Diary Timeline Entries */}
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-stone-100 flex items-center justify-between">
+      <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-stone-100 flex items-center justify-between">
           <h3 className="font-bold text-stone-900 text-sm">
             {language === 'hi' ? 'खेत गतिविधि इतिहास' : 'Farm Activity Timeline & Entries'}
           </h3>
@@ -189,7 +191,7 @@ export const FarmDiaryPage: React.FC = () => {
             filteredDiary.map((item) => (
               <div
                 key={item.id}
-                className="p-5 hover:bg-stone-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-4 hover:bg-stone-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -197,7 +199,7 @@ export const FarmDiaryPage: React.FC = () => {
                     <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
                       {item.category}
                     </span>
-                    <span className="text-xs font-semibold text-[#2D4F1E]">{item.crop}</span>
+                    <span className="text-xs font-semibold text-green-700">{item.crop}</span>
                   </div>
                   <h4 className="text-sm font-bold text-stone-900">{item.title}</h4>
                   {item.notes && <p className="text-xs text-stone-600">{item.notes}</p>}
@@ -244,9 +246,9 @@ export const FarmDiaryPage: React.FC = () => {
       {/* Add Entry Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-              <div className="flex items-center gap-2 text-[#2D4F1E] font-bold text-lg">
+              <div className="flex items-center gap-2 text-green-700 font-bold text-lg">
                 <BookOpen className="w-5 h-5" />
                 <span>{language === 'hi' ? 'खेत गतिविधि दर्ज करें' : 'Record Farm Log'}</span>
               </div>
@@ -380,7 +382,7 @@ export const FarmDiaryPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-[#2D4F1E] hover:bg-[#223d16] text-white font-bold rounded-xl text-xs shadow-md cursor-pointer"
+                  className="flex-1 py-2.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer"
                 >
                   Save Entry
                 </button>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import { AnimatedKishanLogo, playOrganicLogoChime } from './AnimatedKishanLogo';
 import {
   Sparkles,
@@ -23,13 +24,8 @@ interface LogoIntroSplashProps {
 }
 
 export const LogoIntroSplash: React.FC<LogoIntroSplashProps> = ({ isOpen, onClose }) => {
-  const {
-    setCurrentUser,
-    setUserRole,
-    setCurrentView,
-    addToast,
-    language,
-  } = useApp();
+  const { setCurrentUser, setUserRole } = useUserStore();
+  const { setCurrentView, addToast, language } = useApp();
 
   const [animStage, setAnimStage] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
@@ -207,7 +203,7 @@ export const LogoIntroSplash: React.FC<LogoIntroSplashProps> = ({ isOpen, onClos
           >
             <div className="flex items-center justify-center gap-3">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-display tracking-tight text-white">
-                KISAN <span className="bg-gradient-to-r from-emerald-400 via-green-300 to-amber-300 bg-clip-text text-transparent">BHAI</span>
+                KISHAN <span className="bg-gradient-to-r from-emerald-400 via-green-300 to-amber-300 bg-clip-text text-transparent">BHAI</span>
               </h1>
             </div>
 

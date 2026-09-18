@@ -39,7 +39,7 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div className="bg-stone-900 text-white rounded-3xl p-6 sm:p-8 shadow-lg border border-stone-800 space-y-3">
+      <div className="bg-stone-900 text-white rounded-2xl p-6 sm:p-8 shadow-lg border border-stone-800 space-y-3">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -76,7 +76,7 @@ export const AdminDashboard: React.FC = () => {
 
       {/* KPI Overview Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Total Registered Users</div>
           <div className="text-3xl font-bold font-display text-stone-900">{stats?.totalUsers || 6}</div>
           <p className="text-[11px] text-stone-500">
@@ -84,13 +84,13 @@ export const AdminDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Virtual Clusters Active</div>
           <div className="text-3xl font-bold font-display text-emerald-700">{stats?.totalClusters || 2}</div>
           <p className="text-[11px] text-emerald-800 font-medium">84.5 Clustered Acres</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">x402 Micropayment Volume</div>
           <div className="text-3xl font-bold font-display text-purple-700">
             {stats?.totalVolumeUsdc || '0.006'} <span className="text-sm font-normal text-stone-500">USDC</span>
@@ -98,7 +98,7 @@ export const AdminDashboard: React.FC = () => {
           <p className="text-[11px] text-purple-800 font-medium">Algorand Testnet ASA 10458941</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">System Health</div>
           <div className="text-base font-bold text-emerald-700 flex items-center gap-1.5 pt-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>

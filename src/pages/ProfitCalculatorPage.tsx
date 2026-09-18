@@ -108,7 +108,7 @@ export const ProfitCalculatorPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1B3B11] to-[#2D4F1E] text-white p-6 sm:p-8 rounded-3xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#1B3B11] to-green-700 text-white p-6 sm:p-8 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
             <Calculator className="w-4 h-4" />
@@ -135,7 +135,7 @@ export const ProfitCalculatorPage: React.FC = () => {
 
       {/* Top 4 Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">Total Investment (कुल लागत)</div>
           <div className="text-2xl font-bold text-stone-900 font-display">
             ₹{Math.round(results.totalCost).toLocaleString()}
@@ -143,7 +143,7 @@ export const ProfitCalculatorPage: React.FC = () => {
           <div className="text-[11px] text-stone-500 mt-1">₹{Math.round(results.costPerAcre).toLocaleString()} / acre</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">Gross Revenue (कुल बिक्री)</div>
           <div className="text-2xl font-bold text-stone-900 font-display">
             ₹{Math.round(results.grossRevenue).toLocaleString()}
@@ -151,7 +151,7 @@ export const ProfitCalculatorPage: React.FC = () => {
           <div className="text-[11px] text-emerald-700 font-medium mt-1">{results.totalYieldQuintals.toFixed(1)} Quintals total</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">Net Seasonal Profit (शुद्ध लाभ)</div>
           <div className={`text-2xl font-bold font-display ${results.netProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
             ₹{Math.round(results.netProfit).toLocaleString()}
@@ -159,7 +159,7 @@ export const ProfitCalculatorPage: React.FC = () => {
           <div className="text-[11px] text-emerald-700 font-medium mt-1">₹{Math.round(results.netProfitPerAcre).toLocaleString()} / acre</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-2xs">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs">
           <div className="text-xs font-semibold text-stone-500 mb-1">Return on Investment (ROI %)</div>
           <div className="text-2xl font-bold text-emerald-700 font-display">
             {results.roi.toFixed(1)}%
@@ -171,10 +171,10 @@ export const ProfitCalculatorPage: React.FC = () => {
       {/* Main Grid: Inputs vs Visual Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Form: Sliders and Inputs */}
-        <div className="lg:col-span-7 bg-white rounded-3xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-stone-100">
             <h2 className="font-bold text-stone-900 text-base flex items-center gap-2">
-              <Layers className="w-5 h-5 text-[#2D4F1E]" />
+              <Layers className="w-5 h-5 text-green-700" />
               <span>Input Parameters & Acreage</span>
             </h2>
             <select
@@ -195,7 +195,7 @@ export const ProfitCalculatorPage: React.FC = () => {
             <div>
               <div className="flex justify-between text-xs font-bold text-stone-700 mb-1">
                 <span>Farm Cultivation Area (एकड़)</span>
-                <span className="text-[#2D4F1E] font-display text-sm">{farmSizeAcres} Acres</span>
+                <span className="text-green-700 font-display text-sm">{farmSizeAcres} Acres</span>
               </div>
               <input
                 type="range"
@@ -212,7 +212,7 @@ export const ProfitCalculatorPage: React.FC = () => {
             <div>
               <div className="flex justify-between text-xs font-bold text-stone-700 mb-1">
                 <span>Expected Yield per Acre (क्विंटल प्रति एकड़)</span>
-                <span className="text-[#2D4F1E] font-display text-sm">{expectedYieldPerAcre} Qtl / Acre</span>
+                <span className="text-green-700 font-display text-sm">{expectedYieldPerAcre} Qtl / Acre</span>
               </div>
               <input
                 type="range"
@@ -229,7 +229,7 @@ export const ProfitCalculatorPage: React.FC = () => {
             <div>
               <div className="flex justify-between text-xs font-bold text-stone-700 mb-1">
                 <span>Expected Selling Price (भाव प्रति क्विंटल)</span>
-                <span className="text-[#2D4F1E] font-display text-sm">₹{sellingPricePerQuintal} / Qtl</span>
+                <span className="text-green-700 font-display text-sm">₹{sellingPricePerQuintal} / Qtl</span>
               </div>
               <input
                 type="range"
@@ -315,7 +315,7 @@ export const ProfitCalculatorPage: React.FC = () => {
         {/* Right Column: Chart & Break-Even Metrics */}
         <div className="lg:col-span-5 space-y-6">
           {/* Pie Chart Card */}
-          <div className="bg-white rounded-3xl border border-stone-200 shadow-xs p-6">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6">
             <h3 className="font-bold text-stone-900 text-sm mb-2 flex items-center gap-2">
               <PieIcon className="w-4 h-4 text-emerald-700" />
               <span>Investment Distribution</span>
@@ -356,7 +356,7 @@ export const ProfitCalculatorPage: React.FC = () => {
           </div>
 
           {/* Break-even & Safety Metrics */}
-          <div className="bg-emerald-50/70 border border-emerald-200 rounded-3xl p-6 space-y-4">
+          <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-6 space-y-4">
             <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm">
               <Sparkles className="w-4 h-4 text-emerald-700" />
               <span>Break-Even Safety Metrics</span>

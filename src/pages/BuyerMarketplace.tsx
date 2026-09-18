@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Store,
   Package,
@@ -14,7 +15,8 @@ import {
 import { HarvestPoolLot } from '../../shared/types';
 
 export const BuyerMarketplacePage: React.FC = () => {
-  const { currentUser, addToast } = useApp();
+  const currentUser = useUserStore(state => state.currentUser);
+  const { addToast } = useApp();
   const [lots, setLots] = useState<HarvestPoolLot[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCrop, setSelectedCrop] = useState('ALL');
@@ -40,7 +42,7 @@ export const BuyerMarketplacePage: React.FC = () => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-stone-900 via-amber-950 to-stone-900 text-white rounded-3xl p-6 sm:p-8 shadow-lg border border-stone-800 space-y-3">
+      <div className="bg-gradient-to-r from-stone-900 via-amber-950 to-stone-900 text-white rounded-2xl p-6 sm:p-8 shadow-lg border border-stone-800 space-y-3">
         <div className="flex items-center gap-2">
           <span className="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-0.5 rounded-full font-mono border border-amber-400/30">
             DIGITAL MANDI CATALOG
@@ -86,7 +88,7 @@ export const BuyerMarketplacePage: React.FC = () => {
 
       {/* Marketplace Grid */}
       {filteredLots.length === 0 ? (
-        <div className="bg-white/60 backdrop-blur-lg rounded-[28px] p-8 border border-white/80 text-center space-y-4 shadow-xs">
+        <div className="bg-white/60 backdrop-blur-lg rounded-2xl p-8 border border-white/80 text-center space-y-4 shadow-xs">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-800 flex items-center justify-center mx-auto">
             <Store className="w-6 h-6" />
           </div>

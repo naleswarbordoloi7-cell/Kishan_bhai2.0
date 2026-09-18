@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Send,
   Sparkles,
@@ -33,21 +34,11 @@ import { HandsFreeAssistantModal } from '../components/speech/HandsFreeAssistant
 import { INDIAN_SPEECH_LANGUAGES, isSpeechRecognitionSupported } from '../services/webSpeechService';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { uploadFileToStorage } from '../services/storageService';
 
 export const AIAssistantPage: React.FC = () => {
-  const {
-    currentUser,
-    setCurrentUser,
-    userRole,
-    triggerPaymentModal,
-    addToast,
-    wallet,
-    language,
-    setLanguage,
-    setCurrentView,
-    pendingAiQuery,
-    setPendingAiQuery,
-  } = useApp();
+  const { currentUser, setCurrentUser, userRole } = useUserStore();
+  const { triggerPaymentModal, addToast, wallet, language, setLanguage, setCurrentView, pendingAiQuery, setPendingAiQuery } = useApp();
 
   const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
   const [activeSessionId, setActiveSessionId] = useState<string>('sess_wheat_irrigation_01');
@@ -232,6 +223,7 @@ export const AIAssistantPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Display image immediately for prompt preview
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
@@ -239,6 +231,11 @@ export const AIAssistantPage: React.FC = () => {
       addToast('Image Attached', 'Crop photo ready for disease diagnosis.', 'info');
     };
     reader.readAsDataURL(file);
+
+    // Save copy in Firebase Storage production bucket
+    uploadFileToStorage(file, 'chat-attachments').catch((err) => {
+      console.warn('Firebase Storage chat attachment background save:', err);
+    });
   };
 
   const handleSend = async (customPrompt?: string, customImage?: string): Promise<string | undefined> => {
@@ -520,7 +517,7 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
       {/* 1. Header Banner */}
-      <div className="bg-[#2D4F1E] text-white p-5 sm:p-6 rounded-[28px] shadow-xl border border-white/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+      <div className="bg-green-700 text-white p-4 sm:p-6 rounded-2xl shadow-xl border border-white/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
         {/* Left Title & Status */}
         <div className="flex items-center gap-3.5 relative z-10">
           <div className="w-12 h-12 rounded-2xl bg-white/15 text-emerald-200 flex items-center justify-center font-bold border border-white/20 backdrop-blur-xs shadow-inner shrink-0">
@@ -627,7 +624,7 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
       />
 
       {/* 4. Main Chat Interface Feed */}
-      <div className="bg-stone-50/60 backdrop-blur-xl rounded-[28px] border border-stone-200/90 shadow-xs flex flex-col overflow-hidden min-h-[480px]">
+      <div className="bg-stone-50/60 backdrop-blur-xl rounded-2xl border border-stone-200/90 shadow-xs flex flex-col overflow-hidden min-h-[480px]">
         {/* Chat Feed */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 max-h-[560px]">
           {messages.map((msg) => (
@@ -644,7 +641,7 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
           {/* Typing Animation Indicator */}
           {isProcessing && (
             <div className="flex gap-3.5 justify-start animate-in fade-in">
-              <div className="w-9 h-9 rounded-2xl bg-[#2D4F1E] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm border border-emerald-700/30">
+              <div className="w-9 h-9 rounded-2xl bg-green-700 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm border border-emerald-700/30">
                 <Bot className="w-5 h-5 text-emerald-200 animate-spin" />
               </div>
               <div className="bg-white/95 backdrop-blur-md border border-stone-200/90 rounded-2xl rounded-tl-xs p-4 shadow-xs text-xs sm:text-sm text-stone-700 flex items-center gap-3">
@@ -694,7 +691,7 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
           )}
 
           {/* Large Input Box */}
-          <div className="flex items-center gap-2 bg-stone-50 border border-stone-200/90 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-[#2D4F1E]/30 focus-within:border-[#2D4F1E] transition-all shadow-inner">
+          <div className="flex items-center gap-2 bg-stone-50 border border-stone-200/90 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-green-700/30 focus-within:border-green-700 transition-all shadow-inner">
             <input
               type="file"
               ref={fileInputRef}
@@ -707,7 +704,7 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 rounded-xl text-stone-500 hover:text-[#2D4F1E] hover:bg-emerald-50 transition-colors cursor-pointer shrink-0"
+              className="p-2.5 rounded-xl text-stone-500 hover:text-green-700 hover:bg-emerald-50 transition-colors cursor-pointer shrink-0"
               title="Upload crop photo for disease scan"
             >
               <ImageIcon className="w-5 h-5" />
@@ -720,7 +717,7 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
               className={`p-2.5 rounded-xl transition-all cursor-pointer shrink-0 ${
                 isListening
                   ? 'bg-rose-600 text-white animate-pulse shadow-sm'
-                  : 'text-stone-500 hover:text-[#2D4F1E] hover:bg-emerald-50'
+                  : 'text-stone-500 hover:text-green-700 hover:bg-emerald-50'
               }`}
               title="Voice query (Hindi/English)"
             >
@@ -751,7 +748,7 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
               type="button"
               onClick={() => handleSend()}
               disabled={isProcessing || (!inputPrompt.trim() && !selectedImage)}
-              className="bg-[#2D4F1E] hover:bg-[#233f17] disabled:opacity-40 disabled:cursor-not-allowed text-white p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
+              className="bg-green-700 hover:bg-[#233f17] disabled:opacity-40 disabled:cursor-not-allowed text-white p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
             >
               <span className="hidden sm:inline">Send</span>
               <Send className="w-4 h-4" />

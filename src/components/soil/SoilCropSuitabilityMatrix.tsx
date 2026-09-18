@@ -12,7 +12,7 @@ export const SoilCropSuitabilityMatrix: React.FC<SoilCropSuitabilityMatrixProps>
   const { setCurrentView } = useApp();
 
   return (
-    <div className="bg-white rounded-3xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-stone-100">
         <div>
           <div className="flex items-center gap-2">
@@ -32,7 +32,7 @@ export const SoilCropSuitabilityMatrix: React.FC<SoilCropSuitabilityMatrixProps>
 
         <button
           onClick={() => setCurrentView('crop-recommendation')}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1B3B11] hover:text-[#2D4F1E] bg-emerald-100 hover:bg-emerald-200 px-4 py-2 rounded-xl transition-all cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1B3B11] hover:text-green-700 bg-emerald-100 hover:bg-emerald-200 px-4 py-2 rounded-xl transition-all cursor-pointer self-start sm:self-auto"
         >
           <span>Run AI Crop Recommendation</span>
           <ArrowRight className="w-3.5 h-3.5" />
@@ -92,7 +92,7 @@ export const SoilCropSuitabilityMatrix: React.FC<SoilCropSuitabilityMatrixProps>
       </div>
 
       {/* Soil Texture & Irrigation Dynamics */}
-      <div className="bg-stone-50 rounded-2xl p-5 border border-stone-200 space-y-3">
+      <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 space-y-3">
         <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
           <Droplets className="w-4 h-4 text-blue-600" />
           <span>Soil Physical Texture & Irrigation Strategy</span>

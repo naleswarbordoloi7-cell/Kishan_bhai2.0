@@ -20,7 +20,7 @@ export const SoilMacroNutrients: React.FC<SoilMacroNutrientsProps> = ({ soilHeal
   const phPct = Math.min(100, Math.max(0, Math.round(((soilHealth.soilPh - 4) / 6) * 100)));
 
   return (
-    <div className="bg-white rounded-3xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-stone-100">
         <div>
           <div className="flex items-center gap-2">
@@ -43,9 +43,9 @@ export const SoilMacroNutrients: React.FC<SoilMacroNutrientsProps> = ({ soilHeal
       </div>
 
       {/* Grid of Key Nutrients */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Available Nitrogen (N) */}
-        <div className="bg-stone-50/90 rounded-2xl p-5 border border-stone-200/80 flex flex-col justify-between space-y-4">
+        <div className="bg-stone-50/90 rounded-2xl p-4 border border-stone-200/80 flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">
@@ -99,7 +99,7 @@ export const SoilMacroNutrients: React.FC<SoilMacroNutrientsProps> = ({ soilHeal
         </div>
 
         {/* Available Phosphorus (P) */}
-        <div className="bg-stone-50/90 rounded-2xl p-5 border border-stone-200/80 flex flex-col justify-between space-y-4">
+        <div className="bg-stone-50/90 rounded-2xl p-4 border border-stone-200/80 flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">
@@ -149,7 +149,7 @@ export const SoilMacroNutrients: React.FC<SoilMacroNutrientsProps> = ({ soilHeal
         </div>
 
         {/* Available Potassium (K) */}
-        <div className="bg-stone-50/90 rounded-2xl p-5 border border-stone-200/80 flex flex-col justify-between space-y-4">
+        <div className="bg-stone-50/90 rounded-2xl p-4 border border-stone-200/80 flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">

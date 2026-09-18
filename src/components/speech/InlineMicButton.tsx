@@ -54,7 +54,7 @@ export const InlineMicButton: React.FC<InlineMicButtonProps> = ({
       className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center ${
         isListening
           ? 'bg-rose-500 text-white animate-pulse shadow-sm ring-2 ring-rose-300'
-          : 'text-stone-400 hover:text-[#2D4F1E] hover:bg-stone-100'
+          : 'text-stone-400 hover:text-green-700 hover:bg-stone-100'
       } ${className}`}
     >
       {isListening ? (

@@ -210,7 +210,7 @@ export const HandsFreeAssistantModal: React.FC<HandsFreeAssistantModalProps> = (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="bg-stone-900 text-white rounded-[32px] max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-emerald-800/40 space-y-6 relative overflow-hidden flex flex-col justify-between max-h-[90vh]">
+      <div className="bg-stone-900 text-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-emerald-800/40 space-y-6 relative overflow-hidden flex flex-col justify-between max-h-[90vh]">
         
         {/* Background glow */}
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -219,7 +219,7 @@ export const HandsFreeAssistantModal: React.FC<HandsFreeAssistantModalProps> = (
         {/* Top Bar Controls */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4 relative z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#2D4F1E] border border-emerald-500/40 text-emerald-300 flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 rounded-2xl bg-green-700 border border-emerald-500/40 text-emerald-300 flex items-center justify-center shadow-sm">
               <Bot className="w-5 h-5 text-emerald-300" />
             </div>
             <div>
@@ -315,7 +315,7 @@ export const HandsFreeAssistantModal: React.FC<HandsFreeAssistantModalProps> = (
           )}
 
           {/* Latest AI Advisory Output */}
-          <div className="bg-emerald-950/40 rounded-2xl p-4 sm:p-5 border border-emerald-500/30 flex items-start gap-3 space-y-2">
+          <div className="bg-emerald-950/40 rounded-2xl p-4 sm:p-4 border border-emerald-500/30 flex items-start gap-3 space-y-2">
             <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 flex items-center justify-center shrink-0 mt-0.5">
               <Sparkles className="w-4 h-4 text-emerald-400" />
             </div>
@@ -351,7 +351,7 @@ export const HandsFreeAssistantModal: React.FC<HandsFreeAssistantModalProps> = (
         </div>
 
         {/* Waveform & Central Mic Button Stage */}
-        <div className="bg-stone-950/90 rounded-3xl p-5 border border-white/10 text-center space-y-3 relative z-10">
+        <div className="bg-stone-950/90 rounded-2xl p-4 border border-white/10 text-center space-y-3 relative z-10">
           {/* Sound Visualizer Waves */}
           <div className="flex items-center justify-center gap-1.5 h-10">
             {[35, 70, 90, 60, 100, 75, 45, 85, 65, 40, 80, 55].map((val, idx) => (
@@ -378,7 +378,7 @@ export const HandsFreeAssistantModal: React.FC<HandsFreeAssistantModalProps> = (
             <button
               type="button"
               onClick={handleManualMicToggle}
-              className={`w-20 h-20 rounded-3xl flex items-center justify-center transition-all transform active:scale-95 shadow-xl cursor-pointer ${
+              className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all transform active:scale-95 shadow-xl cursor-pointer ${
                 conversationState === 'speaking'
                   ? 'bg-amber-600 hover:bg-amber-500 text-white ring-8 ring-amber-500/20 animate-pulse'
                   : isListening

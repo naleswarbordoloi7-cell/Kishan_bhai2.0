@@ -163,12 +163,12 @@ export const FieldVoiceDictatorModal: React.FC<FieldVoiceDictatorModalProps> = (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl border border-stone-200 space-y-5 text-stone-900 overflow-hidden relative">
+      <div className="bg-white rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl border border-stone-200 space-y-5 text-stone-900 overflow-hidden relative">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stone-100 pb-3.5">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-[#2D4F1E] flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-green-700 flex items-center justify-center font-bold">
               <Mic className="w-5 h-5 text-emerald-700" />
             </div>
             <div>
@@ -221,7 +221,7 @@ export const FieldVoiceDictatorModal: React.FC<FieldVoiceDictatorModalProps> = (
         </div>
 
         {/* Live Visual Waveform & Microphone Action Target */}
-        <div className="bg-gradient-to-b from-stone-900 to-stone-950 text-white rounded-3xl p-6 text-center space-y-4 shadow-inner relative overflow-hidden">
+        <div className="bg-gradient-to-b from-stone-900 to-stone-950 text-white rounded-2xl p-6 text-center space-y-4 shadow-inner relative overflow-hidden">
           {/* Animated Waveform Bars */}
           <div className="flex items-center justify-center gap-1.5 h-12">
             {[40, 75, 95, 60, 100, 80, 50, 90, 70, 45, 85, 60].map((h, i) => (
@@ -245,7 +245,7 @@ export const FieldVoiceDictatorModal: React.FC<FieldVoiceDictatorModalProps> = (
             <button
               type="button"
               onClick={handleToggleMic}
-              className={`w-20 h-20 rounded-3xl flex items-center justify-center transition-all transform active:scale-95 shadow-xl cursor-pointer ${
+              className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all transform active:scale-95 shadow-xl cursor-pointer ${
                 isListening
                   ? 'bg-rose-600 text-white ring-8 ring-rose-500/30 scale-105'
                   : 'bg-emerald-600 hover:bg-emerald-500 text-white ring-8 ring-emerald-500/20'
@@ -322,7 +322,7 @@ export const FieldVoiceDictatorModal: React.FC<FieldVoiceDictatorModalProps> = (
         {parsedResult && (
           <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 space-y-3 animate-in fade-in duration-200 text-xs">
             <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
-              <div className="font-bold text-[#2D4F1E] flex items-center gap-1.5">
+              <div className="font-bold text-green-700 flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-700" />
                 <span>Smart Agricultural Extraction</span>
               </div>
@@ -334,7 +334,7 @@ export const FieldVoiceDictatorModal: React.FC<FieldVoiceDictatorModalProps> = (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-stone-800">
               <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
                 <span className="text-[10px] text-stone-500 font-bold block">CATEGORY</span>
-                <span className="font-bold text-[#2D4F1E]">{parsedResult.category}</span>
+                <span className="font-bold text-green-700">{parsedResult.category}</span>
               </div>
 
               <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
@@ -381,7 +381,7 @@ export const FieldVoiceDictatorModal: React.FC<FieldVoiceDictatorModalProps> = (
             type="button"
             disabled={!parsedResult}
             onClick={handleSaveParsedEntry}
-            className="flex-1 py-3 bg-[#2D4F1E] hover:bg-[#223d16] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            className="flex-1 py-3 bg-green-700 hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
           >
             <BookOpen className="w-4 h-4" />
             <span>Save to Farm Diary</span>

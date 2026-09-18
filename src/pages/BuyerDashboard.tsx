@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Building,
   Store,
@@ -17,7 +18,8 @@ import {
 import { HarvestPoolLot, BuyerPurchaseRequest } from '../../shared/types';
 
 export const BuyerDashboard: React.FC = () => {
-  const { currentUser, setCurrentView, addToast } = useApp();
+  const currentUser = useUserStore(state => state.currentUser);
+  const { setCurrentView, addToast } = useApp();
   const [lots, setLots] = useState<HarvestPoolLot[]>([]);
   const [purchaseRequests, setPurchaseRequests] = useState<BuyerPurchaseRequest[]>([]);
   const [selectedLot, setSelectedLot] = useState<HarvestPoolLot | null>(null);
@@ -72,7 +74,7 @@ export const BuyerDashboard: React.FC = () => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-amber-950 via-stone-900 to-emerald-950 text-white rounded-3xl p-6 sm:p-8 shadow-lg border border-amber-800/40 space-y-3">
+      <div className="bg-gradient-to-r from-amber-950 via-stone-900 to-emerald-950 text-white rounded-2xl p-6 sm:p-8 shadow-lg border border-amber-800/40 space-y-3">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <span className="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-0.5 rounded-full font-mono border border-amber-400/30">
@@ -98,13 +100,13 @@ export const BuyerDashboard: React.FC = () => {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Available Clustered Lots</div>
           <div className="text-3xl font-bold font-display text-stone-900">{lots.length}</div>
           <p className="text-[11px] text-emerald-700 font-medium">Quality Graded & Verified</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Active Purchase Proposals</div>
           <div className="text-3xl font-bold font-display text-amber-700">{purchaseRequests.length}</div>
           <p className="text-[11px] text-stone-500 font-medium">
@@ -112,7 +114,7 @@ export const BuyerDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Procured Volume</div>
           <div className="text-3xl font-bold font-display text-emerald-700">
             {totalProcuredTons.toFixed(1)} <span className="text-base text-stone-500 font-normal">Tons</span>
@@ -120,7 +122,7 @@ export const BuyerDashboard: React.FC = () => {
           <p className="text-[11px] text-emerald-800 font-medium">Direct Mandi Disintermediation</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Traceability Index</div>
           <div className="text-3xl font-bold font-display text-stone-900">100%</div>
           <p className="text-[11px] text-teal-700 font-medium">Full Cluster Farmer Lineage</p>
@@ -142,7 +144,7 @@ export const BuyerDashboard: React.FC = () => {
               {lots.map((lot) => (
                 <div
                   key={lot.id}
-                  className="p-5 rounded-2xl border border-stone-200 bg-stone-50/70 hover:bg-stone-50 transition-all space-y-3"
+                  className="p-4 rounded-2xl border border-stone-200 bg-stone-50/70 hover:bg-stone-50 transition-all space-y-3"
                 >
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div>

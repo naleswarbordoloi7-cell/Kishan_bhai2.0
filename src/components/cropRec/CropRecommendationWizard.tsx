@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useUserStore } from '../../store/userStore';
 import {
   CropRecommendationInput,
   FarmingGoalType,
@@ -32,7 +33,8 @@ export const CropRecommendationWizard: React.FC<CropRecommendationWizardProps> =
   isLoading,
   onOpenUploadModal,
 }) => {
-  const { farmerProfile, soilHealth, language } = useApp();
+  const farmerProfile = useUserStore(state => state.farmerProfile);
+  const { soilHealth, language } = useApp();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -83,7 +85,7 @@ export const CropRecommendationWizard: React.FC<CropRecommendationWizardProps> =
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
       {/* Wizard Progress Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
         <div>
@@ -200,7 +202,7 @@ export const CropRecommendationWizard: React.FC<CropRecommendationWizardProps> =
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="bg-[#1B3B11] hover:bg-[#2D4F1E] text-white text-xs font-bold px-6 py-3 rounded-2xl shadow-md inline-flex items-center gap-2 cursor-pointer transition-all"
+                className="bg-[#1B3B11] hover:bg-green-700 text-white text-xs font-bold px-6 py-3 rounded-2xl shadow-md inline-flex items-center gap-2 cursor-pointer transition-all"
               >
                 <span>Continue to Farm Resources</span>
                 <ArrowRight className="w-4 h-4" />
@@ -303,7 +305,7 @@ export const CropRecommendationWizard: React.FC<CropRecommendationWizardProps> =
               <button
                 type="button"
                 onClick={() => setStep(3)}
-                className="bg-[#1B3B11] hover:bg-[#2D4F1E] text-white text-xs font-bold px-6 py-3 rounded-2xl shadow-md inline-flex items-center gap-2 cursor-pointer transition-all"
+                className="bg-[#1B3B11] hover:bg-green-700 text-white text-xs font-bold px-6 py-3 rounded-2xl shadow-md inline-flex items-center gap-2 cursor-pointer transition-all"
               >
                 <span>Continue to Soil & Goal</span>
                 <ArrowRight className="w-4 h-4" />

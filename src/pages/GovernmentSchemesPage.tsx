@@ -45,7 +45,7 @@ export const GovernmentSchemesPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1B3B11] to-[#2D4F1E] text-white p-6 sm:p-8 rounded-3xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#1B3B11] to-green-700 text-white p-6 sm:p-8 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
             <Landmark className="w-4 h-4" />
@@ -71,7 +71,7 @@ export const GovernmentSchemesPage: React.FC = () => {
       </div>
 
       {/* Search and Category Chips */}
-      <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-2xs space-y-4">
+      <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-2xs space-y-4">
         <div className="relative">
           <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -90,7 +90,7 @@ export const GovernmentSchemesPage: React.FC = () => {
               onClick={() => setSelectedCategory(cat)}
               className={`text-xs font-semibold px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-[#2D4F1E] text-white shadow-xs'
+                  ? 'bg-green-700 text-white shadow-xs'
                   : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
               }`}
             >
@@ -105,7 +105,7 @@ export const GovernmentSchemesPage: React.FC = () => {
         {filteredSchemes.map((scheme) => (
           <div
             key={scheme.id}
-            className="bg-white rounded-3xl border border-stone-200 shadow-xs hover:shadow-md transition-all p-6 flex flex-col justify-between space-y-4"
+            className="bg-white rounded-2xl border border-stone-200 shadow-xs hover:shadow-md transition-all p-6 flex flex-col justify-between space-y-4"
           >
             <div>
               <div className="flex items-center justify-between gap-2 mb-2">
@@ -136,7 +136,7 @@ export const GovernmentSchemesPage: React.FC = () => {
 
               <button
                 onClick={() => setSelectedScheme(scheme)}
-                className="flex items-center gap-1 px-4 py-2 bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+                className="flex items-center gap-1 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
               >
                 <span>View Full Details</span>
                 <ChevronRight className="w-4 h-4" />
@@ -149,7 +149,7 @@ export const GovernmentSchemesPage: React.FC = () => {
       {/* Scheme Detail Modal */}
       {selectedScheme && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-stone-200 my-8 space-y-6 animate-in fade-in duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-stone-200 my-8 space-y-6 animate-in fade-in duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between pb-4 border-b border-stone-100">
               <div>
                 <span className="text-xs font-bold bg-emerald-100 text-emerald-900 px-2.5 py-0.5 rounded-full">
@@ -193,7 +193,7 @@ export const GovernmentSchemesPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {selectedScheme.requiredDocuments.map((doc, idx) => (
                   <div key={idx} className="text-xs text-stone-700 flex items-center gap-2 p-2.5 bg-stone-50 rounded-xl border border-stone-100">
-                    <FileText className="w-4 h-4 text-[#2D4F1E] shrink-0" />
+                    <FileText className="w-4 h-4 text-green-700 shrink-0" />
                     <span className="font-medium">{doc}</span>
                   </div>
                 ))}
@@ -206,7 +206,7 @@ export const GovernmentSchemesPage: React.FC = () => {
               <ol className="space-y-2">
                 {selectedScheme.applicationProcess.map((step, idx) => (
                   <li key={idx} className="text-xs text-stone-700 flex items-start gap-3 bg-stone-50 p-3 rounded-xl border border-stone-100">
-                    <span className="w-5 h-5 rounded-full bg-[#2D4F1E] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                    <span className="w-5 h-5 rounded-full bg-green-700 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
                       {idx + 1}
                     </span>
                     <span>{step}</span>
@@ -221,7 +221,7 @@ export const GovernmentSchemesPage: React.FC = () => {
                 href={selectedScheme.officialPortalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 py-3 bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-bold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all"
+                className="flex-1 py-3 bg-green-700 hover:bg-green-800 text-white text-xs font-bold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all"
               >
                 <span>Open Official Government Portal</span>
                 <ExternalLink className="w-4 h-4" />

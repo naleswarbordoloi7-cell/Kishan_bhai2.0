@@ -34,6 +34,11 @@ export interface UserProfile {
   role: UserRole;
   village: string;
   state: string;
+  district?: string;
+  latitude?: number;
+  longitude?: number;
+  locationAccuracy?: number;
+  isGpsVerified?: boolean;
   verified: boolean;
   farmSizeAcres?: number;
   crops?: string[];
@@ -391,6 +396,79 @@ export interface DiseaseDifferentialPossibility {
   category?: 'Fungal' | 'Bacterial' | 'Viral' | 'Nutrient' | 'Pest' | 'Abiotic';
 }
 
+export interface ChemicalTreatmentItem {
+  name: string;
+  activeIngredient: string;
+  dosage: string;
+  sprayGuidelines: string;
+  waitingPeriodDays: string | number;
+  safetyPrecautions: string;
+  estimatedCost?: string;
+}
+
+export interface OrganicTreatmentItem {
+  name: string;
+  bioAgentOrBotanical: string;
+  dosage: string;
+  preparationMethod: string;
+  soilOrFoliar: 'Foliar Spray' | 'Soil Drench' | 'Seed Treatment' | 'Bio-Formulation';
+  ecoBenefit: string;
+  estimatedCost?: string;
+}
+
+export interface DiseaseApplicationTiming {
+  bestTimeOfDay: string;
+  timingReason: string;
+  growthStage: string;
+  weatherConditions: {
+    temperatureRange: string;
+    windSpeedLimit: string;
+    rainfastnessHours: string;
+    humidityWindow?: string;
+  };
+  sprayIntervalDays: string;
+  expectedRecoveryTimeline: {
+    day1to2: string;
+    day4to5: string;
+    day7to10: string;
+  };
+}
+
+export interface DoctorReportCard {
+  reportId: string;
+  generatedAt: string;
+  patientCrop: {
+    farmerName: string;
+    villageOrLocation: string;
+    fieldPlotName: string;
+    cropType: string;
+    variety?: string;
+    growthStage: string;
+    affectedAcreagePct?: string;
+  };
+  clinicalDiagnosis: {
+    primaryDisease: string;
+    pathogenScientificName: string;
+    diseaseCategory: 'Fungal' | 'Bacterial' | 'Viral' | 'Nutrient' | 'Pest' | 'Abiotic';
+    severityLevel: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL' | 'MEDIUM';
+    confidenceScore: number;
+    diagnosticSymptoms: string[];
+    probableCauses: string[];
+  };
+  treatmentPrescription: {
+    organicProtocol: string[];
+    chemicalProtocol: string[];
+    criticalTimingRule: string;
+    preHarvestInterval: string;
+  };
+  doctorReviewSection: {
+    reviewStatus: 'PENDING_OFFICER_REVIEW' | 'VERIFIED' | 'FOLLOW_UP_REQUIRED';
+    doctorNotesPlaceholder: string;
+    nextInspectionDate: string;
+    kvkExtensionCenter: string;
+  };
+}
+
 export interface DiseaseScanResult {
   id: string;
   cropName: string;
@@ -408,6 +486,10 @@ export interface DiseaseScanResult {
   recommendedAction?: string[];
   recommendedChemical?: string[];
   recommendedOrganic?: string[];
+  chemicalTreatments?: ChemicalTreatmentItem[];
+  organicTreatments?: OrganicTreatmentItem[];
+  applicationTiming?: DiseaseApplicationTiming;
+  doctorReportCard?: DoctorReportCard;
   preventionSteps: string[];
   differentialPossibilities?: DiseaseDifferentialPossibility[];
   imageQuality?: DiseaseScanImageQuality;
@@ -605,6 +687,7 @@ export interface SoilHealthData {
   chemicalFertilizerRecommendations: string[];
   lastUpdated?: string;
   isVerified?: boolean;
+  documentUrl?: string;
 }
 
 export interface SoilRecordHistoryItem {
@@ -626,6 +709,7 @@ export interface SoilRecordHistoryItem {
   electricalConductivityDsM: number;
   status: 'Verified' | 'Self-Reported' | 'OCR-Extracted';
   notes?: string;
+  documentUrl?: string;
 }
 
 export interface SoilImprovementPlanItem {
@@ -1040,3 +1124,15 @@ export interface FarmAlert {
 }
 export type FarmAlertItem = FarmAlert;
 
+
+export interface FarmerProfileData {
+  name: string;
+  mobile: string;
+  state: string;
+  district: string;
+  village: string;
+  farmSizeAcres: number;
+  soilType: string;
+  mainCrop: string;
+  preferredLanguage: string;
+}

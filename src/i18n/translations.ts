@@ -90,6 +90,64 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     alerts: 'खेत अलर्ट',
     filter: 'फ़िल्टर',
     all: 'सभी',
+    home: 'होम',
+    profile: 'प्रोफ़ाइल',
+    languageLabel: '🌐 भाषा:',
+    freeHelp: 'मुफ्त कॉल',
+    callHelpline: 'किसान हेल्पलाइन',
+    acreLand: 'एकड़ खेत',
+    top4Actions: 'सबसे जरूरी 4 काम (सीधा 1-टैप)',
+    oneTap: 'आसान उपयोग',
+    cropDoctorTitle: 'रोग पहचान',
+    scanLeaf: 'पत्ती का फोटो लें',
+    scanLeafDesc: 'रोग पहचानें व तुरंत सही दवा और देसी इलाज पाएं',
+    openCamera: 'कैमरा खोलें 📸',
+    voiceAiTitle: 'बोलकर पूछें',
+    askKisanAi: 'खेती के सवाल पूछें',
+    askKisanAiDesc: 'माइक दबाएं और अपनी भाषा में कोई भी सवाल बोलें',
+    startVoice: 'माइक चालू करें 🎙️',
+    irrigationVerdict: 'सिंचाई सलाह',
+    holdWater: 'सिंचाई: आज पानी न दें ❌',
+    giveWater: 'सिंचाई: आज पानी दें ✅',
+    pumpRunning: 'पंप चालू',
+    pumpStopped: 'पंप बंद',
+    startPump: '▶️ पंप चालू करें',
+    stopPump: '⏹️ पंप बंद करें',
+    liveMandiRate: 'ताज़ा मंडी भाव',
+    cottonRate: 'कपास (Bt Cotton)',
+    highestRate: 'सर्वोच्च भाव',
+    viewAllMandis: 'सभी मंडियां देखें 📊',
+    dailyTasksTitle: 'आज के 3 जरूरी काम (चेकलिस्ट)',
+    dailyTasksDesc: 'पूरा होने पर टिक करें — आपकी फसल सुरक्षित रहेगी',
+    tasksCompleted: 'काम पूरे',
+    allServicesTitle: 'अन्य सभी उपयोगी सेवाएं',
+    tapAnyService: 'किसी भी सेवा पर टैप करें',
+    weatherForecastTitle: 'मौसम का आसान अनुमान (अगले 5 दिन)',
+    viewFullWeather: 'पूरा मौसम देखें',
+    askAiSectionTitle: 'खेती से जुड़ा कोई भी सवाल पूछें',
+    askAiSectionDesc: 'नीचे दिए गए किसी भी सवाल पर क्लिक करें या अपना सवाल बोलें:',
+    aiScientist24x7: '24/7 AI कृषि वैज्ञानिक',
+    askAiPlaceholder: 'यहाँ अपना सवाल लिखें या बोलें...',
+    listenAdvice: 'सलाह बोलकर सुनें 🔊',
+    stopAudio: 'आवाज रोकें',
+    footerTagline: 'किसान भाई • भारतीय किसानों के लिए सरल, सीधा और भरोसेमंद डिजिटल साथी',
+    talkToScientist: 'विशेषज्ञ से बात करें',
+    digitalFarmLedger: 'डिजिटल खेत खाता और दैनिक डायरी',
+    recordActivity: 'नया खर्च / कार्य दर्ज करें',
+    dictateVoice: 'बोलकर डायरी लिखें (Hands-Free)',
+    totalExpenses: 'कुल खर्च',
+    harvestEarnings: 'कुल आमदनी',
+    netProfit: 'शुद्ध मुनाफा',
+    pendingTasks: 'लंबित कार्य',
+    activityTimeline: 'खेत गतिविधि इतिहास',
+    open: 'खोलें',
+    close: 'बंद करें',
+    rain: 'बारिश',
+    sunny: 'धूप',
+    exportCsv: 'CSV डाउनलोड',
+    clearChat: 'चैट साफ़ करें',
+    history: 'इतिहास',
+    handsFreeFieldMode: 'बोलकर बात करें (Hands-Free)',
   },
   en: {
     appTitle: 'Kisan Bhai',
@@ -140,6 +198,64 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     alerts: 'Farm Alerts',
     filter: 'Filter',
     all: 'All',
+    home: 'Home',
+    profile: 'Profile',
+    languageLabel: '🌐 Language:',
+    freeHelp: 'Free Help',
+    callHelpline: 'Kisan Helpline',
+    acreLand: 'Acre Land',
+    top4Actions: 'Top 4 Immediate Actions',
+    oneTap: 'One Tap',
+    cropDoctorTitle: 'Crop Doctor',
+    scanLeaf: 'Scan Leaf Photo',
+    scanLeafDesc: 'Identify crop disease and get certified spray dose',
+    openCamera: 'Open Camera 📸',
+    voiceAiTitle: 'Voice AI',
+    askKisanAi: 'Ask Kisan AI',
+    askKisanAiDesc: 'Speak questions in your language for 24/7 answers',
+    startVoice: 'Start Voice 🎙️',
+    irrigationVerdict: 'Irrigation Verdict',
+    holdWater: 'Hold Water Today ❌',
+    giveWater: 'Irrigation Recommended ✅',
+    pumpRunning: 'Pump Running',
+    pumpStopped: 'Pump Stopped',
+    startPump: '▶️ Start Pump',
+    stopPump: '⏹️ Stop Pump',
+    liveMandiRate: 'Live Mandi Rate',
+    cottonRate: 'Cotton (Bt Cotton)',
+    highestRate: 'Highest Rate',
+    viewAllMandis: 'View All Mandis 📊',
+    dailyTasksTitle: "Today's 3 Key Farm Tasks (Checklist)",
+    dailyTasksDesc: 'Check off tasks as completed to safeguard your crop',
+    tasksCompleted: 'Tasks Done',
+    allServicesTitle: 'All Useful Farming Services',
+    tapAnyService: 'Tap any service below',
+    weatherForecastTitle: '5-Day Simple Weather Guide',
+    viewFullWeather: 'View Full Forecast',
+    askAiSectionTitle: 'Ask Any Farm Question',
+    askAiSectionDesc: 'Tap any common question below or type your query:',
+    aiScientist24x7: '24/7 AI Crop Scientist',
+    askAiPlaceholder: 'Type your farming question here...',
+    listenAdvice: 'Listen Advice 🔊',
+    stopAudio: 'Stop Audio',
+    footerTagline: 'Kisan Bhai • Simple, trusted digital agriculture platform for farmers',
+    talkToScientist: 'Talk to Agronomist',
+    digitalFarmLedger: 'Digital Farm Ledger & Activity Log',
+    recordActivity: 'Record Activity',
+    dictateVoice: 'Dictate Farm Note (Field Voice)',
+    totalExpenses: 'Total Expenses',
+    harvestEarnings: 'Total Farm Income',
+    netProfit: 'Net Farm Margin',
+    pendingTasks: 'Pending Tasks',
+    activityTimeline: 'Farm Activity Timeline & Entries',
+    open: 'Open',
+    close: 'Close',
+    rain: 'Rain',
+    sunny: 'Sunny',
+    exportCsv: 'Export CSV',
+    clearChat: 'Clear Chat',
+    history: 'History',
+    handsFreeFieldMode: 'Hands-Free Field Mode',
   },
   gu: {
     appTitle: 'કિસાન ભાઈ',
@@ -190,6 +306,64 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     alerts: 'ચેતવણીઓ',
     filter: 'ફિલ્ટર',
     all: 'બધા',
+    home: 'હોમ',
+    profile: 'પ્રોફાઇલ',
+    languageLabel: '🌐 ભાષા:',
+    freeHelp: 'મફત કૉલ',
+    callHelpline: 'કિસાન હેલ્પલાઇન',
+    acreLand: 'એકર જમીન',
+    top4Actions: 'સૌથી મહત્વપૂર્ણ ૪ સુવિધાઓ',
+    oneTap: 'સરળ ઉપયોગ',
+    cropDoctorTitle: 'રોગ તપાસ',
+    scanLeaf: 'પાંદડાનો ફોટો લો',
+    scanLeafDesc: 'પાક રોગ ઓળખો અને તાત્કાલિક સાચો ઉપાય મેળવો',
+    openCamera: 'કેમેરા ખોલો 📸',
+    voiceAiTitle: 'બોલીને પૂછો',
+    askKisanAi: 'ખેતીના પ્રશ્નો પૂછો',
+    askKisanAiDesc: 'તમારી ભાષામાં ખેતીના પ્રશ્નો પૂછો',
+    startVoice: 'માઇક શરૂ કરો 🎙️',
+    irrigationVerdict: 'પિયત સલાહ',
+    holdWater: 'આજે પાણી ન આપવું ❌',
+    giveWater: 'આજે પિયત આપો ✅',
+    pumpRunning: 'પંપ ચાલુ',
+    pumpStopped: 'પંપ બંધ',
+    startPump: '▶️ પંપ શરૂ કરો',
+    stopPump: '⏹️ પંપ બંધ કરો',
+    liveMandiRate: 'લાઈવ યાર્ડ ભાવ',
+    cottonRate: 'કપાસ (બીટી કોટન)',
+    highestRate: 'સર્વોચ્ચ ભાવ',
+    viewAllMandis: 'બધા યાર્ડ જુઓ 📊',
+    dailyTasksTitle: 'આજના ૩ મહત્વપૂર્ણ કાર્યો',
+    dailyTasksDesc: 'કાર્ય પૂર્ણ થયે ટીક કરો — પાક સુરક્ષિત રહેશે',
+    tasksCompleted: 'કાર્યો પૂર્ણ',
+    allServicesTitle: 'અન્ય ઉપયોગી સેવાઓ',
+    tapAnyService: 'કોઈપણ સેવા પર ટેપ કરો',
+    weatherForecastTitle: 'આગામી ૫ દિવસનું હવામાન',
+    viewFullWeather: 'સંપૂર્ણ હવામાન જુઓ',
+    askAiSectionTitle: 'ખેતીના કોઈ પણ પ્રશ્નો પૂછો',
+    askAiSectionDesc: 'નીચેના પ્રશ્ન પર ક્લિક કરો અથવા બોલો:',
+    aiScientist24x7: '૨૪/૭ AI કૃષિ વૈજ્ઞાનિક',
+    askAiPlaceholder: 'અહીં તમારો પ્રશ્ન લખો અથવા બોલો...',
+    listenAdvice: 'સલાહ સાંભળો 🔊',
+    stopAudio: 'અવાજ બંધ કરો',
+    footerTagline: 'કિસાન ભાઈ • ખેડૂતો માટે વિશ્વસનીય ડિજિટલ સાથી',
+    talkToScientist: 'નિષ્ણાત સાથે વાત કરો',
+    digitalFarmLedger: 'ડિજિટલ ખેત ખાતાવહી',
+    recordActivity: 'નવો ખર્ચ / કાર્ય નોંધો',
+    dictateVoice: 'બોલીને નોંધ લખો (Hands-Free)',
+    totalExpenses: 'કુલ ખર્ચ',
+    harvestEarnings: 'કુલ આવક',
+    netProfit: 'ચોખ્ખો નફો',
+    pendingTasks: 'બાકી કાર્યો',
+    activityTimeline: 'ખેત પ્રવૃત્તિ ઇતિહાસ',
+    open: 'ખોલો',
+    close: 'બંધ કરો',
+    rain: 'વરસાદ',
+    sunny: 'તડકો',
+    exportCsv: 'CSV નિકાસ',
+    clearChat: 'ચેટ સાફ કરો',
+    history: 'ઇતિહાસ',
+    handsFreeFieldMode: 'બોલીને વાત કરો (Hands-Free)',
   },
   pa: {
     appTitle: 'ਕਿਸਾਨ ਭਰਾ',
@@ -651,13 +825,45 @@ export function getTranslation(lang: string, key: string, fallback?: string): st
   if (TRANSLATIONS[langKey] && TRANSLATIONS[langKey][key]) {
     return TRANSLATIONS[langKey][key];
   }
-  if (TRANSLATIONS['en'] && TRANSLATIONS['en'][key]) {
-    return TRANSLATIONS['en'][key];
+  if (langKey === 'en') {
+    if (TRANSLATIONS['en'] && TRANSLATIONS['en'][key]) {
+      return TRANSLATIONS['en'][key];
+    }
+    return fallback || key;
   }
   if (TRANSLATIONS['hi'] && TRANSLATIONS['hi'][key]) {
     return TRANSLATIONS['hi'][key];
   }
+  if (TRANSLATIONS['en'] && TRANSLATIONS['en'][key]) {
+    return TRANSLATIONS['en'][key];
+  }
   return fallback || key;
+}
+
+/**
+ * Direct locale selector for bilingual/multilingual UI strings
+ */
+export function loc(lang: string, enText: string, hiText: string, guText?: string): string {
+  if (lang === 'en') return enText;
+  if (lang === 'gu' && guText) return guText;
+  if (lang === 'hi') return hiText;
+  return hiText || enText;
+}
+
+/**
+ * Returns localized string from an object with language keys
+ */
+export function getLocalizedText(
+  lang: string,
+  texts: { hi?: string; en?: string; gu?: string; [key: string]: string | undefined },
+  fallback?: string
+): string {
+  if (texts[lang]) return texts[lang]!;
+  if (lang === 'en' && texts.en) return texts.en;
+  if (lang === 'gu' && texts.gu) return texts.gu;
+  if (texts.hi) return texts.hi;
+  if (texts.en) return texts.en;
+  return fallback || Object.values(texts)[0] || '';
 }
 
 /**

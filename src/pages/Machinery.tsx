@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Tractor,
   Calendar,
@@ -13,7 +14,8 @@ import {
 import { MachineryItem } from '../../shared/types';
 
 export const MachineryPage: React.FC = () => {
-  const { currentUser, addToast } = useApp();
+  const currentUser = useUserStore(state => state.currentUser);
+  const { addToast } = useApp();
   const [machinery, setMachinery] = useState<MachineryItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<MachineryItem | null>(null);
   const [bookingDate, setBookingDate] = useState('2026-09-05');
@@ -57,7 +59,7 @@ export const MachineryPage: React.FC = () => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Banner */}
-      <div className="bg-[#2D4F1E] text-white rounded-[32px] p-6 sm:p-8 shadow-xl border border-white/20 space-y-3 relative overflow-hidden">
+      <div className="bg-green-700 text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-white/20 space-y-3 relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center gap-2">
             <span className="bg-white/15 text-emerald-200 text-xs px-3 py-1 rounded-full font-mono border border-white/20 backdrop-blur-xs">
@@ -75,7 +77,7 @@ export const MachineryPage: React.FC = () => {
 
       {/* Machinery Cards */}
       {machinery.length === 0 ? (
-        <div className="bg-white/60 backdrop-blur-lg rounded-[28px] p-8 border border-white/80 text-center space-y-4 shadow-xs">
+        <div className="bg-white/60 backdrop-blur-lg rounded-2xl p-8 border border-white/80 text-center space-y-4 shadow-xs">
           <div className="w-12 h-12 rounded-2xl bg-teal-500/15 text-teal-800 flex items-center justify-center mx-auto">
             <Tractor className="w-6 h-6" />
           </div>
@@ -91,11 +93,11 @@ export const MachineryPage: React.FC = () => {
         {machinery.map((item) => (
           <div
             key={item.id}
-            className="bg-white/60 backdrop-blur-lg rounded-[28px] p-6 border border-white/80 shadow-xs space-y-4 hover:shadow-md transition-all flex flex-col justify-between"
+            className="bg-white/60 backdrop-blur-lg rounded-2xl p-6 border border-white/80 shadow-xs space-y-4 hover:shadow-md transition-all flex flex-col justify-between"
           >
             <div className="space-y-3">
               <div className="flex justify-between items-start">
-                <span className="text-[10px] font-mono font-bold bg-[#2D4F1E]/10 text-[#2D4F1E] border border-[#2D4F1E]/20 px-2.5 py-0.5 rounded-full">
+                <span className="text-[10px] font-mono font-bold bg-green-700/10 text-green-700 border border-green-700/20 px-2.5 py-0.5 rounded-full">
                   {item.category || item.type || 'Equipment'}
                 </span>
                 <span
@@ -119,7 +121,7 @@ export const MachineryPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-500">Hourly Rate:</span>
-                  <span className="font-bold text-[#2D4F1E]">₹{item.hourlyRateInr} / Hour</span>
+                  <span className="font-bold text-green-700">₹{item.hourlyRateInr} / Hour</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-500">Operator:</span>
@@ -130,7 +132,7 @@ export const MachineryPage: React.FC = () => {
 
             <button
               onClick={() => setSelectedItem(item)}
-              className="w-full bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-semibold py-3 rounded-2xl transition-all shadow cursor-pointer border border-white/20 active:scale-[0.99]"
+              className="w-full bg-green-700 hover:bg-green-800 text-white text-xs font-semibold py-3 rounded-2xl transition-all shadow cursor-pointer border border-white/20 active:scale-[0.99]"
             >
               Book Equipment Slot
             </button>

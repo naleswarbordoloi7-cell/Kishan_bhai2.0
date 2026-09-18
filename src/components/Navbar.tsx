@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Sprout,
   Wallet,
@@ -23,28 +24,11 @@ import { UserRole } from '../../shared/types';
 import { NotificationCenter } from './NotificationCenter';
 import { AnimatedKishanLogo } from './AnimatedKishanLogo';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
+import { signOutFirebaseUser } from '../services/firebaseAuthService';
 
 export const Navbar: React.FC = () => {
-  const {
-    currentUser,
-    setCurrentUser,
-    userRole,
-    setUserRole,
-    language,
-    setLanguage,
-    t,
-    wallet,
-    currentView,
-    setCurrentView,
-    setIsWalletModalOpen,
-    setIsNfcModalOpen,
-    setIsLogoSplashOpen,
-    isOnline,
-    setIsOfflineModalOpen,
-    addToast,
-    isDarkMode,
-    toggleDarkMode,
-  } = useApp();
+  const { currentUser, setCurrentUser, userRole, setUserRole } = useUserStore();
+  const { language, setLanguage, t, wallet, currentView, setCurrentView, setIsWalletModalOpen, setIsNfcModalOpen, setIsLogoSplashOpen, isOnline, setIsOfflineModalOpen, addToast, isDarkMode, toggleDarkMode } = useApp();
 
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -70,7 +54,10 @@ export const Navbar: React.FC = () => {
     else if (role === 'ADMIN') setCurrentView('admin-dashboard');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await signOutFirebaseUser();
+    } catch {}
     setCurrentUser(null);
     setIsUserMenuOpen(false);
     addToast('Signed Out', 'You have been signed out of your account.', 'info');
@@ -116,7 +103,7 @@ export const Navbar: React.FC = () => {
                   onClick={() => setCurrentView(link.id)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-[#2D4F1E]/10 text-[#2D4F1E] font-semibold border border-[#2D4F1E]/15 backdrop-blur-xs'
+                      ? 'bg-green-700/10 text-green-700 font-semibold border border-green-700/15 backdrop-blur-xs'
                       : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
                   }`}
                 >
@@ -230,7 +217,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
                 className="flex items-center gap-2 bg-white/60 hover:bg-white/90 text-stone-800 text-xs font-medium px-3 py-1.5 rounded-xl border border-stone-200/80 backdrop-blur-md transition-all cursor-pointer shadow-2xs"
               >
-                <div className="w-2 h-2 rounded-full bg-[#2D4F1E]"></div>
+                <div className="w-2 h-2 rounded-full bg-green-700"></div>
                 <span className="font-semibold">
                   {userRole === 'FARMER' && 'Farmer View'}
                   {userRole === 'CHAMPION' && 'Champion View'}
@@ -250,7 +237,7 @@ export const Navbar: React.FC = () => {
                       key={r.role}
                       onClick={() => handleRoleSelect(r.role)}
                       className={`w-full text-left px-3 py-2 text-xs flex flex-col hover:bg-emerald-50/70 transition-colors ${
-                        userRole === r.role ? 'bg-emerald-50/90 border-l-2 border-[#2D4F1E]' : ''
+                        userRole === r.role ? 'bg-emerald-50/90 border-l-2 border-green-700' : ''
                       }`}
                     >
                       <span className="font-semibold text-stone-900">{r.label}</span>
@@ -261,10 +248,25 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
-            {/* User Account / Sign In */}
+            {/* Algorand Testnet Wallet Button */}
+            <button
+              onClick={() => setIsWalletModalOpen(true)}
+              className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-xs font-medium px-3.5 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer border border-white/20"
+            >
+              <Wallet className="w-3.5 h-3.5 text-emerald-200" />
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono font-semibold">{wallet.usdcBalance.toFixed(2)} USDC</span>
+                <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded-md text-emerald-200 font-mono">
+                  Testnet
+                </span>
+              </div>
+            </button>
+
+            {/* User Account / Sign In (Extreme Right Side) */}
             {currentUser ? (
               <div className="relative">
                 <button
+                  id="navbar-account-profile-btn"
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2 bg-white/70 hover:bg-white text-stone-900 text-xs font-semibold px-3 py-1.5 rounded-xl border border-stone-200/80 backdrop-blur-md transition-all cursor-pointer shadow-2xs"
                 >
@@ -321,27 +323,18 @@ export const Navbar: React.FC = () => {
               </div>
             ) : (
               <button
+                id="navbar-account-profile-btn"
                 onClick={() => setCurrentView('login')}
-                className="flex items-center gap-1.5 bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer border border-white/20 active:scale-[0.99]"
+                className={`flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer border active:scale-[0.99] ${
+                  currentView === 'login'
+                    ? 'bg-[#1E3614] text-white border-emerald-400/50 ring-2 ring-emerald-500/25'
+                    : 'bg-green-700 hover:bg-green-800 text-white border-white/20'
+                }`}
               >
                 <LogIn className="w-3.5 h-3.5 text-emerald-200" />
                 <span>Sign In / Register</span>
               </button>
             )}
-
-            {/* Algorand Testnet Wallet Button */}
-            <button
-              onClick={() => setIsWalletModalOpen(true)}
-              className="flex items-center gap-2 bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-medium px-3.5 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer border border-white/20"
-            >
-              <Wallet className="w-3.5 h-3.5 text-emerald-200" />
-              <div className="flex items-center gap-1.5">
-                <span className="font-mono font-semibold">{wallet.usdcBalance.toFixed(2)} USDC</span>
-                <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded-md text-emerald-200 font-mono">
-                  Testnet
-                </span>
-              </div>
-            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -365,16 +358,32 @@ export const Navbar: React.FC = () => {
               {isOnline ? <Wifi className="w-4 h-4 text-emerald-700" /> : <WifiOff className="w-4 h-4 text-amber-700" />}
             </button>
             <button
-              onClick={() => setCurrentView('login')}
-              className="p-2 text-stone-700 bg-white/60 backdrop-blur-md rounded-xl border border-stone-200/80 text-xs font-semibold flex items-center gap-1"
-            >
-              <LogIn className="w-4 h-4 text-[#2D4F1E]" />
-            </button>
-            <button
               onClick={() => setIsWalletModalOpen(true)}
               className="p-2 text-stone-700 bg-white/60 backdrop-blur-md rounded-xl border border-stone-200/80"
+              title="Algorand Testnet Wallet"
             >
               <Wallet className="w-4 h-4" />
+            </button>
+            {/* Mobile Account Profile Button on Right */}
+            <button
+              id="mobile-navbar-account-profile-btn"
+              onClick={() => {
+                if (currentUser) {
+                  setCurrentView('profile');
+                } else {
+                  setCurrentView('login');
+                }
+              }}
+              className="p-1.5 text-stone-700 bg-white/70 backdrop-blur-md rounded-xl border border-stone-200/80 text-xs font-semibold flex items-center gap-1"
+              title={currentUser ? currentUser.fullName : 'Sign In'}
+            >
+              {currentUser ? (
+                <div className="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[10px]">
+                  {currentUser.fullName.charAt(0).toUpperCase()}
+                </div>
+              ) : (
+                <LogIn className="w-4 h-4 text-green-700" />
+              )}
             </button>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -393,7 +402,7 @@ export const Navbar: React.FC = () => {
           <div className="p-3 bg-white/80 rounded-2xl border border-stone-200/80 flex items-center justify-between">
             {currentUser ? (
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-[#2D4F1E] text-white font-bold text-xs flex items-center justify-center">
+                <div className="w-7 h-7 rounded-full bg-green-700 text-white font-bold text-xs flex items-center justify-center">
                   {currentUser.fullName.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -418,7 +427,7 @@ export const Navbar: React.FC = () => {
                   setCurrentView('login');
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-xs bg-[#2D4F1E] text-white font-semibold px-3 py-1.5 rounded-xl"
+                className="text-xs bg-green-700 text-white font-semibold px-3 py-1.5 rounded-xl"
               >
                 Sign In
               </button>
@@ -449,7 +458,7 @@ export const Navbar: React.FC = () => {
                     }}
                     className={`py-1.5 px-2 rounded-lg text-xs flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
                       language === lang.code
-                        ? 'bg-[#2D4F1E] text-white font-bold shadow-xs'
+                        ? 'bg-green-700 text-white font-bold shadow-xs'
                         : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 border border-stone-200/50 dark:border-stone-700/50'
                     }`}
                   >
@@ -480,7 +489,7 @@ export const Navbar: React.FC = () => {
                   setIsMobileMenuOpen(false);
                 }}
                 className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium ${
-                  currentView === link.id ? 'bg-[#2D4F1E]/10 text-[#2D4F1E] font-semibold' : 'text-stone-700'
+                  currentView === link.id ? 'bg-green-700/10 text-green-700 font-semibold' : 'text-stone-700'
                 }`}
               >
                 {link.label}
@@ -500,7 +509,7 @@ export const Navbar: React.FC = () => {
                   setIsMobileMenuOpen(false);
                 }}
                 className={`w-full text-left px-3 py-2 text-xs rounded-xl font-medium ${
-                  userRole === r.role ? 'bg-[#2D4F1E] text-white' : 'text-stone-700 hover:bg-stone-100/70'
+                  userRole === r.role ? 'bg-green-700 text-white' : 'text-stone-700 hover:bg-stone-100/70'
                 }`}
               >
                 {r.label}

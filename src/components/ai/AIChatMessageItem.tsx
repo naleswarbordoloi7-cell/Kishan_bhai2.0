@@ -155,7 +155,7 @@ export const AIChatMessageItem: React.FC<Props> = ({
               const stepText = match[2];
               return (
                 <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-stone-800 pl-1 bg-stone-50/80 p-2 rounded-lg border border-stone-200/50">
-                  <span className="w-5 h-5 rounded-full bg-[#2D4F1E] text-white font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="w-5 h-5 rounded-full bg-green-700 text-white font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
                     {num}
                   </span>
                   <span className="flex-1" dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(stepText) }} />
@@ -191,7 +191,7 @@ export const AIChatMessageItem: React.FC<Props> = ({
     <div className={`flex gap-3.5 ${isAssistant ? 'justify-start' : 'justify-end'} group`}>
       {/* Assistant Avatar */}
       {isAssistant && (
-        <div className="w-9 h-9 rounded-2xl bg-[#2D4F1E] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm border border-emerald-700/30 relative">
+        <div className="w-9 h-9 rounded-2xl bg-green-700 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm border border-emerald-700/30 relative">
           <Bot className="w-5 h-5 text-emerald-200" />
           <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white"></span>
         </div>
@@ -200,10 +200,10 @@ export const AIChatMessageItem: React.FC<Props> = ({
       <div className={`max-w-[88%] sm:max-w-[80%] space-y-2.5`}>
         {/* User / Bot Message Bubble */}
         <div
-          className={`rounded-2xl p-4 sm:p-5 text-xs sm:text-sm shadow-xs transition-all ${
+          className={`rounded-2xl p-4 sm:p-4 text-xs sm:text-sm shadow-xs transition-all ${
             isAssistant
               ? 'bg-white/95 backdrop-blur-md border border-stone-200/90 text-stone-900 rounded-tl-xs'
-              : 'bg-[#2D4F1E] text-white rounded-tr-xs border border-white/10'
+              : 'bg-green-700 text-white rounded-tr-xs border border-white/10'
           }`}
         >
           {/* User Image Attachment */}
@@ -229,7 +229,7 @@ export const AIChatMessageItem: React.FC<Props> = ({
             <div className="mt-4 bg-stone-50/95 border border-stone-200 rounded-xl p-4 space-y-2.5 shadow-2xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-[#2D4F1E] flex items-center justify-center font-bold text-xs">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-green-700 flex items-center justify-center font-bold text-xs">
                     {message.farmingActionCard.actionType === 'IRRIGATION' && <Droplets className="w-4 h-4 text-blue-600" />}
                     {message.farmingActionCard.actionType === 'DISEASE_SPRAY' && <Bug className="w-4 h-4 text-rose-600" />}
                     {message.farmingActionCard.actionType === 'MARKET_SELL' && <TrendingUp className="w-4 h-4 text-emerald-600" />}
@@ -259,7 +259,7 @@ export const AIChatMessageItem: React.FC<Props> = ({
               {message.farmingActionCard.actionView && onNavigateView && (
                 <button
                   onClick={() => onNavigateView(message.farmingActionCard!.actionView!)}
-                  className="w-full flex items-center justify-center gap-2 bg-[#2D4F1E] hover:bg-[#233f17] text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-xs transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 bg-green-700 hover:bg-[#233f17] text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-xs transition-colors cursor-pointer"
                 >
                   <span>{message.farmingActionCard.actionLabel || 'View in Command Center'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -284,7 +284,7 @@ export const AIChatMessageItem: React.FC<Props> = ({
               {message.executedAction.targetView && onNavigateView && (
                 <button
                   onClick={() => onNavigateView(message.executedAction!.targetView!)}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#2D4F1E] hover:underline cursor-pointer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-green-700 hover:underline cursor-pointer"
                 >
                   <span>View in {message.executedAction.targetView.toUpperCase()}</span>
                   <ChevronRight className="w-3.5 h-3.5" />

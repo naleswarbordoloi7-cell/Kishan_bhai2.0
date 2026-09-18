@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import { Sprout, UserCheck, Building, BarChart3, ArrowRight, ShieldCheck, UserPlus, LogIn, Sparkles } from 'lucide-react';
 import { UserRole, UserProfile } from '../../shared/types';
 
 export const AuthPage: React.FC = () => {
-  const { setCurrentUser, setUserRole, setCurrentView, addToast } = useApp();
+  const { setCurrentUser, setUserRole } = useUserStore();
+  const { setCurrentView, addToast } = useApp();
   const [tab, setTab] = useState<'register' | 'login' | 'roles'>('register');
 
   // Form states
@@ -139,8 +141,8 @@ export const AuthPage: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
       {/* Header */}
       <div className="text-center space-y-3 max-w-xl mx-auto">
-        <div className="inline-flex items-center gap-2 bg-emerald-500/15 text-[#2D4F1E] text-xs px-3.5 py-1 rounded-full font-mono border border-emerald-600/20 font-semibold backdrop-blur-xs">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#2D4F1E]" />
+        <div className="inline-flex items-center gap-2 bg-emerald-500/15 text-green-700 text-xs px-3.5 py-1 rounded-full font-mono border border-emerald-600/20 font-semibold backdrop-blur-xs">
+          <ShieldCheck className="w-3.5 h-3.5 text-green-700" />
           <span>Clean Authentication & Access</span>
         </div>
         <h1 className="text-3xl font-bold font-display text-stone-900">
@@ -157,7 +159,7 @@ export const AuthPage: React.FC = () => {
           <button
             onClick={() => setTab('register')}
             className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              tab === 'register' ? 'bg-[#2D4F1E] text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+              tab === 'register' ? 'bg-green-700 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
             <span className="flex items-center gap-1.5">
@@ -169,7 +171,7 @@ export const AuthPage: React.FC = () => {
           <button
             onClick={() => setTab('login')}
             className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              tab === 'login' ? 'bg-[#2D4F1E] text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+              tab === 'login' ? 'bg-green-700 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
             <span className="flex items-center gap-1.5">
@@ -181,7 +183,7 @@ export const AuthPage: React.FC = () => {
           <button
             onClick={() => setTab('roles')}
             className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              tab === 'roles' ? 'bg-[#2D4F1E] text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+              tab === 'roles' ? 'bg-green-700 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
             <span className="flex items-center gap-1.5">
@@ -194,7 +196,7 @@ export const AuthPage: React.FC = () => {
 
       {/* Register Tab */}
       {tab === 'register' && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-6 sm:p-8 border border-white/90 shadow-xl max-w-xl mx-auto space-y-6">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border border-white/90 shadow-xl max-w-xl mx-auto space-y-6">
           <div className="space-y-1">
             <h2 className="text-xl font-bold font-display text-stone-900">Create New Account</h2>
             <p className="text-xs text-stone-500">Enter your genuine farmer, champion, or buyer information.</p>
@@ -210,7 +212,7 @@ export const AuthPage: React.FC = () => {
                   placeholder="e.g. Ramesh Patel"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-[#2D4F1E]"
+                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-green-700"
                 />
               </div>
 
@@ -222,7 +224,7 @@ export const AuthPage: React.FC = () => {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-[#2D4F1E]"
+                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-green-700"
                 />
               </div>
             </div>
@@ -235,7 +237,7 @@ export const AuthPage: React.FC = () => {
                   placeholder="+91 98765 43210"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-[#2D4F1E]"
+                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-green-700"
                 />
               </div>
 
@@ -244,7 +246,7 @@ export const AuthPage: React.FC = () => {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-[#2D4F1E]"
+                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-green-700"
                 >
                   <option value="FARMER">Smallholder Farmer</option>
                   <option value="CHAMPION">Village Champion (Hub Lead)</option>
@@ -261,7 +263,7 @@ export const AuthPage: React.FC = () => {
                   placeholder="e.g. Anandpur"
                   value={village}
                   onChange={(e) => setVillage(e.target.value)}
-                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-[#2D4F1E]"
+                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-green-700"
                 />
               </div>
 
@@ -272,7 +274,7 @@ export const AuthPage: React.FC = () => {
                   placeholder="e.g. Gujarat"
                   value={state}
                   onChange={(e) => setState(e.target.value)}
-                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-[#2D4F1E]"
+                  className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-green-700"
                 />
               </div>
             </div>
@@ -287,7 +289,7 @@ export const AuthPage: React.FC = () => {
                     placeholder="3.5"
                     value={farmSizeAcres}
                     onChange={(e) => setFarmSizeAcres(e.target.value)}
-                    className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-[#2D4F1E]"
+                    className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-green-700"
                   />
                 </div>
 
@@ -298,7 +300,7 @@ export const AuthPage: React.FC = () => {
                     placeholder="Cotton, Wheat, Mustard"
                     value={crops}
                     onChange={(e) => setCrops(e.target.value)}
-                    className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-[#2D4F1E]"
+                    className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-green-700"
                   />
                 </div>
               </div>
@@ -307,7 +309,7 @@ export const AuthPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#2D4F1E] hover:bg-[#223d16] text-white font-medium py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer border border-white/20 active:scale-[0.99] mt-2"
+              className="w-full bg-green-700 hover:bg-green-800 text-white font-medium py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer border border-white/20 active:scale-[0.99] mt-2"
             >
               <span>{isSubmitting ? 'Registering...' : 'Complete Registration & Open Portal'}</span>
               <ArrowRight className="w-4 h-4" />
@@ -318,7 +320,7 @@ export const AuthPage: React.FC = () => {
 
       {/* Login Tab */}
       {tab === 'login' && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-6 sm:p-8 border border-white/90 shadow-xl max-w-md mx-auto space-y-6">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border border-white/90 shadow-xl max-w-md mx-auto space-y-6">
           <div className="space-y-1">
             <h2 className="text-xl font-bold font-display text-stone-900">Sign In</h2>
             <p className="text-xs text-stone-500">Access your existing registered account.</p>
@@ -333,14 +335,14 @@ export const AuthPage: React.FC = () => {
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-[#2D4F1E]"
+                className="w-full bg-white/80 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-green-700"
               />
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#2D4F1E] hover:bg-[#223d16] text-white font-medium py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer border border-white/20 active:scale-[0.99] mt-2"
+              className="w-full bg-green-700 hover:bg-green-800 text-white font-medium py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer border border-white/20 active:scale-[0.99] mt-2"
             >
               <span>{isSubmitting ? 'Signing In...' : 'Sign In'}</span>
               <ArrowRight className="w-4 h-4" />
@@ -387,27 +389,27 @@ export const AuthPage: React.FC = () => {
               <div
                 key={item.role}
                 onClick={() => handleQuickRoleSetup(item.role, item.defaultName)}
-                className="bg-white/70 backdrop-blur-lg rounded-[28px] p-6 border border-white/90 shadow-xs hover:border-[#2D4F1E] hover:shadow-md transition-all cursor-pointer space-y-4 group flex flex-col justify-between"
+                className="bg-white/70 backdrop-blur-lg rounded-2xl p-6 border border-white/90 shadow-xs hover:border-green-700 hover:shadow-md transition-all cursor-pointer space-y-4 group flex flex-col justify-between"
               >
                 <div className="space-y-3">
                   <div className="flex justify-between items-start">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-[#2D4F1E] group-hover:bg-[#2D4F1E] group-hover:text-white flex items-center justify-center transition-colors">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-green-700 group-hover:bg-green-700 group-hover:text-white flex items-center justify-center transition-colors">
                       <Icon className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px] font-mono font-bold bg-[#2D4F1E]/10 text-[#2D4F1E] border border-[#2D4F1E]/20 px-2.5 py-0.5 rounded-full uppercase">
+                    <span className="text-[10px] font-mono font-bold bg-green-700/10 text-green-700 border border-green-700/20 px-2.5 py-0.5 rounded-full uppercase">
                       {item.role}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="font-bold text-lg text-stone-900 group-hover:text-[#2D4F1E]">
+                    <h3 className="font-bold text-lg text-stone-900 group-hover:text-green-700">
                       {item.title}
                     </h3>
                     <p className="text-xs text-stone-500 leading-relaxed mt-1">{item.desc}</p>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-stone-200/50 flex items-center justify-between text-xs font-semibold text-[#2D4F1E]">
+                <div className="pt-3 border-t border-stone-200/50 flex items-center justify-between text-xs font-semibold text-green-700">
                   <span>Initialize Clean {item.title}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>

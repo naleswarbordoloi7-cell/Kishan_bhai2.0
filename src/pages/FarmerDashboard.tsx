@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
+import { useMarketStore } from '../store/marketStore';
 import {
   Sprout,
   Scan,
@@ -19,6 +21,7 @@ import {
   PhoneCall,
   Tractor,
   ShoppingCart,
+  ShoppingBag,
   Landmark,
   Power,
   RefreshCw,
@@ -31,6 +34,7 @@ import {
   FileText,
   ShieldCheck,
   Award,
+  Wallet,
 } from 'lucide-react';
 import { MandiTicker } from '../components/MandiTicker';
 import { WeatherData } from '../../shared/types';
@@ -42,22 +46,9 @@ import {
 import { speakText, stopSpeech, isSpeechSynthesisSupported } from '../services/webSpeechService';
 
 export const FarmerDashboard: React.FC = () => {
-  const {
-    farmerProfile,
-    crops,
-    irrigationStatus,
-    togglePump,
-    soilHealth,
-    mandiPrices,
-    alerts,
-    language,
-    setLanguage,
-    t,
-    setCurrentView,
-    askAiWithPrompt,
-    addToast,
-    isDarkMode,
-  } = useApp();
+  const farmerProfile = useUserStore(state => state.farmerProfile);
+  const mandiPrices = useMarketStore(state => state.mandiPrices);
+  const { crops, irrigationStatus, togglePump, soilHealth, alerts, language, setLanguage, t, setCurrentView, askAiWithPrompt, addToast, isDarkMode } = useApp();
 
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [isPumpLoading, setIsPumpLoading] = useState(false);
@@ -289,112 +280,9 @@ export const FarmerDashboard: React.FC = () => {
       {/* Live APMC Mandi Ticker */}
       <MandiTicker />
 
-      {/* ========================================================= */}
-      {/* 1. TOP QUICK LANGUAGE & TOLL-FREE BAR                     */}
-      {/* ========================================================= */}
-      <div className="bg-white dark:bg-[#161c14] border-2 border-stone-200 dark:border-stone-800 rounded-2xl p-3 sm:p-4 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-3">
-        {/* Language selector chips */}
-        <div className="flex items-center gap-1.5 flex-wrap w-full lg:w-auto justify-center lg:justify-start">
-          <span className="text-xs font-bold text-stone-500 dark:text-stone-400 mr-1">
-            🌐 भाषा:
-          </span>
-          {SUPPORTED_LANGUAGES.map((l) => (
-            <button
-              key={l.code}
-              onClick={() => {
-                setLanguage(l.code);
-                addToast('Language Updated', `Active: ${l.nativeName}`, 'info');
-              }}
-              className={`px-2.5 py-1 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-1 ${
-                language === l.code
-                  ? 'bg-emerald-700 text-white shadow-sm ring-2 ring-emerald-500/40'
-                  : 'bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300'
-              }`}
-            >
-              <span>{l.flag}</span>
-              <span>{l.nativeName}</span>
-            </button>
-          ))}
-        </div>
 
-        {/* Toll-Free Kisan Helpline 1800-180-1551 */}
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
-          <a
-            href="tel:18001801551"
-            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-stone-950 font-black text-xs sm:text-sm px-4 py-2 rounded-xl shadow-sm transition-all active:scale-95"
-            title="Call Kisan Call Centre Toll-Free"
-          >
-            <PhoneCall className="w-4 h-4 animate-pulse text-stone-950" />
-            <span>1800-180-1551</span>
-            <span className="bg-amber-400/80 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold">
-              {language === 'hi' ? 'मुफ्त कॉल' : 'Free Help'}
-            </span>
-          </a>
-        </div>
-      </div>
 
-      {/* ========================================================= */}
-      {/* 2. SIMPLE FARMER BANNER WITH VOICE READ-ALOUD             */}
-      {/* ========================================================= */}
-      <section
-        id="farmer-welcome-card"
-        className="bg-gradient-to-r from-[#14380e] via-[#1a4413] to-[#14380e] text-white rounded-3xl p-5 sm:p-6 shadow-md border-2 border-emerald-800/60 relative overflow-hidden"
-      >
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-emerald-900/90 text-emerald-200 border border-emerald-700/60 text-xs font-bold px-3 py-0.5 rounded-full flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                {farmerProfile.village || 'आनंदपुर'}, {farmerProfile.district || 'राजकोट'} ({farmerProfile.state || 'गुजरात'})
-              </span>
-              <span className="bg-amber-400 text-stone-950 font-black text-xs px-2.5 py-0.5 rounded-full">
-                {language === 'hi' ? '4.5 एकड़ खेत' : '4.5 Acre Land'}
-              </span>
-            </div>
 
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-              {language === 'hi'
-                ? `राम राम, ${farmerProfile.name || 'रमेश भाई'} 👋`
-                : language === 'gu'
-                ? `રામ રામ, ${farmerProfile.name || 'રમેશભાઈ'} 👋`
-                : `Namaste, ${farmerProfile.name || 'Ramesh Patel'} 👋`}
-            </h1>
-
-            <p className="text-emerald-100 text-sm sm:text-base font-medium max-w-2xl leading-relaxed">
-              {language === 'hi'
-                ? '🌾 मुख्य फसल: कपास (Bt Cotton) • 🌦️ कल 70% बारिश का अनुमान है, आज कीटनाशक छिड़काव न करें।'
-                : language === 'gu'
-                ? '🌾 મુખ્ય પાક: કપાસ • 🌦️ આવતીકાલે ૭૦% વરસાદ છે, આજે દવાનો છંટકાવ ન કરવો.'
-                : '🌾 Main Crop: Bt Cotton • 🌦️ 70% rain expected tomorrow. Please avoid foliar spraying today.'}
-            </p>
-          </div>
-
-          {/* Big Voice Button: Tap to Listen Aloud */}
-          <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
-            <button
-              id="listen-advisory-btn"
-              onClick={handlePlayAdvisoryAudio}
-              className={`flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl font-black text-sm sm:text-base transition-all shadow-md active:scale-95 cursor-pointer ${
-                isPlayingAudio
-                  ? 'bg-rose-600 text-white animate-pulse'
-                  : 'bg-amber-400 hover:bg-amber-300 text-stone-950'
-              }`}
-            >
-              {isPlayingAudio ? (
-                <>
-                  <VolumeX className="w-5 h-5 text-stone-950" />
-                  <span>{language === 'hi' ? 'आवाज रोकें' : 'Stop Audio'}</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="w-5 h-5 text-stone-950 animate-bounce" />
-                  <span>{language === 'hi' ? 'सलाह बोलकर सुनें 🔊' : language === 'gu' ? 'સલાહ સાંભળો 🔊' : 'Listen Advice 🔊'}</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </section>
 
       {/* ========================================================= */}
       {/* 3. THE "BIG 4" PRIMARY ACTION TILES (EASY FOR ANY FARMER) */}
@@ -416,36 +304,36 @@ export const FarmerDashboard: React.FC = () => {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex flex-row overflow-x-auto gap-3.5 pb-3 pt-1 scrollbar-none snap-x -mx-3 px-3 sm:mx-0 sm:px-0">
           {/* TILE 1: CROP DOCTOR (SCAN LEAF) */}
           <div
             id="action-scan-leaf"
             onClick={() => setCurrentView('disease-scanner')}
-            className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white rounded-3xl p-5 sm:p-6 shadow-md border-2 border-emerald-500 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col justify-between min-h-[200px] group"
+            className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white rounded-2xl p-4 sm:p-4 shadow-md border-2 border-emerald-500 hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between min-w-[260px] sm:min-w-[280px] max-w-[290px] flex-shrink-0 snap-start group"
           >
             <div>
               <div className="flex items-center justify-between">
-                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-xs">
-                  <Camera className="w-7 h-7 text-white group-hover:scale-110 transition-transform" />
+                <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-xs">
+                  <Camera className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
                 </div>
-                <span className="bg-white text-emerald-900 font-black text-xs px-2.5 py-1 rounded-full uppercase shadow-xs">
+                <span className="bg-white text-emerald-900 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase shadow-xs">
                   {language === 'hi' ? 'रोग पहचान' : 'Crop Doctor'}
                 </span>
               </div>
 
-              <h3 className="text-xl sm:text-2xl font-black text-white mt-4 leading-tight">
+              <h3 className="text-lg sm:text-xl font-black text-white mt-3 leading-tight">
                 {language === 'hi' ? 'पत्ती का फोटो लें' : language === 'gu' ? 'પાંદડાનો ફોટો લો' : 'Scan Leaf Photo'}
               </h3>
-              <p className="text-emerald-100 text-xs sm:text-sm mt-1">
+              <p className="text-emerald-100 text-xs mt-1 line-clamp-2">
                 {language === 'hi'
                   ? 'रोग पहचानें व तुरंत सही दवा और देसी इलाज पाएं'
                   : 'Identify crop disease and get certified spray dose'}
               </p>
             </div>
 
-            <button className="mt-4 w-full py-3 bg-white hover:bg-emerald-50 text-emerald-900 font-black text-sm rounded-xl flex items-center justify-center gap-2 shadow-sm">
+            <button className="mt-3 w-full py-2.5 bg-white hover:bg-emerald-50 text-emerald-900 font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm">
               <span>{language === 'hi' ? 'कैमरा खोलें 📸' : 'Open Camera 📸'}</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -453,46 +341,46 @@ export const FarmerDashboard: React.FC = () => {
           <div
             id="action-voice-ai"
             onClick={() => setCurrentView('ai-assistant')}
-            className="bg-gradient-to-br from-[#1b3d14] to-[#26531d] text-white rounded-3xl p-5 sm:p-6 shadow-md border-2 border-emerald-600 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col justify-between min-h-[200px] group"
+            className="bg-gradient-to-br from-[#1b3d14] to-[#26531d] text-white rounded-2xl p-4 sm:p-4 shadow-md border-2 border-emerald-600 hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between min-w-[260px] sm:min-w-[280px] max-w-[290px] flex-shrink-0 snap-start group"
           >
             <div>
               <div className="flex items-center justify-between">
-                <div className="p-3 bg-amber-400 text-stone-950 rounded-2xl">
-                  <Mic className="w-7 h-7 group-hover:scale-110 transition-transform" />
+                <div className="p-2.5 bg-amber-400 text-stone-950 rounded-2xl">
+                  <Mic className="w-6 h-6 group-hover:scale-110 transition-transform" />
                 </div>
-                <span className="bg-amber-400 text-stone-950 font-black text-xs px-2.5 py-1 rounded-full uppercase">
+                <span className="bg-amber-400 text-stone-950 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase">
                   {language === 'hi' ? 'बोलकर पूछें' : 'Voice AI'}
                 </span>
               </div>
 
-              <h3 className="text-xl sm:text-2xl font-black text-white mt-4 leading-tight">
+              <h3 className="text-lg sm:text-xl font-black text-white mt-3 leading-tight">
                 {language === 'hi' ? 'खेती के सवाल पूछें' : language === 'gu' ? 'ખેતીના પ્રશ્નો પૂછો' : 'Ask Kisan AI'}
               </h3>
-              <p className="text-emerald-200 text-xs sm:text-sm mt-1">
+              <p className="text-emerald-200 text-xs mt-1 line-clamp-2">
                 {language === 'hi'
                   ? 'माइक दबाएं और अपनी भाषा में कोई भी सवाल बोलें'
                   : 'Speak questions in your language for 24/7 answers'}
               </p>
             </div>
 
-            <button className="mt-4 w-full py-3 bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-sm rounded-xl flex items-center justify-center gap-2 shadow-sm">
+            <button className="mt-3 w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm">
               <span>{language === 'hi' ? 'माइक चालू करें 🎙️' : 'Start Voice 🎙️'}</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* TILE 3: TODAY'S IRRIGATION VERDICT & PUMP */}
           <div
             id="action-smart-water"
-            className="bg-white dark:bg-[#161c14] rounded-3xl p-5 sm:p-6 shadow-md border-2 border-sky-300 dark:border-sky-800 flex flex-col justify-between min-h-[200px]"
+            className="bg-white dark:bg-[#161c14] rounded-2xl p-4 sm:p-4 shadow-md border-2 border-sky-300 dark:border-sky-800 flex flex-col justify-between min-w-[260px] sm:min-w-[280px] max-w-[290px] flex-shrink-0 snap-start"
           >
             <div>
               <div className="flex items-center justify-between">
-                <div className="p-3 bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 rounded-2xl">
-                  <Droplets className="w-7 h-7" />
+                <div className="p-2.5 bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 rounded-2xl">
+                  <Droplets className="w-6 h-6" />
                 </div>
                 <span
-                  className={`font-black text-xs px-2.5 py-1 rounded-full uppercase ${
+                  className={`font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase ${
                     isPumpRunning ? 'bg-emerald-600 text-white animate-pulse' : 'bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300'
                   }`}
                 >
@@ -500,10 +388,10 @@ export const FarmerDashboard: React.FC = () => {
                 </span>
               </div>
 
-              <h3 className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-100 mt-4 leading-tight">
+              <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100 mt-3 leading-tight">
                 {language === 'hi' ? 'सिंचाई: आज पानी न दें ❌' : 'Hold Water Today ❌'}
               </h3>
-              <p className="text-stone-600 dark:text-stone-400 text-xs sm:text-sm mt-1">
+              <p className="text-stone-600 dark:text-stone-400 text-xs mt-1 line-clamp-2">
                 {language === 'hi'
                   ? `नमी ${moisturePct}% (अनुकूल) • कल बारिश होगी`
                   : `Soil Moisture ${moisturePct}% • Rain tomorrow`}
@@ -513,16 +401,16 @@ export const FarmerDashboard: React.FC = () => {
             <button
               onClick={handleTogglePump}
               disabled={isPumpLoading}
-              className={`mt-4 w-full py-3 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer ${
+              className={`mt-3 w-full py-2.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer ${
                 isPumpRunning
                   ? 'bg-rose-600 hover:bg-rose-700 text-white'
                   : 'bg-sky-700 hover:bg-sky-800 text-white'
               }`}
             >
               {isPumpLoading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Power className="w-4 h-4" />
+                <Power className="w-3.5 h-3.5" />
               )}
               <span>
                 {isPumpRunning
@@ -536,114 +424,97 @@ export const FarmerDashboard: React.FC = () => {
           <div
             id="action-mandi-rate"
             onClick={() => setCurrentView('market-prices')}
-            className="bg-white dark:bg-[#161c14] rounded-3xl p-5 sm:p-6 shadow-md border-2 border-amber-300 dark:border-amber-800 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col justify-between min-h-[200px] group"
+            className="bg-white dark:bg-[#161c14] rounded-2xl p-4 sm:p-4 shadow-md border-2 border-amber-300 dark:border-amber-800 hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between min-w-[260px] sm:min-w-[280px] max-w-[290px] flex-shrink-0 snap-start group"
           >
             <div>
               <div className="flex items-center justify-between">
-                <div className="p-3 bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 rounded-2xl">
-                  <TrendingUp className="w-7 h-7 group-hover:scale-110 transition-transform" />
+                <div className="p-2.5 bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 rounded-2xl">
+                  <TrendingUp className="w-6 h-6 group-hover:scale-110 transition-transform" />
                 </div>
-                <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-black text-xs px-2.5 py-1 rounded-full uppercase">
+                <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase">
                   +₹220 उछाल 📈
                 </span>
               </div>
 
-              <div className="mt-4">
-                <span className="text-xs font-bold text-stone-500 uppercase">
+              <div className="mt-3">
+                <span className="text-[11px] font-bold text-stone-500 uppercase">
                   {language === 'hi' ? 'कपास (Bt Cotton)' : 'Cotton Rate'}
                 </span>
-                <div className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-stone-100 mt-0.5">
+                <div className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100 mt-0.5">
                   ₹7,620 <span className="text-xs text-stone-500 font-normal">/क्विंटल</span>
                 </div>
-                <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold mt-1">
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">
                   ⭐ Gondal APMC (सर्वोच्च भाव)
                 </p>
               </div>
             </div>
 
-            <button className="mt-4 w-full py-3 bg-amber-500 hover:bg-amber-600 text-stone-950 font-black text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 shadow-sm">
+            <button className="mt-3 w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-stone-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm">
               <span>{language === 'hi' ? 'सभी मंडियां देखें 📊' : 'View All Mandis 📊'}</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </section>
 
       {/* ========================================================= */}
-      {/* 4. TODAY'S 3 KEY FARM TASKS (SIMPLE INTERACTIVE CHECKLIST)*/}
+      {/* ALL-IN-ONE COMPACT SUPER HUB (ALL TABS IN ONE PAGE)        */}
       {/* ========================================================= */}
-      <section
-        id="daily-tasks-checklist"
-        className="bg-white dark:bg-[#161c14] border-2 border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 dark:border-stone-800 pb-3">
-          <div>
-            <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-100 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>
-                {language === 'hi'
-                  ? 'आज के 3 जरूरी काम (चेकलिस्ट)'
-                  : language === 'gu'
-                  ? 'આજના મહત્વપૂર્ણ કાર્યો'
-                  : 'Today\'s 3 Key Farm Tasks'}
-              </span>
-            </h2>
-            <p className="text-xs text-stone-500 dark:text-stone-400">
-              {language === 'hi'
-                ? 'पूरा होने पर टिक करें — आपकी फसल सुरक्षित रहेगी'
-                : 'Check off tasks as completed to safeguard your crop'}
-            </p>
-          </div>
-
+      <section id="all-in-one-compact-hub" className="bg-stone-50 dark:bg-stone-900 border-2 border-stone-200 dark:border-stone-800 rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200 dark:border-stone-800 pb-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 px-3 py-1 rounded-full">
-              {dailyTasks.filter((t) => t.done).length} / {dailyTasks.length} {language === 'hi' ? 'काम पूरे' : 'Done'}
-            </span>
+            <div className="p-2.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-2xl">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100">
+                {language === 'hi' ? '⚡ सभी टैब और सुविधाएँ एक नज़र में (Compact Super Hub)' : '⚡ All-in-One Super Hub (All Tabs in One View)'}
+              </h2>
+              <p className="text-xs text-stone-500">
+                {language === 'hi' ? 'बिना पेज बदले या भटके, सभी 14 कृषि मॉड्यूल यहाँ छोटे कार्ड में उपलब्ध हैं' : 'All 14 agriculture modules compactly accessible in one view'}
+              </p>
+            </div>
           </div>
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 px-3 py-1 rounded-full self-start sm:self-center">
+            {language === 'hi' ? '1-क्लिक एक्सेस' : 'Instant Access'}
+          </span>
         </div>
 
-        <div className="space-y-3">
-          {dailyTasks.map((task) => (
-            <div
-              key={task.id}
-              onClick={() => toggleTask(task.id)}
-              className={`p-4 rounded-2xl border-2 flex items-start gap-3.5 transition-all cursor-pointer active:scale-[0.99] ${
-                task.done
-                  ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800'
-                  : 'bg-stone-50 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800 hover:border-emerald-400'
-              }`}
-            >
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+          {[
+            { id: 'crop-recommendation', labelHi: 'फसल सलाहकार', labelEn: 'Crop Advisor', icon: Sprout, color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' },
+            { id: 'disease-scanner', labelHi: 'रोग डॉक्टर', labelEn: 'Disease Scanner', icon: Camera, color: 'bg-green-50 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800' },
+            { id: 'smart-irrigation', labelHi: 'स्मार्ट सिंचाई', labelEn: 'Smart Irrigation', icon: Droplets, color: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800' },
+            { id: 'market-prices', labelHi: 'मंडी भाव', labelEn: 'Mandi Rates', icon: TrendingUp, color: 'bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800' },
+            { id: 'soil-health', labelHi: 'मिट्टी जांच', labelEn: 'Soil Health', icon: ShieldCheck, color: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' },
+            { id: 'profit-calculator', labelHi: 'मुनाफा कैलकुलेटर', labelEn: 'Profit Calc', icon: Award, color: 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800' },
+            { id: 'government-schemes', labelHi: 'सरकारी योजनाएं', labelEn: 'Govt Schemes', icon: Landmark, color: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800' },
+            { id: 'talk-to-expert', labelHi: 'विशेषज्ञ से बात', labelEn: 'Talk to Expert', icon: PhoneCall, color: 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800' },
+            { id: 'farm-diary', labelHi: 'फार्म डायरी', labelEn: 'Farm Diary', icon: Calendar, color: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800' },
+            { id: 'my-crops', labelHi: 'फसलें व उपज', labelEn: 'My Products', icon: ShoppingBag, color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' },
+            { id: 'virtual-farm-clusters', labelHi: 'वर्चुअल क्लस्टर', labelEn: 'Farm Clusters', icon: MapPin, color: 'bg-orange-50 text-orange-800 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800' },
+            { id: 'community', labelHi: 'किसान समुदाय', labelEn: 'Community', icon: FileText, color: 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800' },
+            { id: 'transactions', labelHi: 'खाता बही/लेनदेन', labelEn: 'Ledger', icon: Wallet, color: 'bg-stone-100 text-stone-800 border-stone-300 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-700' },
+            { id: 'weather', labelHi: 'विस्तृत मौसम', labelEn: 'Weather Hub', icon: CloudSun, color: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800' },
+          ].map((mod) => {
+            const ModIcon = mod.icon;
+            return (
               <button
-                type="button"
-                className="mt-0.5 text-emerald-700 dark:text-emerald-400 shrink-0"
+                key={mod.id}
+                onClick={() => setCurrentView(mod.id)}
+                className={`p-2.5 rounded-2xl border text-center transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center justify-center gap-1 shadow-xs ${mod.color}`}
               >
-                {task.done ? (
-                  <CheckSquare className="w-6 h-6 text-emerald-600" />
-                ) : (
-                  <Square className="w-6 h-6 text-stone-400" />
-                )}
+                <ModIcon className="w-5 h-5" />
+                <span className="text-[11px] font-black truncate w-full">
+                  {language === 'hi' ? mod.labelHi : mod.labelEn}
+                </span>
               </button>
-
-              <div className="flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p
-                    className={`font-black text-sm sm:text-base leading-snug ${
-                      task.done
-                        ? 'line-through text-stone-500 dark:text-stone-400'
-                        : 'text-stone-900 dark:text-stone-100'
-                    }`}
-                  >
-                    {language === 'hi' ? task.textHi : language === 'gu' ? task.textGu : task.textEn}
-                  </p>
-                  <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded">
-                    {task.tag}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
+
+
 
       {/* ========================================================= */}
       {/* 5. 6 MAIN EASY FARM SERVICES GRID                         */}
@@ -673,7 +544,7 @@ export const FarmerDashboard: React.FC = () => {
                 key={srv.id}
                 id={`srv-card-${srv.id}`}
                 onClick={() => setCurrentView(srv.id)}
-                className="bg-white dark:bg-[#161c14] border-2 border-stone-200 dark:border-stone-800 hover:border-emerald-500 dark:hover:border-emerald-600 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[160px] group"
+                className="bg-white dark:bg-[#161c14] border-2 border-stone-200 dark:border-stone-800 hover:border-emerald-500 dark:hover:border-emerald-600 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[160px] group"
               >
                 <div>
                   <div className="flex items-center justify-between">
@@ -708,7 +579,7 @@ export const FarmerDashboard: React.FC = () => {
       {/* ========================================================= */}
       <section
         id="simple-weather-forecast"
-        className="bg-white dark:bg-[#161c14] border-2 border-stone-200 dark:border-stone-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4"
+        className="bg-white dark:bg-[#161c14] border-2 border-stone-200 dark:border-stone-800 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4"
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 dark:border-stone-800 pb-3">
           <div className="flex items-center gap-2">
@@ -770,7 +641,7 @@ export const FarmerDashboard: React.FC = () => {
       {/* ========================================================= */}
       <section
         id="ask-ai-chips-section"
-        className="bg-gradient-to-br from-[#183d12] via-[#214e1a] to-[#163610] text-white rounded-3xl p-5 sm:p-7 shadow-lg border-2 border-emerald-700"
+        className="bg-gradient-to-br from-[#183d12] via-[#214e1a] to-[#163610] text-white rounded-2xl p-4 sm:p-6 shadow-lg border-2 border-emerald-700"
       >
         <div className="max-w-3xl mx-auto text-center space-y-3">
           <div className="inline-flex items-center gap-1.5 bg-emerald-900/80 border border-emerald-600/50 px-3 py-1 rounded-full text-xs font-bold text-emerald-300">

@@ -25,6 +25,7 @@ import {
   HelpCircle,
   Maximize2,
   FolderDown,
+  Cloud,
 } from 'lucide-react';
 import { DiseaseScanResult, DiseaseScanImageQuality } from '../../shared/types';
 import { DiseaseScanAnimation } from '../components/disease/DiseaseScanAnimation';
@@ -32,6 +33,7 @@ import { ImageQualityCheckCard } from '../components/disease/ImageQualityCheckCa
 import { DiseaseResultCard } from '../components/disease/DiseaseResultCard';
 import { DiseaseScanHistory } from '../components/disease/DiseaseScanHistory';
 import { CropPatchTimelineCard } from '../components/disease/CropPatchTimelineCard';
+import { uploadFileToStorage } from '../services/storageService';
 
 const CROP_OPTIONS = [
   'Auto-detect crop',
@@ -116,6 +118,9 @@ export const DiseaseScannerPage: React.FC = () => {
   const [selectedCrop, setSelectedCrop] = useState<string>('Auto-detect crop');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFileSize, setImageFileSize] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [storageFileUrl, setStorageFileUrl] = useState<string | null>(null);
+  const [isUploadingToStorage, setIsUploadingToStorage] = useState<boolean>(false);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<number>(0);
@@ -136,7 +141,7 @@ export const DiseaseScannerPage: React.FC = () => {
     }
   }, [diseaseScans, activeResult]);
 
-  const processFile = (file: File) => {
+  const processFile = async (file: File) => {
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
     if (!validTypes.includes(file.type)) {
       addToast(
@@ -153,6 +158,7 @@ export const DiseaseScannerPage: React.FC = () => {
       return;
     }
 
+    setSelectedFile(file);
     const formattedSize =
       sizeInMb >= 1
         ? `${sizeInMb.toFixed(1)} MB`
@@ -166,6 +172,18 @@ export const DiseaseScannerPage: React.FC = () => {
       setQualityStatus(null);
     };
     reader.readAsDataURL(file);
+
+    // Asynchronously upload to Firebase Storage bucket in production mode
+    setIsUploadingToStorage(true);
+    try {
+      const res = await uploadFileToStorage(file, 'disease-scans');
+      setStorageFileUrl(res.downloadUrl);
+      addToast('Uploaded to Firebase Storage', `Saved securely in storage bucket as ${file.name}`, 'info');
+    } catch (err) {
+      console.warn('Firebase storage background upload notice:', err);
+    } finally {
+      setIsUploadingToStorage(false);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -241,9 +259,13 @@ export const DiseaseScannerPage: React.FC = () => {
       setTimeout(() => {
         setIsScanning(false);
         if (response.ok && data.scan) {
-          setActiveResult(data.scan);
+          const scanWithStorage: DiseaseScanResult = {
+            ...data.scan,
+            imageUrl: storageFileUrl || data.scan.imageUrl,
+          };
+          setActiveResult(scanWithStorage);
           setQualityStatus(data.quality || null);
-          addDiseaseScan(data.scan);
+          addDiseaseScan(scanWithStorage);
           addToast(
             'Analysis Complete',
             `Identified possible diagnosis: ${data.scan.possibleDisease || data.scan.pathogen}`,
@@ -303,7 +325,7 @@ export const DiseaseScannerPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-300">
       {/* 1. PAGE HEADER */}
-      <div className="bg-gradient-to-r from-[#1B3B11] via-[#244516] to-[#2D4F1E] text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-[#1B3B11] via-[#244516] to-green-700 text-white p-6 sm:p-8 rounded-2xl shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs font-bold tracking-wide uppercase">
@@ -357,13 +379,13 @@ export const DiseaseScannerPage: React.FC = () => {
       </div>
 
       {/* 2. MODE NAVIGATION TABS */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2 sm:p-2.5 rounded-3xl border border-stone-200 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2 sm:p-2.5 rounded-2xl border border-stone-200 shadow-xs">
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => setActiveViewTab('scanner')}
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeViewTab === 'scanner'
-                ? 'bg-[#2D4F1E] text-white shadow-sm'
+                ? 'bg-green-700 text-white shadow-sm'
                 : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
             }`}
           >
@@ -375,7 +397,7 @@ export const DiseaseScannerPage: React.FC = () => {
             onClick={() => setActiveViewTab('timeline')}
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeViewTab === 'timeline'
-                ? 'bg-[#2D4F1E] text-white shadow-sm'
+                ? 'bg-green-700 text-white shadow-sm'
                 : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
             }`}
           >
@@ -387,7 +409,7 @@ export const DiseaseScannerPage: React.FC = () => {
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                 activeViewTab === 'timeline'
                   ? 'bg-emerald-800 text-emerald-100'
-                  : 'bg-emerald-100 text-[#2D4F1E]'
+                  : 'bg-emerald-100 text-green-700'
               }`}
             >
               {cropPatches.length} {language === 'hi' ? 'भूखंड' : 'Plots'}
@@ -398,7 +420,7 @@ export const DiseaseScannerPage: React.FC = () => {
             onClick={() => setActiveViewTab('history')}
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeViewTab === 'history'
-                ? 'bg-[#2D4F1E] text-white shadow-sm'
+                ? 'bg-green-700 text-white shadow-sm'
                 : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
             }`}
           >
@@ -441,7 +463,7 @@ export const DiseaseScannerPage: React.FC = () => {
 
       {/* VIEW: HISTORY TAB */}
       {activeViewTab === 'history' && (
-        <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-8 shadow-sm">
+        <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-sm">
           <DiseaseScanHistory
             scans={diseaseScans}
             onSelectScan={(scan) => {
@@ -463,10 +485,10 @@ export const DiseaseScannerPage: React.FC = () => {
         {/* Left Column: Upload Area, Crop Selector & Scan Controls */}
         <div className="lg:col-span-5 space-y-6">
           {/* 2. UPLOAD AREA CARD */}
-          <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6 space-y-5">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
-                <Camera className="w-5 h-5 text-[#2D4F1E]" />
+                <Camera className="w-5 h-5 text-green-700" />
                 <span>
                   {language === 'hi'
                     ? 'प्रभावित फसल की स्पष्ट तस्वीर अपलोड करें'
@@ -543,7 +565,7 @@ export const DiseaseScannerPage: React.FC = () => {
                 </>
               ) : (
                 <div className="space-y-3 pointer-events-none">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-100/90 text-[#2D4F1E] flex items-center justify-center mx-auto group-hover:scale-105 transition-transform shadow-xs">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-100/90 text-green-700 flex items-center justify-center mx-auto group-hover:scale-105 transition-transform shadow-xs">
                     <Upload className="w-7 h-7" />
                   </div>
                   <div>
@@ -597,6 +619,29 @@ export const DiseaseScannerPage: React.FC = () => {
               </select>
             </div>
 
+            {/* Firebase Cloud Storage Archive Indicator */}
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-xs">
+              <div className="flex items-center gap-2">
+                <Cloud className="w-4 h-4 text-emerald-700 shrink-0" />
+                <div>
+                  <div className="font-bold text-emerald-950 flex items-center gap-1.5">
+                    <span>Firebase Storage (Production Bucket)</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                  </div>
+                  <div className="text-[11px] text-emerald-800">
+                    {isUploadingToStorage
+                      ? 'Archiving leaf photo to storage bucket...'
+                      : storageFileUrl
+                      ? 'Leaf photo secured in Firebase Storage'
+                      : 'Leaf photos are safely archived to production bucket'}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono text-emerald-700 bg-white/80 px-2 py-1 rounded-lg border border-emerald-200 hidden sm:inline">
+                kishan-bhai-a1c8d
+              </span>
+            </div>
+
             {/* Tip Box */}
             <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-2.5">
               <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
@@ -614,7 +659,7 @@ export const DiseaseScannerPage: React.FC = () => {
                   ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
                   : isScanning
                   ? 'bg-emerald-900 text-emerald-200 cursor-wait'
-                  : 'bg-[#2D4F1E] hover:bg-[#223d16] text-white hover:shadow-lg active:scale-99'
+                  : 'bg-green-700 hover:bg-green-800 text-white hover:shadow-lg active:scale-99'
               }`}
             >
               <Scan className={`w-5 h-5 ${isScanning ? 'animate-spin' : ''}`} />
@@ -623,7 +668,7 @@ export const DiseaseScannerPage: React.FC = () => {
           </div>
 
           {/* Hackathon Demo Preset Library */}
-          <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6 space-y-3.5">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 space-y-3.5">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-stone-600 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-600" />
@@ -697,8 +742,8 @@ export const DiseaseScannerPage: React.FC = () => {
             </div>
           ) : (
             /* Placeholder state before first scan */
-            <div className="bg-white rounded-3xl border border-stone-200 p-12 text-center space-y-4 shadow-sm flex flex-col items-center justify-center min-h-[420px]">
-              <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
+            <div className="bg-white rounded-2xl border border-stone-200 p-12 text-center space-y-4 shadow-sm flex flex-col items-center justify-center min-h-[420px]">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
                 <Leaf className="w-8 h-8" />
               </div>
               <div className="space-y-1 max-w-sm">

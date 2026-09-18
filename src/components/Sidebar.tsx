@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   LayoutDashboard,
   Sprout,
@@ -27,7 +28,8 @@ import {
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
-  const { userRole, currentUser, currentView, setCurrentView, language, alerts } = useApp();
+  const { userRole, currentUser } = useUserStore();
+  const { currentView, setCurrentView, language, alerts } = useApp();
 
   const unreadAlertCount = alerts.filter((a) => !a.isRead).length;
 
@@ -107,7 +109,7 @@ export const Sidebar: React.FC = () => {
         <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1 px-1">
           {language === 'hi' ? 'सक्रिय खाता' : 'Active Account Profile'}
         </div>
-        <div className="flex items-center justify-between bg-emerald-50 text-[#2D4F1E] px-3 py-2 rounded-2xl text-xs font-bold border border-emerald-200/60">
+        <div className="flex items-center justify-between bg-emerald-50 text-green-700 px-3 py-2 rounded-2xl text-xs font-bold border border-emerald-200/60">
           <div className="flex items-center gap-2 truncate">
             <div className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></div>
             <span className="truncate">
@@ -137,7 +139,7 @@ export const Sidebar: React.FC = () => {
                     onClick={() => setCurrentView(item.id)}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all text-left cursor-pointer ${
                       isActive
-                        ? 'bg-[#2D4F1E] text-white shadow-xs'
+                        ? 'bg-green-700 text-white shadow-xs'
                         : 'text-stone-700 hover:bg-stone-100 hover:text-stone-900'
                     }`}
                   >
@@ -167,7 +169,7 @@ export const Sidebar: React.FC = () => {
                   onClick={() => setCurrentView(item.id)}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all text-left cursor-pointer ${
                     isActive
-                      ? 'bg-[#2D4F1E] text-white shadow-xs'
+                      ? 'bg-green-700 text-white shadow-xs'
                       : 'text-stone-700 hover:bg-stone-100 hover:text-stone-900'
                   }`}
                 >
@@ -185,7 +187,7 @@ export const Sidebar: React.FC = () => {
             onClick={() => setCurrentView('login')}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all text-left cursor-pointer ${
               currentView === 'login'
-                ? 'bg-[#2D4F1E] text-white'
+                ? 'bg-green-700 text-white'
                 : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
             }`}
           >

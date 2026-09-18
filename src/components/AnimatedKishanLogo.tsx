@@ -319,7 +319,7 @@ export const AnimatedKishanLogo: React.FC<AnimatedKishanLogoProps> = ({
                 sizeConfig.text
               } ${isHovered ? 'text-emerald-800' : ''}`}
             >
-              KISAN
+              KISHAN
             </span>
             <span
               className={`font-black font-display tracking-tight bg-gradient-to-r from-emerald-600 via-green-700 to-amber-600 bg-clip-text text-transparent ${

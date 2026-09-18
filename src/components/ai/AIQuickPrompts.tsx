@@ -100,7 +100,7 @@ export const AIQuickPrompts: React.FC<Props> = ({ onSelectPrompt, language }) =>
             onClick={() => setActiveCategory('ALL')}
             className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap ${
               activeCategory === 'ALL'
-                ? 'bg-[#2D4F1E] text-white font-bold shadow-2xs'
+                ? 'bg-green-700 text-white font-bold shadow-2xs'
                 : 'bg-white/80 text-stone-600 hover:bg-stone-200 border border-stone-200'
             }`}
           >
@@ -171,7 +171,7 @@ export const AIQuickPrompts: React.FC<Props> = ({ onSelectPrompt, language }) =>
                 <Icon className="w-4 h-4" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-xs text-stone-900 group-hover:text-[#2D4F1E] transition-colors truncate">
+                <div className="font-bold text-xs text-stone-900 group-hover:text-green-700 transition-colors truncate">
                   {p.title}
                 </div>
                 <div className="text-[11px] text-stone-500 truncate mt-0.5">

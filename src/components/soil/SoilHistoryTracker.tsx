@@ -9,7 +9,7 @@ interface SoilHistoryTrackerProps {
 
 export const SoilHistoryTracker: React.FC<SoilHistoryTrackerProps> = ({ history, language }) => {
   return (
-    <div className="bg-white rounded-3xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-stone-100">
         <div>
           <div className="flex items-center gap-2">

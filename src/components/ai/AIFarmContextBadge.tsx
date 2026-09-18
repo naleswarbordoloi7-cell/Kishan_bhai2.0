@@ -24,7 +24,7 @@ export const AIFarmContextBadge: React.FC<Props> = ({ currentUser, language }) =
         className="px-4 py-3 flex flex-wrap items-center justify-between gap-3 cursor-pointer hover:bg-stone-50/80 transition-colors"
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#2D4F1E] flex items-center justify-center font-bold text-xs shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-emerald-100 text-green-700 flex items-center justify-center font-bold text-xs shrink-0">
             <Sparkles className="w-4 h-4 text-emerald-700" />
           </div>
           <div>

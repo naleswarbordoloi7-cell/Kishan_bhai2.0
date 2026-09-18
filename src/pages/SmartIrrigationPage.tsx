@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Droplets,
   Power,
@@ -48,17 +49,8 @@ import {
 import { SmartIrrigationStatus, IoTSensor, IrrigationRecord, WaterAnalytics } from '../../shared/types';
 
 export const SmartIrrigationPage: React.FC = () => {
-  const {
-    irrigationStatus: initialStatus,
-    togglePump: contextTogglePump,
-    language,
-    setCurrentView,
-    askAiWithPrompt,
-    farmerProfile,
-    currentUser,
-    addDiaryEntry,
-    addToast,
-  } = useApp();
+  const { farmerProfile, currentUser } = useUserStore();
+  const { irrigationStatus: initialStatus, togglePump: contextTogglePump, language, setCurrentView, askAiWithPrompt, addDiaryEntry, addToast } = useApp();
 
   const [status, setStatus] = useState<SmartIrrigationStatus>(initialStatus);
   const [sensors, setSensors] = useState<IoTSensor[]>(initialStatus.sensors || []);
@@ -230,7 +222,7 @@ export const SmartIrrigationPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* HACKATHON DEMO FLOW STEPPER BANNER */}
-      <div className="bg-stone-900 text-white rounded-3xl p-5 border border-stone-800 shadow-xl space-y-3">
+      <div className="bg-stone-900 text-white rounded-2xl p-4 border border-stone-800 shadow-xl space-y-3">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="bg-emerald-500 text-stone-950 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
@@ -298,7 +290,7 @@ export const SmartIrrigationPage: React.FC = () => {
       </div>
 
       {/* 1. PAGE HEADER */}
-      <div className="bg-gradient-to-br from-[#1b3811] via-[#244b17] to-[#12280a] text-white rounded-[32px] p-6 sm:p-8 shadow-2xl border border-emerald-500/20 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-br from-[#1b3811] via-[#244b17] to-[#12280a] text-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-emerald-500/20 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-400/30 flex items-center gap-1.5">
@@ -366,7 +358,7 @@ export const SmartIrrigationPage: React.FC = () => {
       </div>
 
       {/* 2. TELEMETRY SUMMARY BAR */}
-      <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-xs">
+      <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs">
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 text-center divide-y sm:divide-y-0 sm:divide-x divide-stone-100">
           {/* Soil Moisture */}
           <div className="pt-2 sm:pt-0 sm:px-2 space-y-0.5">
@@ -403,7 +395,7 @@ export const SmartIrrigationPage: React.FC = () => {
           {/* Rain Forecast */}
           <div className="pt-2 sm:pt-0 sm:px-2 space-y-0.5">
             <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider block">Rain Forecast</span>
-            <span className={`text-2xl font-extrabold font-display block ${isRainDelay ? 'text-blue-700 font-black' : 'text-[#2D4F1E]'}`}>
+            <span className={`text-2xl font-extrabold font-display block ${isRainDelay ? 'text-blue-700 font-black' : 'text-green-700'}`}>
               {status.rainForecast48hPct}%
             </span>
             <span className={`text-[11px] font-bold block ${isRainDelay ? 'text-blue-800' : 'text-stone-500'}`}>
@@ -421,7 +413,7 @@ export const SmartIrrigationPage: React.FC = () => {
           {/* Water Requirement */}
           <div className="pt-2 sm:pt-0 sm:px-2 space-y-0.5">
             <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider block">Water Demand</span>
-            <span className="text-base font-extrabold text-[#2D4F1E] block">
+            <span className="text-base font-extrabold text-green-700 block">
               {shouldIrrigate ? '3,800 L' : '0 L (Deferred)'}
             </span>
             <span className="text-[11px] text-stone-500 block">per acre cycle</span>
@@ -432,7 +424,7 @@ export const SmartIrrigationPage: React.FC = () => {
       {/* 3. PROMINENT "SHOULD YOU IRRIGATE?" CENTERPIECE & IRRIGATION SCORE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Decision Card (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-[32px] border border-stone-200/80 shadow-xs p-6 sm:p-8 space-y-6 flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-stone-200/80 shadow-xs p-6 sm:p-8 space-y-6 flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -521,7 +513,7 @@ export const SmartIrrigationPage: React.FC = () => {
               type="button"
               id="btn-ask-ai-irrigation"
               onClick={() => askAiWithPrompt('Should I water my wheat today considering tomorrow\'s weather and 38% soil moisture?')}
-              className="w-full sm:w-auto flex-1 py-3.5 px-5 bg-[#2D4F1E] hover:bg-[#223d16] text-white rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
+              className="w-full sm:w-auto flex-1 py-3.5 px-5 bg-green-700 hover:bg-green-800 text-white rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
             >
               <Bot className="w-4 h-4 text-emerald-300" />
               <span>Ask Kisan Bhai about Irrigation</span>
@@ -542,7 +534,7 @@ export const SmartIrrigationPage: React.FC = () => {
         {/* Right: Irrigation Score Card & 24h Soil Moisture Curve (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           {/* Irrigation Score */}
-          <div className="bg-white rounded-[32px] border border-stone-200/80 shadow-xs p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xs p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold">
@@ -577,7 +569,7 @@ export const SmartIrrigationPage: React.FC = () => {
           </div>
 
           {/* 24-Hour Soil Moisture Trend Chart */}
-          <div className="bg-white rounded-[32px] border border-stone-200/80 shadow-xs p-6 space-y-3">
+          <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xs p-6 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-stone-900 text-sm">24-Hour Soil Moisture Curve</h3>
               <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
@@ -626,7 +618,7 @@ export const SmartIrrigationPage: React.FC = () => {
       </div>
 
       {/* 4. SENSOR SUPPORT & IOT DASHBOARD */}
-      <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-6">
+      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -680,7 +672,7 @@ export const SmartIrrigationPage: React.FC = () => {
               onClick={() => handleSimulatePreset(preset.key as any)}
               className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer ${
                 activePreset === preset.key
-                  ? 'bg-[#2D4F1E] text-white shadow-xs'
+                  ? 'bg-green-700 text-white shadow-xs'
                   : 'bg-white hover:bg-stone-100 text-stone-700 border border-stone-200'
               }`}
             >
@@ -763,7 +755,7 @@ export const SmartIrrigationPage: React.FC = () => {
       {/* 5. WATER USAGE ANALYTICS & SAVINGS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Daily & Weekly Chart (8 cols) */}
-        <div className="lg:col-span-8 bg-white rounded-[32px] p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-4">
+        <div className="lg:col-span-8 bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
               <h2 className="text-xl font-bold font-display text-stone-900">
@@ -801,7 +793,7 @@ export const SmartIrrigationPage: React.FC = () => {
         </div>
 
         {/* Savings Stat Card (4 cols) */}
-        <div className="lg:col-span-4 bg-gradient-to-br from-emerald-900 via-[#1b3811] to-emerald-950 text-white rounded-[32px] p-6 sm:p-8 shadow-xl border border-emerald-500/30 flex flex-col justify-between space-y-6">
+        <div className="lg:col-span-4 bg-gradient-to-br from-emerald-900 via-[#1b3811] to-emerald-950 text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-emerald-500/30 flex flex-col justify-between space-y-6">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <span className="bg-emerald-400/20 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full border border-emerald-400/30">
@@ -845,7 +837,7 @@ export const SmartIrrigationPage: React.FC = () => {
       </div>
 
       {/* 6. IRRIGATION HISTORY TIMELINE */}
-      <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-6">
+      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h2 className="text-2xl font-extrabold font-display text-stone-900">
@@ -860,7 +852,7 @@ export const SmartIrrigationPage: React.FC = () => {
             type="button"
             id="btn-add-irrigation-timeline"
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 bg-[#2D4F1E] hover:bg-[#223d16] text-white rounded-2xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+            className="px-4 py-2.5 bg-green-700 hover:bg-green-800 text-white rounded-2xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <Plus className="w-4 h-4" />
             <span>Add Manual Irrigation Log</span>
@@ -874,7 +866,7 @@ export const SmartIrrigationPage: React.FC = () => {
             return (
               <div
                 key={item.id}
-                className={`p-4 sm:p-5 rounded-2xl border text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
+                className={`p-4 sm:p-4 rounded-2xl border text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
                   isRainSkipped
                     ? 'bg-blue-50/60 border-blue-200'
                     : 'bg-stone-50/60 border-stone-200/80'
@@ -927,10 +919,10 @@ export const SmartIrrigationPage: React.FC = () => {
       {/* MODAL: ADD MANUAL IRRIGATION */}
       {showAddModal && (
         <div className="fixed inset-0 bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
-          <div className="bg-white rounded-[32px] max-w-lg w-full p-6 sm:p-8 border border-stone-200 shadow-2xl space-y-5">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-stone-200 shadow-2xl space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-stone-100">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#2D4F1E] flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-green-700 flex items-center justify-center font-bold">
                   <Droplets className="w-4 h-4" />
                 </div>
                 <h3 className="text-lg font-bold text-stone-900 font-display">Log Irrigation Session</h3>
@@ -1039,7 +1031,7 @@ export const SmartIrrigationPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-[#2D4F1E] hover:bg-[#223d16] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
+                  className="px-5 py-2.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
                   <span>Save Irrigation Log</span>

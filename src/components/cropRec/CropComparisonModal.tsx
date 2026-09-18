@@ -19,7 +19,7 @@ export const CropComparisonModal: React.FC<CropComparisonModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-5xl w-full p-6 sm:p-8 shadow-2xl border border-stone-200 space-y-6 my-8">
+      <div className="bg-white rounded-2xl max-w-5xl w-full p-6 sm:p-8 shadow-2xl border border-stone-200 space-y-6 my-8">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
@@ -140,7 +140,7 @@ export const CropComparisonModal: React.FC<CropComparisonModalProps> = ({
                 onClose();
                 onViewGuide(c.cropId);
               }}
-              className="px-4 py-2.5 bg-[#1B3B11] hover:bg-[#2D4F1E] text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
+              className="px-4 py-2.5 bg-[#1B3B11] hover:bg-green-700 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
             >
               View {c.cropName} Complete Guide →
             </button>

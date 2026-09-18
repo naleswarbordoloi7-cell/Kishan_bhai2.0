@@ -38,7 +38,8 @@ import {
   INITIAL_COMMUNITY_POSTS,
   INITIAL_FARM_ALERTS,
 } from '../data/agriData';
-import { getTranslation } from '../i18n/translations';
+import { getTranslation, loc as locHelper } from '../i18n/translations';
+import { useUserStore } from '../store/userStore';
 import {
   CacheStats,
   OfflineSyncQueueItem,
@@ -60,6 +61,9 @@ import {
   fetchUserBiometricCredentials,
   BiometricDeviceCapability,
 } from '../services/biometricAuth';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
 interface WalletState {
   address: string;
@@ -71,28 +75,13 @@ interface WalletState {
   network: 'testnet';
 }
 
-export interface FarmerProfileData {
-  name: string;
-  mobile: string;
-  state: string;
-  district: string;
-  village: string;
-  farmSizeAcres: number;
-  soilType: string;
-  mainCrop: string;
-  preferredLanguage: string;
-}
+// FarmerProfileData moved to shared/types.ts
 
 interface AppContextType {
-  currentUser: UserProfile | null;
-  setCurrentUser: (user: UserProfile | null) => void;
-  farmerProfile: FarmerProfileData;
-  updateProfile: (profile: Partial<FarmerProfileData>) => void;
-  userRole: UserRole;
-  setUserRole: (role: UserRole) => void;
   language: string;
   setLanguage: (lang: string) => void;
   t: (key: string, fallback?: string) => string;
+  loc: (enText: string, hiText: string, guText?: string) => string;
   wallet: WalletState;
   setWallet: React.Dispatch<React.SetStateAction<WalletState>>;
   connectDemoWallet: () => Promise<void>;
@@ -198,7 +187,6 @@ interface AppContextType {
   runCropRecommendation: (input: CropRecommendationInput) => Promise<CropRecommendationResult>;
   compareCrops: (cropIds: string[]) => Promise<CropDetail[]>;
 
-  mandiPrices: MandiPriceRecord[];
   
   diaryEntries: FarmDiaryEntry[];
   farmDiary: FarmDiaryEntry[];
@@ -222,32 +210,11 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    try {
-      const saved = localStorage.getItem('kb_user');
-      if (saved) return JSON.parse(saved);
-      // Default verified farmer profile for instant live demonstration
-      return {
-        id: 'usr_farmer_ramesh',
-        fullName: 'Ramesh Patel',
-        email: 'ramesh.patel@kishanbhai.in',
-        phone: '+91 98251 44320',
-        role: 'FARMER',
-        village: 'Anandpur',
-        state: 'Gujarat',
-        verified: true,
-        farmSizeAcres: 4.5,
-        crops: ['Cotton (Bt)', 'Groundnut (GG-20)', 'Wheat (Sharbati)'],
-        preferredLanguage: 'hi',
-        walletAddress: 'ALGO_TESTNET_DEMO_WALLET_7X9A',
-        createdAt: '2026-06-15T08:30:00Z',
-      };
-    } catch {
-      return null;
-    }
-  });
+  const currentUser = useUserStore(state => state.currentUser);
+  const setCurrentUser = useUserStore(state => state.setCurrentUser);
+  const setUserRole = useUserStore(state => state.setUserRole);
+  const updateProfile = useUserStore(state => state.updateProfile);
 
-  const [userRole, setUserRole] = useState<UserRole>('FARMER');
   const [language, setLanguageState] = useState<string>(() => {
     try {
       return localStorage.getItem('kb_language') || 'hi';
@@ -268,7 +235,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [language]
   );
 
-  const [currentView, setCurrentView] = useState<string>('farmer-dashboard');
+  const loc = useCallback(
+    (enText: string, hiText: string, guText?: string) => locHelper(language, enText, hiText, guText),
+    [language]
+  );
+
+  // When someone visits our app for a new user, firstly show the login page
+  const [currentView, setCurrentViewState] = useState<string>(() => {
+    try {
+      const savedUser = localStorage.getItem('kb_user');
+      const isAuthenticated = localStorage.getItem('kb_user_authenticated') === 'true';
+      // If no authenticated user session exists, default to the login page
+      if (!savedUser || (!isAuthenticated && JSON.parse(savedUser)?.id === 'usr_farmer_ramesh')) {
+        return 'login';
+      }
+      const savedView = localStorage.getItem('kb_current_view');
+      if (savedView && savedView !== 'login') return savedView;
+      return 'farmer-dashboard';
+    } catch {
+      return 'login';
+    }
+  });
+
+  const setCurrentView = useCallback((view: string) => {
+    setCurrentViewState(view);
+    try {
+      localStorage.setItem('kb_current_view', view);
+    } catch {}
+  }, []);
   const [pendingPaymentReq, setPendingPaymentReq] = useState<X402PaymentRequirement | null>(null);
   const [paymentCallback, setPaymentCallback] = useState<((proof: { txId: string; sender: string }) => void) | null>(null);
   const [toasts, setToasts] = useState<{ id: string; title: string; message: string; type: 'success' | 'info' | 'error' }[]>([]);
@@ -774,18 +768,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const compareCrops = async (cropIds: string[]): Promise<CropDetail[]> => {
     return CROP_RECOMMENDATIONS_DATABASE.filter((c) => cropIds.includes(c.id));
   };
-  const [mandiPrices, setMandiPrices] = useState<MandiPriceRecord[]>(INITIAL_MANDI_PRICES);
-
-  useEffect(() => {
-    fetch('/api/mandi/prices')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && Array.isArray(data.prices) && data.prices.length > 0) {
-          setMandiPrices(data.prices);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const [diaryEntries, setDiaryEntries] = useState<FarmDiaryEntry[]>(() => {
     try {
@@ -840,51 +822,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  const [farmerProfile, setFarmerProfile] = useState<FarmerProfileData>(() => {
-    try {
-      const saved = localStorage.getItem('kb_farmer_profile');
-      return saved ? JSON.parse(saved) : {
-        name: 'Ramesh Patel',
-        mobile: '+91 98251 44320',
-        state: 'Gujarat',
-        district: 'Rajkot',
-        village: 'Anandpur',
-        farmSizeAcres: 4.5,
-        soilType: 'Medium Black Cotton',
-        mainCrop: 'Cotton (Bt) & Groundnut',
-        preferredLanguage: 'hi',
-      };
-    } catch {
-      return {
-        name: 'Ramesh Patel',
-        mobile: '+91 98251 44320',
-        state: 'Gujarat',
-        district: 'Rajkot',
-        village: 'Anandpur',
-        farmSizeAcres: 4.5,
-        soilType: 'Medium Black Cotton',
-        mainCrop: 'Cotton (Bt) & Groundnut',
-        preferredLanguage: 'hi',
-      };
-    }
-  });
-
-  const updateProfile = (profile: Partial<FarmerProfileData>) => {
-    setFarmerProfile((prev) => {
-      const updated = { ...prev, ...profile };
-      localStorage.setItem('kb_farmer_profile', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('kb_user', JSON.stringify(currentUser));
+      localStorage.setItem('kb_user_authenticated', 'true');
       setUserRole(currentUser.role);
+      
+      const { farmerProfile } = useUserStore.getState();
+      updateProfile({
+        name: currentUser.fullName || farmerProfile.name,
+        mobile: currentUser.phone || farmerProfile.mobile,
+        village: currentUser.village || farmerProfile.village,
+        state: currentUser.state || farmerProfile.state,
+        farmSizeAcres: currentUser.farmSizeAcres || farmerProfile.farmSizeAcres,
+        mainCrop: currentUser.crops?.join(', ') || farmerProfile.mainCrop,
+        preferredLanguage: currentUser.preferredLanguage || farmerProfile.preferredLanguage,
+      });
     } else {
       localStorage.removeItem('kb_user');
+      localStorage.removeItem('kb_user_authenticated');
     }
-  }, [currentUser]);
+  }, [currentUser, setUserRole, updateProfile]);
+
+  // Listen for active Firebase Auth session
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        try {
+          const userDocRef = doc(db, 'users', fbUser.uid);
+          const snap = await getDoc(userDocRef);
+          if (snap.exists()) {
+            const profile = snap.data() as UserProfile;
+            setCurrentUser(profile);
+            setUserRole(profile.role);
+            localStorage.setItem('kb_user', JSON.stringify(profile));
+            localStorage.setItem('kb_user_authenticated', 'true');
+          }
+        } catch (err) {
+          console.warn('[Firebase Auth] Session sync note:', err);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('kb_crops', JSON.stringify(crops));
@@ -1182,15 +1162,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider
       value={{
-        currentUser,
-        setCurrentUser,
-        farmerProfile,
-        updateProfile,
-        userRole,
-        setUserRole,
         language,
         setLanguage,
         t,
+        loc,
         wallet,
         setWallet,
         connectDemoWallet,
@@ -1267,7 +1242,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedCropDetailId,
         runCropRecommendation,
         compareCrops,
-        mandiPrices,
         diaryEntries,
         farmDiary: diaryEntries,
         addDiaryEntry,

@@ -9,7 +9,7 @@ interface SoilMicroNutrientsProps {
 
 export const SoilMicroNutrients: React.FC<SoilMicroNutrientsProps> = ({ micronutrients, language }) => {
   return (
-    <div className="bg-white rounded-3xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-5">
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="p-1.5 rounded-lg bg-blue-100 text-blue-800">

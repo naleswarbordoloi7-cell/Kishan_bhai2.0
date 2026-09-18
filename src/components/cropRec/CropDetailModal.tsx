@@ -104,7 +104,7 @@ export const CropDetailModal: React.FC<CropDetailModalProps> = ({ isOpen, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl border border-stone-200 space-y-6 my-8">
+      <div className="bg-white rounded-2xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl border border-stone-200 space-y-6 my-8">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4">

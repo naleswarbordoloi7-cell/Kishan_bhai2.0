@@ -45,7 +45,7 @@ export const SoilImprovementTabs: React.FC<SoilImprovementTabsProps> = ({ plans,
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 sm:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
         <div>
           <div className="flex items-center gap-2">
@@ -82,11 +82,11 @@ export const SoilImprovementTabs: React.FC<SoilImprovementTabsProps> = ({ plans,
       </div>
 
       {/* Plan Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredPlans.map((plan) => (
           <div
             key={plan.id}
-            className="bg-stone-50/80 hover:bg-stone-50 border border-stone-200 rounded-2xl p-5 transition-all space-y-4 flex flex-col justify-between"
+            className="bg-stone-50/80 hover:bg-stone-50 border border-stone-200 rounded-2xl p-4 transition-all space-y-4 flex flex-col justify-between"
           >
             <div className="space-y-2.5">
               <div className="flex items-center justify-between gap-2">

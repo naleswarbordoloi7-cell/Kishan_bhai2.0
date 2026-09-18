@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Users,
   Sprout,
@@ -16,7 +17,8 @@ import {
 import { VirtualCluster } from '../../shared/types';
 
 export const VirtualFarmClustersPage: React.FC = () => {
-  const { currentUser, userRole, addToast } = useApp();
+  const { currentUser, userRole } = useUserStore();
+  const { addToast } = useApp();
   const [clusters, setClusters] = useState<VirtualCluster[]>([]);
   const [selectedCluster, setSelectedCluster] = useState<VirtualCluster | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -114,7 +116,7 @@ export const VirtualFarmClustersPage: React.FC = () => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header Banner */}
-      <div className="bg-[#2D4F1E] text-white rounded-[32px] p-6 sm:p-8 shadow-xl border border-white/20 space-y-4 relative overflow-hidden">
+      <div className="bg-green-700 text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-white/20 space-y-4 relative overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
           <div className="space-y-1">
             <span className="bg-white/15 text-emerald-200 text-xs px-3 py-1 rounded-full font-mono border border-white/20 backdrop-blur-xs">
@@ -131,7 +133,7 @@ export const VirtualFarmClustersPage: React.FC = () => {
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-white hover:bg-emerald-50 text-[#2D4F1E] text-xs font-semibold px-4 py-2.5 rounded-2xl shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.99]"
+            className="bg-white hover:bg-emerald-50 text-green-700 text-xs font-semibold px-4 py-2.5 rounded-2xl shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.99]"
           >
             <Plus className="w-4 h-4" />
             <span>Create New Cluster</span>
@@ -140,7 +142,7 @@ export const VirtualFarmClustersPage: React.FC = () => {
       </div>
 
       {/* Interactive Visual Cluster Diagram */}
-      <div className="bg-white/60 backdrop-blur-lg rounded-[28px] p-6 sm:p-8 border border-white/80 shadow-xs space-y-6">
+      <div className="bg-white/60 backdrop-blur-lg rounded-2xl p-6 sm:p-8 border border-white/80 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h3 className="font-bold font-display text-lg text-stone-900">
@@ -150,7 +152,7 @@ export const VirtualFarmClustersPage: React.FC = () => {
               Visual representation of digital synchronization between independent plots
             </p>
           </div>
-          <span className="text-xs font-mono bg-emerald-500/15 text-[#2D4F1E] px-3 py-1 rounded-full font-semibold border border-emerald-600/20">
+          <span className="text-xs font-mono bg-emerald-500/15 text-green-700 px-3 py-1 rounded-full font-semibold border border-emerald-600/20">
             Selected: {selectedCluster?.name || 'Anandpur Cluster'}
           </span>
         </div>
@@ -159,7 +161,7 @@ export const VirtualFarmClustersPage: React.FC = () => {
         <div className="bg-white/50 backdrop-blur-md rounded-2xl p-6 border border-white/80 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
           {/* Node 1: Independent Farmers */}
           <div className="bg-white/70 backdrop-blur-sm p-4 rounded-2xl border border-white/80 shadow-2xs space-y-2 text-center">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-[#2D4F1E] flex items-center justify-center mx-auto font-bold text-xs">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-green-700 flex items-center justify-center mx-auto font-bold text-xs">
               🌾
             </div>
             <h4 className="font-bold text-xs text-stone-900">Independent Smallholders</h4>
@@ -213,8 +215,8 @@ export const VirtualFarmClustersPage: React.FC = () => {
         </div>
 
         {clusters.length === 0 ? (
-          <div className="bg-white/60 backdrop-blur-lg rounded-[28px] p-8 border border-white/80 text-center space-y-4 shadow-xs">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-[#2D4F1E] flex items-center justify-center mx-auto">
+          <div className="bg-white/60 backdrop-blur-lg rounded-2xl p-8 border border-white/80 text-center space-y-4 shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-green-700 flex items-center justify-center mx-auto">
               <Users className="w-6 h-6" />
             </div>
             <div className="space-y-1">
@@ -225,7 +227,7 @@ export const VirtualFarmClustersPage: React.FC = () => {
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-semibold px-5 py-2.5 rounded-2xl shadow transition-all inline-flex items-center gap-1.5 cursor-pointer active:scale-[0.99] border border-white/20"
+              className="bg-green-700 hover:bg-green-800 text-white text-xs font-semibold px-5 py-2.5 rounded-2xl shadow transition-all inline-flex items-center gap-1.5 cursor-pointer active:scale-[0.99] border border-white/20"
             >
               <Plus className="w-4 h-4" />
               <span>Create First Virtual Cluster</span>
@@ -241,16 +243,16 @@ export const VirtualFarmClustersPage: React.FC = () => {
               <div
                 key={cluster.id}
                 onClick={() => setSelectedCluster(cluster)}
-                className={`p-6 rounded-[28px] border transition-all cursor-pointer space-y-4 ${
+                className={`p-6 rounded-2xl border transition-all cursor-pointer space-y-4 ${
                   isSelected
-                    ? 'bg-white/80 backdrop-blur-lg border-[#2D4F1E] shadow-md ring-2 ring-[#2D4F1E]/20'
+                    ? 'bg-white/80 backdrop-blur-lg border-green-700 shadow-md ring-2 ring-green-700/20'
                     : 'bg-white/60 backdrop-blur-lg border-white/80 shadow-xs hover:bg-white/80 hover:shadow-md'
                 }`}
               >
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono font-bold bg-emerald-500/15 text-[#2D4F1E] border border-emerald-600/20 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-mono font-bold bg-emerald-500/15 text-green-700 border border-emerald-600/20 px-2 py-0.5 rounded-full">
                         {cluster.village}, {cluster.state}
                       </span>
                       {isUserMember && (
@@ -264,7 +266,7 @@ export const VirtualFarmClustersPage: React.FC = () => {
                     <p className="text-xs text-stone-500">Champion: {cluster.championName}</p>
                   </div>
 
-                  <span className="text-xs font-mono font-bold text-[#2D4F1E] bg-emerald-500/15 px-2.5 py-1 rounded-xl border border-emerald-600/20">
+                  <span className="text-xs font-mono font-bold text-green-700 bg-emerald-500/15 px-2.5 py-1 rounded-xl border border-emerald-600/20">
                     {cluster.bulkSavingsPercent}% Savings
                   </span>
                 </div>
@@ -282,7 +284,7 @@ export const VirtualFarmClustersPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-[10px] text-stone-400 block">Pooled Crop</span>
-                    <span className="font-bold text-[#2D4F1E]">{(cluster.collectiveHarvestKg / 1000).toFixed(1)} Tons</span>
+                    <span className="font-bold text-green-700">{(cluster.collectiveHarvestKg / 1000).toFixed(1)} Tons</span>
                   </div>
                 </div>
 
@@ -301,7 +303,7 @@ export const VirtualFarmClustersPage: React.FC = () => {
                         e.stopPropagation();
                         setShowJoinModal(cluster);
                       }}
-                      className="bg-[#2D4F1E] hover:bg-[#223d16] text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer shadow-xs border border-white/20"
+                      className="bg-green-700 hover:bg-green-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer shadow-xs border border-white/20"
                     >
                       Join Cluster
                     </button>

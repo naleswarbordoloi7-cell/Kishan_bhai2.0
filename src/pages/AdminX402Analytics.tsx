@@ -60,25 +60,25 @@ export const AdminX402Analytics: React.FC = () => {
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Total Payment Requests</div>
           <div className="text-3xl font-bold font-display text-stone-900">{data?.totalRequests || 14}</div>
           <p className="text-[11px] text-stone-500 font-mono">HTTP 402 Handshakes</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Successful Settlements</div>
           <div className="text-3xl font-bold font-display text-emerald-700">{data?.successfulPayments || 14}</div>
           <p className="text-[11px] text-emerald-800 font-medium">100% Consensus Rate</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Total Volume Settled</div>
           <div className="text-3xl font-bold font-display text-purple-700">{data?.totalVolumeUsdc || '0.0060 USDC'}</div>
           <p className="text-[11px] text-purple-800 font-medium">ASA ID: 10458941</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
           <div className="text-xs text-stone-500 font-medium">Avg Settlement Time</div>
           <div className="text-3xl font-bold font-display text-stone-900">{data?.avgTransactionTimeMs || 1380} ms</div>
           <p className="text-[11px] text-teal-700 font-medium">Sub-2 Second Finality</p>
@@ -86,7 +86,7 @@ export const AdminX402Analytics: React.FC = () => {
       </div>
 
       {/* Facilitator & Node Box */}
-      <div className="bg-stone-900 text-white rounded-3xl p-6 sm:p-8 border border-stone-800 space-y-6">
+      <div className="bg-stone-900 text-white rounded-2xl p-6 sm:p-8 border border-stone-800 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-stone-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">

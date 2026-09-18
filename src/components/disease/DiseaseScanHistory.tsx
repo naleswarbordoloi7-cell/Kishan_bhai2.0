@@ -17,7 +17,7 @@ export const DiseaseScanHistory: React.FC<DiseaseScanHistoryProps> = ({
 }) => {
   if (!scans || scans.length === 0) {
     return (
-      <div className="bg-white rounded-3xl border border-stone-200 p-8 text-center space-y-3 shadow-xs">
+      <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center space-y-3 shadow-xs">
         <div className="w-12 h-12 rounded-2xl bg-stone-100 text-stone-400 flex items-center justify-center mx-auto">
           <Leaf className="w-6 h-6" />
         </div>
@@ -67,7 +67,7 @@ export const DiseaseScanHistory: React.FC<DiseaseScanHistoryProps> = ({
             <div className="flex items-start justify-between gap-2">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-bold text-white bg-[#2D4F1E] px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <span className="text-[11px] font-bold text-white bg-green-700 px-2 py-0.5 rounded-md flex items-center gap-1">
                     <Leaf className="w-2.5 h-2.5" />
                     <span>{scan.cropName}</span>
                   </span>

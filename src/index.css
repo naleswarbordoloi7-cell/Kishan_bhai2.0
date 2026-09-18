@@ -1,125 +1,57 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+@theme {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+}
 
 @layer base {
-  :root {
-    --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
-    --font-display: 'Outfit', 'DM Sans', sans-serif;
-    --font-serif: 'Fraunces', Georgia, serif;
-    --font-mono: 'JetBrains Mono', monospace;
-
-    --color-forest: #1B3B1B;
-    --color-leaf: #2D5A27;
-    --color-sage: #4D7C40;
-    --color-earth: #F4F1EA;
-    --color-warm-gray: #78716C;
-  }
-
   body {
-    font-family: var(--font-sans);
-    background-color: #F9F8F5;
-    background-image: 
-      radial-gradient(at 12% 10%, #EFF5EC 0px, transparent 45%),
-      radial-gradient(at 88% 88%, #F7F3E8 0px, transparent 50%);
-    background-attachment: fixed;
+    background-color: #F9FAFB;
     min-height: 100vh;
-    color: #1c1c1a;
-    letter-spacing: -0.011em;
-    line-height: 1.6;
+    color: #1F2937;
+    letter-spacing: -0.01em;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.25s ease, color 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    overscroll-behavior-y: none;
   }
 
-  :root.dark body,
-  .dark body {
-    background-color: #0d120c;
-    background-image: 
-      radial-gradient(at 12% 10%, #152214 0px, transparent 50%),
-      radial-gradient(at 88% 88%, #171d15 0px, transparent 55%);
-    color: #f1f3ee;
+  /* Re-enable selection for inputs and textareas */
+  input, textarea, [contenteditable="true"] {
+    user-select: auto;
   }
 
-  h1, h2, h3, h4, .font-display {
+  /* Desktop Mobile Frame */
+  @media (min-width: 768px) {
+    #root {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      border-left: 1px solid rgba(229, 231, 235, 1);
+      border-right: 1px solid rgba(229, 231, 235, 1);
+      box-shadow: 0 0 40px rgba(0,0,0,0.05);
+      background: white;
+      position: relative;
+      overflow-x: hidden;
+    }
+    body {
+      background-color: #F3F4F6;
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.025em;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  }
-
-  .font-serif-display {
-    font-family: var(--font-serif);
-    font-variation-settings: "opsz" 36, "SOFT" 20;
+    font-weight: 600;
     letter-spacing: -0.02em;
+    color: #111827;
   }
 
-  .font-mono {
-    font-family: var(--font-mono);
-    letter-spacing: -0.03em;
+  p {
+    max-width: 70ch;
   }
-}
-
-/* Crisp tactile cards and surface utilities */
-.surface-card {
-  background: #ffffff;
-  border: 1px solid rgba(229, 231, 235, 0.85);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.dark .surface-card,
-:root.dark .surface-card {
-  background: #171e16;
-  border-color: rgba(68, 85, 64, 0.6);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
-  color: #f1f3ee;
-}
-
-.surface-card-interactive {
-  background: #ffffff;
-  border: 1px solid rgba(229, 231, 235, 0.85);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.dark .surface-card-interactive,
-:root.dark .surface-card-interactive {
-  background: #171e16;
-  border-color: rgba(68, 85, 64, 0.6);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
-  color: #f1f3ee;
-}
-
-.surface-card-interactive:hover {
-  transform: translateY(-1px);
-  border-color: rgba(45, 90, 39, 0.3);
-  box-shadow: 0 8px 20px -4px rgba(27, 59, 27, 0.08), 0 2px 6px -2px rgba(27, 59, 27, 0.04);
-}
-.dark .surface-card-interactive:hover,
-:root.dark .surface-card-interactive:hover {
-  border-color: rgba(74, 222, 128, 0.4);
-  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5);
-}
-
-.surface-pill {
-  background: #ffffff;
-  border: 1px solid rgba(229, 231, 235, 0.9);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-}
-.dark .surface-pill,
-:root.dark .surface-pill {
-  background: #1f291d;
-  border-color: rgba(68, 85, 64, 0.8);
-  color: #e5e7eb;
-}
-
-/* Refined typography scale utilities */
-.tracking-display {
-  letter-spacing: -0.03em;
-}
-
-.editorial-title {
-  font-family: 'Fraunces', Georgia, serif;
-  font-feature-settings: "liga", "clig";
-  letter-spacing: -0.025em;
 }
 
 /* Smooth custom scrollbars */
@@ -129,37 +61,22 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f5f5f4;
-}
-.dark ::-webkit-scrollbar-track,
-:root.dark ::-webkit-scrollbar-track {
-  background: #121711;
+  background: #F3F4F6;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d6d3d1;
+  background: #D1D5DB;
   border-radius: 9999px;
-}
-.dark ::-webkit-scrollbar-thumb,
-:root.dark ::-webkit-scrollbar-thumb {
-  background: #2e3d2a;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a29e;
-}
-.dark ::-webkit-scrollbar-thumb:hover,
-:root.dark ::-webkit-scrollbar-thumb:hover {
-  background: #455a40;
+  background: #9CA3AF;
 }
 
 /* Subtle focus rings for accessibility */
 *:focus-visible {
-  outline: 2px solid #2D5A27;
+  outline: 2px solid #16A34A;
   outline-offset: 2px;
 }
-.dark *:focus-visible,
-:root.dark *:focus-visible {
-  outline: 2px solid #4ade80;
-}
+
 

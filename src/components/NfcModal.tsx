@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import { Radio, X, CheckCircle2, ShieldAlert, Sparkles, Smartphone, QrCode } from 'lucide-react';
 
 export const NfcModal: React.FC = () => {
-  const { isNfcModalOpen, setIsNfcModalOpen, currentUser, addToast } = useApp();
+  const currentUser = useUserStore(state => state.currentUser);
+  const { isNfcModalOpen, setIsNfcModalOpen, addToast } = useApp();
   const [isScanning, setIsScanning] = useState(false);
   const [scannedData, setScannedData] = useState<string | null>(null);
 
@@ -67,7 +69,7 @@ export const NfcModal: React.FC = () => {
 
         <div className="p-6 space-y-5">
           {/* Digital Badge Preview */}
-          <div className="bg-gradient-to-br from-emerald-800 to-stone-900 text-white p-5 rounded-2xl shadow-md border border-emerald-700/50 space-y-4">
+          <div className="bg-gradient-to-br from-emerald-800 to-stone-900 text-white p-4 rounded-2xl shadow-md border border-emerald-700/50 space-y-4">
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] uppercase tracking-widest text-emerald-300 font-bold block">

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   CloudSun,
   Droplets,
@@ -41,7 +42,8 @@ const POPULAR_LOCATIONS = [
 ];
 
 export const WeatherModule: React.FC = () => {
-  const { currentUser, farmerProfile, setCurrentView, askAiWithPrompt, addDiaryEntry } = useApp();
+  const { currentUser, farmerProfile } = useUserStore();
+  const { setCurrentView, askAiWithPrompt, addDiaryEntry } = useApp();
   const defaultLocation = farmerProfile?.village
     ? `${farmerProfile.village}, ${farmerProfile.state || 'Gujarat'}`
     : (currentUser?.village ? `${currentUser.village}, ${currentUser.state || 'Gujarat'}` : 'Anandpur, Gujarat');
@@ -118,7 +120,7 @@ export const WeatherModule: React.FC = () => {
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* 1. PAGE HEADER */}
-      <div className="bg-gradient-to-br from-[#1b3811] via-[#244b17] to-[#12280a] text-white rounded-[32px] p-6 sm:p-8 shadow-2xl border border-emerald-500/20 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-[#1b3811] via-[#244b17] to-[#12280a] text-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-emerald-500/20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-400/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 
@@ -234,7 +236,7 @@ export const WeatherModule: React.FC = () => {
       {/* 2. CURRENT CONDITIONS HERO STRIP */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: Temperature & Feels Like */}
-        <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Current Temperature</span>
             <div className="text-3xl sm:text-4xl font-extrabold text-stone-900 font-display flex items-baseline gap-1">
@@ -252,10 +254,10 @@ export const WeatherModule: React.FC = () => {
         </div>
 
         {/* Metric 2: Rain Probability & Clouds */}
-        <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Rain Probability (Today)</span>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#2D4F1E] font-display flex items-baseline gap-1">
+            <div className="text-3xl sm:text-4xl font-extrabold text-green-700 font-display flex items-baseline gap-1">
               {weather?.rainfallProbability || 25}%
             </div>
             <p className="text-xs text-stone-600 font-medium truncate max-w-[170px]">
@@ -268,7 +270,7 @@ export const WeatherModule: React.FC = () => {
         </div>
 
         {/* Metric 3: Relative Humidity & Dew */}
-        <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Relative Humidity</span>
             <div className="text-3xl sm:text-4xl font-extrabold text-stone-900 font-display">
@@ -284,7 +286,7 @@ export const WeatherModule: React.FC = () => {
         </div>
 
         {/* Metric 4: Surface Wind & Solar Sun Times */}
-        <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Wind Speed & Sun</span>
             <div className="text-3xl sm:text-4xl font-extrabold text-stone-900 font-display flex items-baseline gap-1">
@@ -307,7 +309,7 @@ export const WeatherModule: React.FC = () => {
       {/* 3. WEATHER RISK SCORE & WEATHER ALERTS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Weather Risk Score Card */}
-        <div className="bg-white rounded-[28px] p-6 border border-stone-200/80 shadow-xs space-y-5">
+        <div className="bg-white rounded-2xl p-6 border border-stone-200/80 shadow-xs space-y-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
@@ -395,7 +397,7 @@ export const WeatherModule: React.FC = () => {
         </div>
 
         {/* Weather Alerts Hub */}
-        <div className="lg:col-span-2 bg-white rounded-[28px] p-6 border border-stone-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-stone-200/80 shadow-xs space-y-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -463,7 +465,7 @@ export const WeatherModule: React.FC = () => {
               type="button"
               id="btn-ask-ai-weather"
               onClick={() => askAiWithPrompt('Analyze upcoming 48-hour weather impacts on my cotton and wheat irrigation scheduling.')}
-              className="text-xs font-bold text-[#2D4F1E] hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-xs font-bold text-green-700 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <Bot className="w-3.5 h-3.5" />
               Ask Kisan Bhai about this forecast &rarr;
@@ -473,7 +475,7 @@ export const WeatherModule: React.FC = () => {
       </div>
 
       {/* 4. WEATHER → FARMING ACTION (THE MOST IMPORTANT SECTION) */}
-      <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-6">
+      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -513,7 +515,7 @@ export const WeatherModule: React.FC = () => {
           {filteredActions.map((action) => (
             <div
               key={action.id}
-              className="p-5 rounded-2xl border border-stone-200/80 hover:border-emerald-500/50 bg-gradient-to-b from-stone-50/50 to-white transition-all shadow-2xs space-y-3 group"
+              className="p-4 rounded-2xl border border-stone-200/80 hover:border-emerald-500/50 bg-gradient-to-b from-stone-50/50 to-white transition-all shadow-2xs space-y-3 group"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5">
@@ -521,7 +523,7 @@ export const WeatherModule: React.FC = () => {
                     {action.icon}
                   </div>
                   <div>
-                    <h3 className="font-bold text-stone-900 text-sm group-hover:text-[#2D4F1E] transition-colors">
+                    <h3 className="font-bold text-stone-900 text-sm group-hover:text-green-700 transition-colors">
                       {action.title}
                     </h3>
                     <p className="text-xs text-stone-500 font-medium">{action.conditionDescription}</p>
@@ -543,7 +545,7 @@ export const WeatherModule: React.FC = () => {
 
               {/* Recommended Action Box */}
               <div className="bg-emerald-500/10 p-3.5 rounded-xl border border-emerald-600/15 space-y-1">
-                <span className="text-[11px] font-bold text-[#2D4F1E] flex items-center gap-1.5 uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-green-700 flex items-center gap-1.5 uppercase tracking-wider">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   Recommended Action:
                 </span>
@@ -569,7 +571,7 @@ export const WeatherModule: React.FC = () => {
                     type="button"
                     id={`btn-goto-irrigation-${action.id}`}
                     onClick={() => setCurrentView('smart-irrigation')}
-                    className="font-bold text-[#2D4F1E] hover:underline flex items-center gap-1 cursor-pointer"
+                    className="font-bold text-green-700 hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <span>Adjust Irrigation</span>
                     <ArrowRight className="w-3 h-3" />
@@ -579,7 +581,7 @@ export const WeatherModule: React.FC = () => {
                     type="button"
                     id={`btn-goto-scanner-${action.id}`}
                     onClick={() => setCurrentView('crop-disease-scanner')}
-                    className="font-bold text-[#2D4F1E] hover:underline flex items-center gap-1 cursor-pointer"
+                    className="font-bold text-green-700 hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <span>Open Disease Scanner</span>
                     <ArrowRight className="w-3 h-3" />
@@ -589,7 +591,7 @@ export const WeatherModule: React.FC = () => {
                     type="button"
                     id={`btn-ask-ai-action-${action.id}`}
                     onClick={() => askAiWithPrompt(`Provide specific guidance on: ${action.title} - ${action.recommendedAction}`)}
-                    className="font-bold text-[#2D4F1E] hover:underline flex items-center gap-1 cursor-pointer"
+                    className="font-bold text-green-700 hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <span>Ask AI Advice</span>
                     <ArrowRight className="w-3 h-3" />
@@ -602,7 +604,7 @@ export const WeatherModule: React.FC = () => {
       </div>
 
       {/* 5. 7-DAY FARM FORECAST (HORIZONTAL CARDS) */}
-      <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-6">
+      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h2 className="text-2xl font-extrabold font-display text-stone-900">
@@ -629,7 +631,7 @@ export const WeatherModule: React.FC = () => {
                 onClick={() => setSelectedDayIdx(idx)}
                 className={`p-4 rounded-2xl border text-center transition-all cursor-pointer space-y-2.5 relative ${
                   isSelected
-                    ? 'bg-[#2D4F1E] text-white border-[#2D4F1E] shadow-md scale-102 ring-2 ring-emerald-400/50'
+                    ? 'bg-green-700 text-white border-green-700 shadow-md scale-102 ring-2 ring-emerald-400/50'
                     : 'bg-stone-50/70 hover:bg-stone-100/80 text-stone-900 border-stone-200/80'
                 }`}
               >
@@ -691,9 +693,9 @@ export const WeatherModule: React.FC = () => {
 
         {/* Selected Day Expanded Agronomic Advisory */}
         {selectedDay && (
-          <div className="bg-emerald-500/10 p-5 rounded-2xl border border-emerald-600/20 space-y-2">
+          <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-600/20 space-y-2">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <div className="flex items-center gap-2 font-bold text-sm text-[#2D4F1E]">
+              <div className="flex items-center gap-2 font-bold text-sm text-green-700">
                 <ShieldCheck className="w-5 h-5" />
                 <span>
                   {selectedDay.day} ({selectedDay.date}) — Agronomic Advisory for {farmerProfile?.mainCrop || 'Cotton & Wheat'}:
@@ -711,7 +713,7 @@ export const WeatherModule: React.FC = () => {
       </div>
 
       {/* 6. HACKATHON SHORTCUTS & SMART IRRIGATION BANNER */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-[#1b3811] rounded-[32px] p-6 sm:p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl border border-blue-400/20">
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-[#1b3811] rounded-2xl p-6 sm:p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl border border-blue-400/20">
         <div className="space-y-2 max-w-2xl">
           <div className="flex items-center gap-2">
             <span className="bg-blue-500/30 text-blue-200 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-400/30">

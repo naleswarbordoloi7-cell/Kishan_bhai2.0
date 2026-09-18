@@ -37,7 +37,7 @@ export const CropRecommendationCard: React.FC<CropRecommendationCardProps> = ({
 
   return (
     <div
-      className={`rounded-3xl p-6 sm:p-7 border transition-all space-y-5 bg-white ${
+      className={`rounded-2xl p-6 sm:p-6 border transition-all space-y-5 bg-white ${
         isTopMatch
           ? 'border-emerald-600 shadow-md ring-2 ring-emerald-500/20'
           : 'border-stone-200 hover:border-stone-300 shadow-xs'
@@ -199,7 +199,7 @@ export const CropRecommendationCard: React.FC<CropRecommendationCardProps> = ({
 
           <button
             onClick={() => onViewGuide(crop.cropId)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-[#1B3B11] hover:bg-[#2D4F1E] px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-[#1B3B11] hover:bg-green-700 px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
           >
             <span>Complete Crop Guide</span>
             <ArrowRight className="w-3.5 h-3.5" />
