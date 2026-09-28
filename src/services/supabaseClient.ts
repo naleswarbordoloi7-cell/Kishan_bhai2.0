@@ -39,11 +39,54 @@ export interface DatabaseSchema {
         Insert: Omit<BulkOrderRow, 'created_at'> & { created_at?: string };
         Update: Partial<BulkOrderRow>;
       };
+      appointments: {
+        Row: AppointmentRow;
+        Insert: Partial<AppointmentRow> & { farmer_name: string; farmer_phone: string; expert_name: string; problem_description: string; preferred_slot: string };
+        Update: Partial<AppointmentRow>;
+      };
+      user_logins: {
+        Row: UserLoginRow;
+        Insert: Partial<UserLoginRow> & { user_id: string; user_name: string };
+        Update: Partial<UserLoginRow>;
+      };
     };
   };
 }
 
 // 1. Database Table Row Types
+export interface UserLoginRow {
+  id: string;
+  user_id: string;
+  user_name: string;
+  email?: string | null;
+  phone?: string | null;
+  role: string;
+  village?: string | null;
+  state?: string | null;
+  login_method: string;
+  login_time: string;
+  device_info?: string | null;
+  metadata?: Record<string, any>;
+}
+
+export interface AppointmentRow {
+  id: string;
+  farmer_id?: string;
+  farmer_name: string;
+  farmer_phone: string;
+  farmer_village?: string;
+  farmer_state?: string;
+  expert_id: string;
+  expert_name: string;
+  expert_specialization?: string;
+  expert_institution?: string;
+  consultation_type: 'VOICE' | 'VIDEO';
+  preferred_slot: string;
+  problem_description: string;
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  metadata?: Record<string, any>;
+  created_at: string;
+}
 export interface UserRow {
   id: string;
   full_name: string;
@@ -150,8 +193,26 @@ export interface BulkOrderRow {
 }
 
 // 2. Client Initialization (Environment-safe & Lazy)
-const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+export const SUPABASE_PROJECT_ID = 'sphasblonzgvkninmjva';
+const DEFAULT_SUPABASE_URL = 'https://sphasblonzgvkninmjva.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_eEBFN75JQVyYkZ-8kXT5nw_PZCbgS31';
+
+const getEnv = (key: string): string => {
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key] as string;
+    }
+  } catch {}
+  try {
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
+      return (import.meta as any).env[key] as string;
+    }
+  } catch {}
+  return '';
+};
+
+export const SUPABASE_URL = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL') || DEFAULT_SUPABASE_URL;
+export const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY') || DEFAULT_SUPABASE_ANON_KEY;
 
 let clientInstance: SupabaseClient<DatabaseSchema> | null = null;
 
@@ -180,10 +241,139 @@ export const getSupabase = (): SupabaseClient<DatabaseSchema> | null => {
 };
 
 // 3. PostgreSQL Database Schema Definition (SQL DDL script)
+export const SUPABASE_APPOINTMENTS_ONLY_SQL = `
+-- ============================================================================
+-- Kishan Bhai - Appointments Table for Supabase (Run in SQL Editor)
+-- Project: sphasblonzgvkninmjva
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS public.appointments (
+  id TEXT PRIMARY KEY DEFAULT ('apt_' || replace(gen_random_uuid()::text, '-', '')),
+  farmer_id TEXT,
+  farmer_name TEXT NOT NULL,
+  farmer_phone TEXT NOT NULL,
+  farmer_village TEXT,
+  farmer_state TEXT,
+  expert_id TEXT NOT NULL,
+  expert_name TEXT NOT NULL,
+  expert_specialization TEXT,
+  expert_institution TEXT,
+  consultation_type TEXT NOT NULL DEFAULT 'VOICE' CHECK (consultation_type IN ('VOICE', 'VIDEO')),
+  preferred_slot TEXT NOT NULL,
+  problem_description TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'CONFIRMED' CHECK (status IN ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED')),
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Realtime Publication for instant appointment updates
+ALTER PUBLICATION supabase_realtime ADD TABLE public.appointments;
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
+
+-- Public Access Policies
+CREATE POLICY "Public read appointments" ON public.appointments FOR SELECT USING (true);
+CREATE POLICY "Public insert appointments" ON public.appointments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update appointments" ON public.appointments FOR UPDATE USING (true);
+`;
+
+export const SUPABASE_USER_LOGINS_SQL = `
+-- ============================================================================
+-- Kishan Bhai - User Logins Table for Supabase (Run in SQL Editor)
+-- Project: sphasblonzgvkninmjva
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS public.user_logins (
+  id TEXT PRIMARY KEY DEFAULT ('log_' || replace(gen_random_uuid()::text, '-', '')),
+  user_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  role TEXT NOT NULL DEFAULT 'FARMER',
+  village TEXT,
+  state TEXT,
+  login_method TEXT NOT NULL DEFAULT 'phone',
+  login_time TIMESTAMPTZ NOT NULL DEFAULT now(),
+  device_info TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+-- Realtime Broadcasts
+ALTER PUBLICATION supabase_realtime ADD TABLE public.user_logins;
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE public.user_logins ENABLE ROW LEVEL SECURITY;
+
+-- Public Access Policies
+CREATE POLICY "Public read user_logins" ON public.user_logins FOR SELECT USING (true);
+CREATE POLICY "Public insert user_logins" ON public.user_logins FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update user_logins" ON public.user_logins FOR UPDATE USING (true);
+`;
+
+export const SUPABASE_COMBINED_ESSENTIALS_SQL = `
+-- ============================================================================
+-- Kishan Bhai - Combined Appointments & User Logins Tables
+-- Project: sphasblonzgvkninmjva
+-- ============================================================================
+
+-- 1. APPOINTMENTS TABLE
+CREATE TABLE IF NOT EXISTS public.appointments (
+  id TEXT PRIMARY KEY DEFAULT ('apt_' || replace(gen_random_uuid()::text, '-', '')),
+  farmer_id TEXT,
+  farmer_name TEXT NOT NULL,
+  farmer_phone TEXT NOT NULL,
+  farmer_village TEXT,
+  farmer_state TEXT,
+  expert_id TEXT NOT NULL,
+  expert_name TEXT NOT NULL,
+  expert_specialization TEXT,
+  expert_institution TEXT,
+  consultation_type TEXT NOT NULL DEFAULT 'VOICE' CHECK (consultation_type IN ('VOICE', 'VIDEO')),
+  preferred_slot TEXT NOT NULL,
+  problem_description TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'CONFIRMED' CHECK (status IN ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED')),
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 2. USER LOGINS TABLE
+CREATE TABLE IF NOT EXISTS public.user_logins (
+  id TEXT PRIMARY KEY DEFAULT ('log_' || replace(gen_random_uuid()::text, '-', '')),
+  user_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  role TEXT NOT NULL DEFAULT 'FARMER',
+  village TEXT,
+  state TEXT,
+  login_method TEXT NOT NULL DEFAULT 'phone',
+  login_time TIMESTAMPTZ NOT NULL DEFAULT now(),
+  device_info TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+-- Realtime Broadcasts
+ALTER PUBLICATION supabase_realtime ADD TABLE public.appointments, public.user_logins;
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_logins ENABLE ROW LEVEL SECURITY;
+
+-- Public Access Policies
+CREATE POLICY "Public read appointments" ON public.appointments FOR SELECT USING (true);
+CREATE POLICY "Public insert appointments" ON public.appointments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update appointments" ON public.appointments FOR UPDATE USING (true);
+
+CREATE POLICY "Public read user_logins" ON public.user_logins FOR SELECT USING (true);
+CREATE POLICY "Public insert user_logins" ON public.user_logins FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update user_logins" ON public.user_logins FOR UPDATE USING (true);
+`;
+
 export const SUPABASE_SQL_SCHEMA = `
 -- ============================================================================
 -- Kishan Bhai - PostgreSQL Schema for Supabase
--- Tables: users, farms, transactions, clusters, harvest_lots, bulk_orders
+-- Tables: users, farms, transactions, clusters, harvest_lots, bulk_orders, appointments
 -- Includes Row Level Security (RLS) & Realtime Publication
 -- ============================================================================
 
@@ -298,8 +488,28 @@ CREATE TABLE IF NOT EXISTS public.bulk_orders (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- 7. APPOINTMENTS TABLE (Talk to Agri-Expert Bookings)
+CREATE TABLE IF NOT EXISTS public.appointments (
+  id TEXT PRIMARY KEY DEFAULT ('apt_' || replace(gen_random_uuid()::text, '-', '')),
+  farmer_id TEXT,
+  farmer_name TEXT NOT NULL,
+  farmer_phone TEXT NOT NULL,
+  farmer_village TEXT,
+  farmer_state TEXT,
+  expert_id TEXT NOT NULL,
+  expert_name TEXT NOT NULL,
+  expert_specialization TEXT,
+  expert_institution TEXT,
+  consultation_type TEXT NOT NULL DEFAULT 'VOICE' CHECK (consultation_type IN ('VOICE', 'VIDEO')),
+  preferred_slot TEXT NOT NULL,
+  problem_description TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'CONFIRMED' CHECK (status IN ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED')),
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Realtime Publication for live updates
-ALTER PUBLICATION supabase_realtime ADD TABLE public.users, public.farms, public.transactions, public.harvest_lots, public.bulk_orders;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.users, public.farms, public.transactions, public.harvest_lots, public.bulk_orders, public.appointments;
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
@@ -308,8 +518,9 @@ ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clusters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.harvest_lots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bulk_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 
--- Public Access Policies (Allow read/write for demo and collaborative cluster operations)
+-- Public Access Policies
 CREATE POLICY "Public read users" ON public.users FOR SELECT USING (true);
 CREATE POLICY "Public write users" ON public.users FOR ALL USING (true);
 
@@ -327,6 +538,9 @@ CREATE POLICY "Public write harvest_lots" ON public.harvest_lots FOR ALL USING (
 
 CREATE POLICY "Public read bulk_orders" ON public.bulk_orders FOR SELECT USING (true);
 CREATE POLICY "Public write bulk_orders" ON public.bulk_orders FOR ALL USING (true);
+
+CREATE POLICY "Public read appointments" ON public.appointments FOR SELECT USING (true);
+CREATE POLICY "Public write appointments" ON public.appointments FOR ALL USING (true);
 `;
 
 // 4. Real-time Service Layer & CRUD Handlers
@@ -514,4 +728,407 @@ export async function getTransactionsByUserId(userId: string): Promise<Transacti
     return [];
   }
   return data || [];
+}
+
+// 6. Appointment Booking Integration Layer (Talk to Expert & KVK Advisory)
+
+const APPOINTMENTS_STORAGE_KEY = 'kb_appointments_cache';
+
+const getCachedAppointments = (): AppointmentRow[] => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const stored = window.localStorage.getItem(APPOINTMENTS_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    }
+  } catch (e) {
+    console.warn('[Supabase Cache] Failed to read appointments cache:', e);
+  }
+  return [];
+};
+
+const saveCachedAppointments = (appointments: AppointmentRow[]): void => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(APPOINTMENTS_STORAGE_KEY, JSON.stringify(appointments));
+    }
+  } catch (e) {
+    console.warn('[Supabase Cache] Failed to write appointments cache:', e);
+  }
+};
+
+/**
+ * Record a new expert consultation appointment into Supabase
+ */
+export async function recordAppointment(
+  appointment: Omit<AppointmentRow, 'id' | 'created_at'> & { id?: string; created_at?: string }
+): Promise<{ success: boolean; data: AppointmentRow; savedToSupabase: boolean; error?: string }> {
+  const generatedId = appointment.id || `apt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const fullRecord: AppointmentRow = {
+    ...appointment,
+    id: generatedId,
+    status: appointment.status || 'CONFIRMED',
+    created_at: appointment.created_at || new Date().toISOString(),
+  };
+
+  // Always store in local cache first for instant UI response and offline safety
+  const localList = getCachedAppointments();
+  const updatedList = [fullRecord, ...localList.filter((a) => a.id !== fullRecord.id)];
+  saveCachedAppointments(updatedList);
+
+  const supabase = getSupabase();
+  if (!supabase) {
+    return {
+      success: true,
+      data: fullRecord,
+      savedToSupabase: false,
+      error: 'Supabase client is not configured with valid credentials.',
+    };
+  }
+
+  try {
+    // Attempt insert into Supabase appointments table
+    const { data, error } = await (supabase.from('appointments') as any)
+      .insert([fullRecord])
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('[Supabase] Failed to write appointment to public.appointments:', error.message);
+      return {
+        success: true,
+        data: fullRecord,
+        savedToSupabase: false,
+        error: error.message,
+      };
+    }
+
+    // Success in Supabase!
+    const savedRecord = (data as AppointmentRow) || fullRecord;
+    const syncedList = [savedRecord, ...localList.filter((a) => a.id !== savedRecord.id)];
+    saveCachedAppointments(syncedList);
+
+    return {
+      success: true,
+      data: savedRecord,
+      savedToSupabase: true,
+    };
+  } catch (err: any) {
+    console.error('[Supabase] Unexpected exception writing appointment:', err);
+    return {
+      success: true,
+      data: fullRecord,
+      savedToSupabase: false,
+      error: err?.message || 'Network exception',
+    };
+  }
+}
+
+/**
+ * Fetch all appointments from Supabase, seamlessly falling back or merging with cached items
+ */
+export async function getAppointments(farmerPhoneOrId?: string): Promise<{ appointments: AppointmentRow[]; source: 'supabase' | 'local' }> {
+  const localItems = getCachedAppointments();
+  const supabase = getSupabase();
+
+  if (!supabase) {
+    return { appointments: localItems, source: 'local' };
+  }
+
+  try {
+    let query = supabase.from('appointments').select('*').order('created_at', { ascending: false });
+    if (farmerPhoneOrId) {
+      query = query.or(`farmer_phone.eq.${farmerPhoneOrId},farmer_id.eq.${farmerPhoneOrId}`);
+    }
+    const { data, error } = await query.limit(50);
+
+    if (error) {
+      console.warn('[Supabase] Could not fetch appointments from database:', error.message);
+      return { appointments: localItems, source: 'local' };
+    }
+
+    if (data && Array.isArray(data)) {
+      // Merge unique appointments
+      const map = new Map<string, AppointmentRow>();
+      (data as AppointmentRow[]).forEach((item) => map.set(item.id, item));
+      localItems.forEach((item) => {
+        if (!map.has(item.id)) {
+          map.set(item.id, item);
+        }
+      });
+      const combined = Array.from(map.values()).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      saveCachedAppointments(combined);
+      return { appointments: combined, source: 'supabase' };
+    }
+  } catch (e: any) {
+    console.warn('[Supabase] Fetch error:', e?.message);
+  }
+
+  return { appointments: localItems, source: 'local' };
+}
+
+/**
+ * Real-time Subscription to new appointments
+ */
+export function subscribeToAppointments(
+  onInsert: (app: AppointmentRow) => void
+): RealtimeChannel | null {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  try {
+    const channel = supabase
+      .channel('realtime_appointments')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'appointments' },
+        (payload) => {
+          if (payload.new) {
+            onInsert(payload.new as AppointmentRow);
+          }
+        }
+      )
+      .subscribe();
+
+    return channel;
+  } catch (e) {
+    console.warn('[Supabase Realtime] Could not subscribe to appointments:', e);
+    return null;
+  }
+}
+
+/**
+ * Check Supabase backend health and appointments table readiness
+ */
+export async function checkSupabaseHealth(): Promise<{
+  configured: boolean;
+  connected: boolean;
+  tableExists: boolean;
+  projectId: string;
+  url: string;
+  errorMessage?: string;
+}> {
+  const configured = isSupabaseConfigured();
+  if (!configured) {
+    return {
+      configured: false,
+      connected: false,
+      tableExists: false,
+      projectId: SUPABASE_PROJECT_ID,
+      url: SUPABASE_URL,
+      errorMessage: 'Supabase credentials not configured.',
+    };
+  }
+
+  const supabase = getSupabase();
+  if (!supabase) {
+    return {
+      configured: true,
+      connected: false,
+      tableExists: false,
+      projectId: SUPABASE_PROJECT_ID,
+      url: SUPABASE_URL,
+      errorMessage: 'Failed to initialize Supabase client instance.',
+    };
+  }
+
+  try {
+    const { data, error } = await supabase.from('appointments').select('id').limit(1);
+    if (error) {
+      // Table doesn't exist yet or permission denied
+      const isMissingTable = error.code === 'PGRST205' || error.message.includes('Could not find the table');
+      return {
+        configured: true,
+        connected: true,
+        tableExists: !isMissingTable,
+        projectId: SUPABASE_PROJECT_ID,
+        url: SUPABASE_URL,
+        errorMessage: error.message,
+      };
+    }
+    return {
+      configured: true,
+      connected: true,
+      tableExists: true,
+      projectId: SUPABASE_PROJECT_ID,
+      url: SUPABASE_URL,
+    };
+  } catch (err: any) {
+    return {
+      configured: true,
+      connected: false,
+      tableExists: false,
+      projectId: SUPABASE_PROJECT_ID,
+      url: SUPABASE_URL,
+      errorMessage: err?.message || 'Connection failure',
+    };
+  }
+}
+
+// 7. User Sign-in & Authentication Tracking Layer
+
+const USER_LOGINS_STORAGE_KEY = 'kb_user_logins_cache';
+
+const getCachedUserLogins = (): UserLoginRow[] => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const stored = window.localStorage.getItem(USER_LOGINS_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    }
+  } catch (e) {
+    console.warn('[Supabase Cache] Failed to read logins cache:', e);
+  }
+  return [];
+};
+
+const saveCachedUserLogins = (logins: UserLoginRow[]): void => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(USER_LOGINS_STORAGE_KEY, JSON.stringify(logins.slice(0, 30)));
+    }
+  } catch (e) {
+    console.warn('[Supabase Cache] Failed to write logins cache:', e);
+  }
+};
+
+/**
+ * Record a user login into Supabase user_logins table
+ */
+export async function recordUserLogin(
+  login: Omit<UserLoginRow, 'id' | 'login_time'> & { id?: string; login_time?: string }
+): Promise<{ success: boolean; data: UserLoginRow; savedToSupabase: boolean; error?: string }> {
+  const generatedId = login.id || `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const fullRecord: UserLoginRow = {
+    ...login,
+    id: generatedId,
+    login_time: login.login_time || new Date().toISOString(),
+  };
+
+  // Cache locally
+  const localList = getCachedUserLogins();
+  const updatedList = [fullRecord, ...localList.filter((l) => l.id !== fullRecord.id)].slice(0, 30);
+  saveCachedUserLogins(updatedList);
+
+  const supabase = getSupabase();
+  if (!supabase) {
+    return {
+      success: true,
+      data: fullRecord,
+      savedToSupabase: false,
+      error: 'Supabase client is not configured.',
+    };
+  }
+
+  try {
+    const { data, error } = await (supabase.from('user_logins') as any)
+      .insert([fullRecord])
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('[Supabase] Failed to write to public.user_logins:', error.message);
+      return {
+        success: true,
+        data: fullRecord,
+        savedToSupabase: false,
+        error: error.message,
+      };
+    }
+
+    const savedRecord = (data as UserLoginRow) || fullRecord;
+    const syncedList = [savedRecord, ...localList.filter((l) => l.id !== savedRecord.id)].slice(0, 30);
+    saveCachedUserLogins(syncedList);
+
+    return {
+      success: true,
+      data: savedRecord,
+      savedToSupabase: true,
+    };
+  } catch (err: any) {
+    console.warn('[Supabase] Exception writing user login:', err?.message);
+    return {
+      success: true,
+      data: fullRecord,
+      savedToSupabase: false,
+      error: err?.message,
+    };
+  }
+}
+
+/**
+ * Fetch recent user logins from Supabase
+ */
+export async function getUserLogins(limit = 20): Promise<{ logins: UserLoginRow[]; source: 'supabase' | 'local' }> {
+  const localItems = getCachedUserLogins();
+  const supabase = getSupabase();
+
+  if (!supabase) {
+    return { logins: localItems, source: 'local' };
+  }
+
+  try {
+    const { data, error } = await (supabase.from('user_logins') as any)
+      .select('*')
+      .order('login_time', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.warn('[Supabase] Fetch user_logins error:', error.message);
+      return { logins: localItems, source: 'local' };
+    }
+
+    if (data && Array.isArray(data)) {
+      const map = new Map<string, UserLoginRow>();
+      (data as UserLoginRow[]).forEach((item) => map.set(item.id, item));
+      localItems.forEach((item) => {
+        if (!map.has(item.id)) {
+          map.set(item.id, item);
+        }
+      });
+      const combined = Array.from(map.values())
+        .sort((a, b) => new Date(b.login_time).getTime() - new Date(a.login_time).getTime())
+        .slice(0, limit);
+      saveCachedUserLogins(combined);
+      return { logins: combined, source: 'supabase' };
+    }
+  } catch (err: any) {
+    console.warn('[Supabase] Fetch user logins exception:', err?.message);
+  }
+
+  return { logins: localItems, source: 'local' };
+}
+
+/**
+ * Real-time subscription to user logins
+ */
+export function subscribeToUserLogins(
+  onInsert: (login: UserLoginRow) => void
+): RealtimeChannel | null {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  try {
+    const channel = supabase
+      .channel('realtime_user_logins')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'user_logins' },
+        (payload) => {
+          if (payload.new) {
+            onInsert(payload.new as UserLoginRow);
+          }
+        }
+      )
+      .subscribe();
+
+    return channel;
+  } catch (e) {
+    console.warn('[Supabase Realtime] Could not subscribe to user_logins:', e);
+    return null;
+  }
 }

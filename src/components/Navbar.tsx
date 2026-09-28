@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useUserStore } from '../store/userStore';
 import {
@@ -26,6 +26,8 @@ import {
   Radio,
   Check,
   ShoppingBag,
+  Clock,
+  Database,
 } from 'lucide-react';
 import { UserRole } from '../../shared/types';
 import { NotificationCenter } from './NotificationCenter';
@@ -33,6 +35,12 @@ import { AnimatedKishanLogo } from './AnimatedKishanLogo';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 import { signOutFirebaseUser } from '../services/firebaseAuthService';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  getUserLogins,
+  subscribeToUserLogins,
+  UserLoginRow,
+  SUPABASE_PROJECT_ID,
+} from '../services/supabaseClient';
 
 export const Navbar: React.FC = () => {
   const { currentUser, setCurrentUser, userRole, setUserRole } = useUserStore();
@@ -54,6 +62,18 @@ export const Navbar: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoginsMenuOpen, setIsLoginsMenuOpen] = useState(false);
+  const [recentLogins, setRecentLogins] = useState<UserLoginRow[]>([]);
+
+  useEffect(() => {
+    getUserLogins(8).then(({ logins }) => setRecentLogins(logins));
+    const channel = subscribeToUserLogins((newLogin) => {
+      setRecentLogins((prev) => [newLogin, ...prev.filter((l) => l.id !== newLogin.id)].slice(0, 8));
+    });
+    return () => {
+      channel?.unsubscribe();
+    };
+  }, []);
 
   const currentLangObj =
     SUPPORTED_LANGUAGES.find((l) => l.code === language) || SUPPORTED_LANGUAGES[0];
@@ -227,6 +247,84 @@ export const Navbar: React.FC = () => {
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             <span>{language === 'hi' ? 'पूछें AI' : 'Kishan AI'}</span>
           </button>
+
+          {/* Supabase Live Logins Tracker */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsLoginsMenuOpen(!isLoginsMenuOpen);
+                setIsLangMenuOpen(false);
+                setIsRoleMenuOpen(false);
+                setIsUserMenuOpen(false);
+                setIsToolsMenuOpen(false);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-900 dark:text-emerald-300 text-xs font-semibold transition-all cursor-pointer"
+              title="Recent Active Sign-Ins (Supabase)"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="hidden lg:inline">{language === 'hi' ? 'लॉगिन' : 'Logins'}</span>
+              {recentLogins.length > 0 && (
+                <span className="text-[10px] font-bold bg-emerald-700 text-white px-1.5 py-0.2 rounded-full">
+                  {recentLogins.length}
+                </span>
+              )}
+            </button>
+
+            {isLoginsMenuOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-stone-900 rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-2.5">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-stone-800">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900 dark:text-stone-100">
+                    <Database className="w-4 h-4 text-emerald-600" />
+                    <span>{language === 'hi' ? 'हालिया लॉगिन (Supabase)' : 'Recent Logins (Supabase Live)'}</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded">
+                    {SUPABASE_PROJECT_ID}
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                  {recentLogins.length > 0 ? (
+                    recentLogins.map((item) => (
+                      <div
+                        key={item.id}
+                        className="p-2 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 font-bold flex items-center justify-center text-[10px]">
+                            {item.user_name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-bold text-stone-900 dark:text-stone-100 text-[11px] flex items-center gap-1">
+                              <span>{item.user_name}</span>
+                              <span className="text-[9px] bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300 px-1 rounded">
+                                {item.role}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-stone-500 dark:text-stone-400">
+                              {item.phone ? `${item.phone.slice(0, 6)}***` : item.email || ''}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-1.5 py-0.5 rounded">
+                            {item.login_method}
+                          </span>
+                          <div className="text-[9px] text-stone-400 mt-0.5">
+                            {new Date(item.login_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-xs text-stone-400">
+                      {language === 'hi' ? 'कोई हालिया लॉगिन नहीं' : 'No recent login records yet'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Notification Bell */}
           <NotificationCenter />

@@ -11,6 +11,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 import { db } from './src/server/db.js';
 import { algorandService } from './src/server/algorand.js';
 import { askKishanAI, generatePaidCropAnalysis, analyzeCropDiseaseImage } from './src/server/gemini.js';
@@ -60,6 +61,11 @@ import {
 } from './src/server/firebaseBackend.js';
 
 dotenv.config();
+
+// Supabase Backend Integration (Project ID: sphasblonzgvkninmjva)
+const serverSupabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://sphasblonzgvkninmjva.supabase.co';
+const serverSupabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_eEBFN75JQVyYkZ-8kXT5nw_PZCbgS31';
+const serverSupabase = createClient(serverSupabaseUrl, serverSupabaseKey);
 
 const app = express();
 const PORT = 3000;
@@ -185,6 +191,24 @@ app.post('/api/auth/register', (req, res) => {
 
   db.users.set(newUser.id, newUser as any);
   syncUserToFirestore(newUser as any).catch((err) => console.warn('[Firebase] Background sync note:', err.message));
+  
+  // Track new registration in Supabase
+  try {
+    (serverSupabase.from('user_logins') as any).insert([{
+      id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      user_id: newUser.id,
+      user_name: newUser.fullName,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role,
+      village: newUser.village,
+      state: newUser.state,
+      login_method: 'register',
+      login_time: new Date().toISOString(),
+      device_info: 'Web Application (New Registration)',
+    }]).then(() => {}).catch(() => {});
+  } catch {}
+
   return res.json({ success: true, user: newUser });
 });
 
@@ -213,6 +237,23 @@ app.post('/api/auth/login', (req, res) => {
 
   if (user) {
     syncUserToFirestore(user).catch((err) => console.warn('[Firebase] Background sync note:', err.message));
+    // Log user sign-in to Supabase
+    try {
+      (serverSupabase.from('user_logins') as any).insert([{
+        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        user_id: user.id,
+        user_name: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        village: user.village,
+        state: user.state,
+        login_method: searchKey.includes('@') ? 'email' : 'phone',
+        login_time: new Date().toISOString(),
+        device_info: 'Web Application',
+      }]).then(() => {}).catch(() => {});
+    } catch {}
+
     return res.json({ success: true, user, message: 'Authentication successful.' });
   }
 
@@ -235,7 +276,41 @@ app.post('/api/auth/login', (req, res) => {
 
   db.users.set(newUser.id, newUser);
   syncUserToFirestore(newUser).catch((err) => console.warn('[Firebase] Background sync note:', err.message));
+
+  // Log new user sign-in to Supabase
+  try {
+    (serverSupabase.from('user_logins') as any).insert([{
+      id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      user_id: newUser.id,
+      user_name: newUser.fullName,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role,
+      village: newUser.village,
+      state: newUser.state,
+      login_method: isEmail ? 'email' : 'phone',
+      login_time: new Date().toISOString(),
+      device_info: 'Web Application',
+    }]).then(() => {}).catch(() => {});
+  } catch {}
+
   return res.json({ success: true, user: newUser, message: 'Account verified and signed in.' });
+});
+
+app.get('/api/auth/recent-logins', async (req, res) => {
+  try {
+    const { data, error } = await (serverSupabase.from('user_logins') as any)
+      .select('*')
+      .order('login_time', { ascending: false })
+      .limit(20);
+
+    if (!error && data) {
+      return res.json({ success: true, logins: data, source: 'supabase' });
+    }
+  } catch (e: any) {
+    console.warn('[Server Supabase] Logins warning:', e?.message);
+  }
+  res.json({ success: true, logins: [], source: 'empty' });
 });
 
 app.get('/api/auth/users', (req, res) => {
@@ -1008,6 +1083,142 @@ app.post('/api/machinery/book', (req, res) => {
     isPrototypeDemo: false,
     message: 'Equipment booking registered.',
   });
+});
+
+// 5.5. TALK TO EXPERT & KVK SCIENTIST APPOINTMENTS (Supabase Synchronized)
+app.get('/api/appointments', async (req, res) => {
+  try {
+    const { data, error } = await serverSupabase
+      .from('appointments')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!error && data && Array.isArray(data)) {
+      // Sync into memory cache as well
+      data.forEach((item: any) => db.appointments.set(item.id, item));
+      return res.json({ success: true, appointments: data, source: 'supabase' });
+    }
+  } catch (e: any) {
+    console.warn('[Server Supabase] Fetch appointments warning:', e?.message);
+  }
+
+  // Fallback to in-memory store
+  const list = Array.from(db.appointments.values()).sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  res.json({ success: true, appointments: list, source: 'memory' });
+});
+
+app.post('/api/appointments/book', async (req, res) => {
+  try {
+    const {
+      id,
+      farmer_id,
+      farmer_name,
+      farmer_phone,
+      farmer_village,
+      farmer_state,
+      expert_id,
+      expert_name,
+      expert_specialization,
+      expert_institution,
+      consultation_type,
+      preferred_slot,
+      problem_description,
+      status,
+      metadata,
+    } = req.body;
+
+    if (!farmer_name || !farmer_phone || !expert_name || !problem_description) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required appointment fields (farmer_name, farmer_phone, expert_name, problem_description)',
+      });
+    }
+
+    const appointmentRecord = {
+      id: id || `apt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      farmer_id: farmer_id || 'usr_farmer',
+      farmer_name,
+      farmer_phone,
+      farmer_village: farmer_village || 'Anandpur',
+      farmer_state: farmer_state || 'Gujarat',
+      expert_id: expert_id || 'exp_icar_1',
+      expert_name,
+      expert_specialization: expert_specialization || 'Agronomy & Crop Health',
+      expert_institution: expert_institution || 'ICAR - Indian Agricultural Research Institute',
+      consultation_type: consultation_type || 'VOICE',
+      preferred_slot: preferred_slot || 'Today, 04:00 PM - 05:00 PM',
+      problem_description,
+      status: status || 'CONFIRMED',
+      metadata: metadata || {},
+      created_at: new Date().toISOString(),
+    };
+
+    // Keep locally in memory
+    db.appointments.set(appointmentRecord.id, appointmentRecord);
+
+    let savedToSupabase = false;
+    let supabaseError: string | null = null;
+
+    try {
+      const { data, error } = await serverSupabase
+        .from('appointments')
+        .insert([appointmentRecord])
+        .select()
+        .single();
+
+      if (error) {
+        console.warn('[Server Supabase] Appointment insert notice:', error.message);
+        supabaseError = error.message;
+      } else {
+        savedToSupabase = true;
+        if (data) {
+          db.appointments.set(data.id, data);
+        }
+      }
+    } catch (err: any) {
+      console.warn('[Server Supabase] Appointment insert exception:', err?.message);
+      supabaseError = err?.message;
+    }
+
+    res.json({
+      success: true,
+      appointment: appointmentRecord,
+      savedToSupabase,
+      supabaseError,
+      message: savedToSupabase
+        ? 'Appointment successfully saved to Supabase backend!'
+        : 'Appointment recorded in Kisan Bhai system.',
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Server error booking appointment' });
+  }
+});
+
+app.get('/api/supabase/status', async (req, res) => {
+  try {
+    const { data, error } = await serverSupabase.from('appointments').select('id').limit(1);
+    const tableExists = !error || (!error.message.includes('Could not find the table') && error.code !== 'PGRST205');
+    res.json({
+      configured: true,
+      connected: true,
+      tableExists,
+      projectId: 'sphasblonzgvkninmjva',
+      url: serverSupabaseUrl,
+      error: error ? error.message : null,
+    });
+  } catch (err: any) {
+    res.json({
+      configured: true,
+      connected: false,
+      tableExists: false,
+      projectId: 'sphasblonzgvkninmjva',
+      url: serverSupabaseUrl,
+      error: err?.message,
+    });
+  }
 });
 
 // 6. HARVEST POOLING

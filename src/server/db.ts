@@ -45,6 +45,7 @@ class InMemoryDB {
   cropRecommendations: Map<string, CropRecommendationResult> = new Map();
   soilHealth: Map<string, SoilHealthData> = new Map();
   soilRecords: Map<string, SoilRecordHistoryItem> = new Map();
+  appointments: Map<string, any> = new Map();
   usedTxHashes: Set<string> = new Set();
   
   budgetStats: ApiBudgetStats = {

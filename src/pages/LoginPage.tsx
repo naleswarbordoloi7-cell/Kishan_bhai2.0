@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useUserStore } from '../store/userStore';
 import {
@@ -17,6 +17,14 @@ import {
   UserPlus,
   Sparkles,
   MapPin,
+  Database,
+  ExternalLink,
+  Copy,
+  Check,
+  Clock,
+  RefreshCw,
+  FileCode2,
+  X,
 } from 'lucide-react';
 import { UserRole, UserProfile } from '../../shared/types';
 import { AnimatedKishanLogo } from '../components/AnimatedKishanLogo';
@@ -31,6 +39,15 @@ import {
 } from '../data/indianStatesAndDistricts';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { PWAInstallButton } from '../components/PWAInstallButton';
+import {
+  recordUserLogin,
+  getUserLogins,
+  subscribeToUserLogins,
+  SUPABASE_USER_LOGINS_SQL,
+  SUPABASE_COMBINED_ESSENTIALS_SQL,
+  SUPABASE_PROJECT_ID,
+  UserLoginRow,
+} from '../services/supabaseClient';
 
 const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
   <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
@@ -88,6 +105,41 @@ export const LoginPage: React.FC = () => {
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
 
+  // Supabase User Sign-in Tracking
+  const [recentLogins, setRecentLogins] = useState<UserLoginRow[]>([]);
+  const [showLoginsModal, setShowLoginsModal] = useState(false);
+  const [copiedLoginSql, setCopiedLoginSql] = useState(false);
+  const [isLoadingLogins, setIsLoadingLogins] = useState(false);
+
+  const fetchLogins = async () => {
+    setIsLoadingLogins(true);
+    try {
+      const { logins } = await getUserLogins(10);
+      setRecentLogins(logins);
+    } catch (e) {
+      console.warn('Could not fetch logins:', e);
+    } finally {
+      setIsLoadingLogins(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogins();
+
+    const channel = subscribeToUserLogins((newLogin) => {
+      setRecentLogins((prev) => [newLogin, ...prev.filter((l) => l.id !== newLogin.id)].slice(0, 10));
+      addToast(
+        language === 'hi' ? 'सक्रिय उपयोगकर्ता लॉगिन' : 'User Signed In',
+        `${newLogin.user_name} (${newLogin.role}) logged in via ${newLogin.login_method}`,
+        'info'
+      );
+    });
+
+    return () => {
+      channel?.unsubscribe();
+    };
+  }, []);
+
   const navigateToRoleDashboard = (targetRole: UserRole) => {
     switch (targetRole) {
       case 'FARMER':
@@ -139,6 +191,19 @@ export const LoginPage: React.FC = () => {
       });
       setCurrentUser(user);
       setUserRole(user.role);
+
+      // Track login in Supabase
+      recordUserLogin({
+        user_id: user.id,
+        user_name: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        village: user.village,
+        state: user.state,
+        login_method: 'google',
+      });
+
       addToast(
         language === 'hi' ? 'Google लॉगिन सफल' : 'Google Sign-In Successful',
         language === 'hi'
@@ -251,10 +316,30 @@ export const LoginPage: React.FC = () => {
         }),
       });
 
-      const data = await res.json();
-      if (res.ok && data.user) {
+      let data: any = null;
+      try {
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          data = await res.json();
+        }
+      } catch {}
+
+      if (data && data.user) {
         setCurrentUser(data.user);
         setUserRole(data.user.role);
+
+        // Record to Supabase user_logins
+        recordUserLogin({
+          user_id: data.user.id,
+          user_name: data.user.fullName,
+          email: data.user.email,
+          phone: data.user.phone,
+          role: data.user.role,
+          village: data.user.village,
+          state: data.user.state,
+          login_method: loginMethod,
+        });
+
         addToast(
           language === 'hi' ? 'लॉगिन सफल' : 'Login Successful',
           language === 'hi'
@@ -282,6 +367,19 @@ export const LoginPage: React.FC = () => {
         };
         setCurrentUser(fallbackUser);
         setUserRole('FARMER');
+
+        // Record to Supabase user_logins
+        recordUserLogin({
+          user_id: fallbackUser.id,
+          user_name: fallbackUser.fullName,
+          email: fallbackUser.email,
+          phone: fallbackUser.phone,
+          role: fallbackUser.role,
+          village: fallbackUser.village,
+          state: fallbackUser.state,
+          login_method: loginMethod,
+        });
+
         addToast(
           language === 'hi' ? 'लॉगिन सफल' : 'Login Successful',
           language === 'hi' ? `स्वागत है, ${fallbackUser.fullName}!` : `Welcome, ${fallbackUser.fullName}!`,
@@ -369,25 +467,53 @@ export const LoginPage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser),
       });
-      const data = await res.json();
-      if (res.ok && data.user) {
-        setCurrentUser(data.user);
-        setUserRole(data.user.role);
-      } else {
-        setCurrentUser(newUser);
-        setUserRole(newUser.role);
-      }
+      let data: any = null;
+      try {
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          data = await res.json();
+        }
+      } catch {}
+      const finalUser = (data && data.user) ? data.user : newUser;
+      setCurrentUser(finalUser);
+      setUserRole(finalUser.role);
+
+      // Record to Supabase user_logins
+      recordUserLogin({
+        user_id: finalUser.id,
+        user_name: finalUser.fullName,
+        email: finalUser.email,
+        phone: finalUser.phone,
+        role: finalUser.role,
+        village: finalUser.village,
+        state: finalUser.state,
+        login_method: 'register',
+      });
+
       addToast(
         language === 'hi' ? 'खाता सफलतापूर्वक बना' : 'Account Created Successfully',
         language === 'hi'
-          ? `स्वागत है, ${newUser.fullName}! (${newUser.role})`
-          : `Welcome, ${newUser.fullName}! (${newUser.role})`,
+          ? `स्वागत है, ${finalUser.fullName}! (${finalUser.role})`
+          : `Welcome, ${finalUser.fullName}! (${finalUser.role})`,
         'success'
       );
-      navigateToRoleDashboard(newUser.role);
+      navigateToRoleDashboard(finalUser.role);
     } catch {
       setCurrentUser(newUser);
       setUserRole(newUser.role);
+
+      // Record to Supabase user_logins
+      recordUserLogin({
+        user_id: newUser.id,
+        user_name: newUser.fullName,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+        village: newUser.village,
+        state: newUser.state,
+        login_method: 'register',
+      });
+
       addToast(
         language === 'hi' ? 'खाता पंजीकृत' : 'Account Registered',
         language === 'hi' ? `स्वागत है, ${newUser.fullName}!` : `Welcome, ${newUser.fullName}!`,
@@ -418,6 +544,19 @@ export const LoginPage: React.FC = () => {
 
     setCurrentUser(demoUser);
     setUserRole(chosenRole);
+
+    // Record demo login to Supabase
+    recordUserLogin({
+      user_id: demoUser.id,
+      user_name: demoUser.fullName,
+      email: demoUser.email,
+      phone: demoUser.phone,
+      role: demoUser.role,
+      village: demoUser.village,
+      state: demoUser.state,
+      login_method: 'demo',
+    });
+
     addToast(
       language === 'hi' ? 'डेमो लॉगिन सफल' : 'Demo Login Successful',
       language === 'hi' ? `${defaultName} के रूप में प्रवेश किया` : `Logged in as ${defaultName}`,
@@ -1120,11 +1259,163 @@ export const LoginPage: React.FC = () => {
           <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
           <span>
             {language === 'hi'
-              ? 'Google Firebase द्वारा 100% सुरक्षित'
-              : '100% Secure via Google Firebase & End-to-End Encryption'}
+              ? 'Google Firebase व Supabase द्वारा 100% सुरक्षित'
+              : '100% Secure via Google Firebase & Supabase Backend'}
           </span>
         </div>
       </div>
+
+      {/* Supabase Live Active Logins Stream */}
+      <div className="w-full mt-4 bg-white rounded-2xl border border-stone-200/90 shadow-md p-4 sm:p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h3 className="text-xs font-bold text-stone-900 tracking-wide flex items-center gap-1.5">
+              <span>{language === 'hi' ? 'सक्रिय लॉगिन' : 'Live Active Sign-ins'}</span>
+              <span className="text-[10px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.2 rounded font-bold">
+                Supabase
+              </span>
+            </h3>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={fetchLogins}
+              className="text-stone-400 hover:text-stone-600 p-1 cursor-pointer"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-3 h-3 ${isLoadingLogins ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowLoginsModal(true)}
+              className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline flex items-center gap-1 cursor-pointer"
+            >
+              <FileCode2 className="w-3 h-3" />
+              <span>SQL</span>
+            </button>
+          </div>
+        </div>
+
+        {recentLogins.length > 0 ? (
+          <div className="space-y-2">
+            {recentLogins.slice(0, 5).map((login) => (
+              <div
+                key={login.id}
+                className="flex items-center justify-between p-2.5 bg-stone-50 hover:bg-emerald-50/40 transition-colors rounded-xl border border-stone-200/70 text-xs"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 border border-emerald-200">
+                    {login.user_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-bold text-stone-900 flex items-center gap-1.5">
+                      <span>{login.user_name}</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-stone-200 text-stone-700 uppercase">
+                        {login.role}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-stone-500">
+                      {login.phone ? `${login.phone.slice(0, 6)}***${login.phone.slice(-3)}` : login.email}
+                      {login.village ? ` • ${login.village}` : ''}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100/90 text-emerald-800">
+                    via {login.login_method}
+                  </span>
+                  <div className="text-[9px] text-stone-400 mt-0.5 flex items-center justify-end gap-1">
+                    <Clock className="w-2.5 h-2.5" />
+                    <span>
+                      {new Date(login.login_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-xs text-stone-400 bg-stone-50 rounded-xl border border-dashed border-stone-200">
+            {language === 'hi'
+              ? 'कोई हालिया लॉगिन नहीं। साइन इन करें और आपका लॉगिन यहाँ लाइव दिखेगा।'
+              : 'Sign in to see your session recorded live in Supabase backend.'}
+          </div>
+        )}
+      </div>
+
+      {/* SQL Setup Modal */}
+      {showLoginsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-stone-200 space-y-4 max-h-[85vh] flex flex-col">
+            <div className="flex items-start justify-between pb-2 border-b border-stone-100">
+              <div>
+                <h3 className="font-bold text-stone-900 text-base flex items-center gap-2">
+                  <Database className="w-5 h-5 text-emerald-700" />
+                  <span>Supabase User Logins Schema</span>
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Project ID: <code className="text-emerald-700 font-mono font-bold">{SUPABASE_PROJECT_ID}</code>
+                </p>
+              </div>
+              <button
+                onClick={() => setShowLoginsModal(false)}
+                className="p-1.5 rounded-full hover:bg-stone-100 text-stone-500 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-xs text-stone-600 space-y-1.5">
+              <p>
+                Run this SQL in your{' '}
+                <a
+                  href={`https://supabase.com/dashboard/project/${SUPABASE_PROJECT_ID}/sql/new`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-emerald-700 underline font-bold inline-flex items-center gap-0.5"
+                >
+                  Supabase SQL Editor <ExternalLink className="w-3 h-3" />
+                </a>{' '}
+                to create the <code className="font-mono bg-stone-100 px-1 py-0.5 rounded text-emerald-800 font-bold">user_logins</code> table with real-time sync:
+              </p>
+            </div>
+
+            <div className="relative flex-1 overflow-hidden rounded-xl border border-stone-300 bg-stone-950 text-stone-100 font-mono text-[11px] p-3.5">
+              <pre className="overflow-x-auto max-h-56 overflow-y-auto whitespace-pre leading-relaxed">
+                {SUPABASE_USER_LOGINS_SQL}
+              </pre>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between gap-3">
+              <span className="text-[11px] text-stone-400">
+                Includes RLS & Realtime Broadcast.
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(SUPABASE_USER_LOGINS_SQL);
+                    setCopiedLoginSql(true);
+                    setTimeout(() => setCopiedLoginSql(false), 2500);
+                  }}
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  {copiedLoginSql ? <Check className="w-4 h-4 text-emerald-200" /> : <Copy className="w-4 h-4" />}
+                  <span>{copiedLoginSql ? 'Copied!' : 'Copy SQL'}</span>
+                </button>
+                <button
+                  onClick={() => setShowLoginsModal(false)}
+                  className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
