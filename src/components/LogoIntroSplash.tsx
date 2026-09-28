@@ -105,7 +105,7 @@ export const LogoIntroSplash: React.FC<LogoIntroSplashProps> = ({ isOpen, onClos
 
     setCurrentUser(demoUser);
     setUserRole(role);
-    addToast('Welcome to Kisan Bhai', `Signed in as ${defaultName} (${role})`, 'success');
+    addToast('Welcome to Kishan Bhai', `Signed in as ${defaultName} (${role})`, 'success');
     onClose();
 
     if (role === 'FARMER') setCurrentView('farmer-dashboard');
@@ -233,12 +233,12 @@ export const LogoIntroSplash: React.FC<LogoIntroSplashProps> = ({ isOpen, onClos
 
             <div className="inline-flex items-center gap-1.5 bg-stone-800/80 border border-stone-700 px-3 py-1 rounded-full text-[11px] text-stone-300">
               <Cpu className="w-3.5 h-3.5 text-amber-400" />
-              <span>x402 AI Agronomic Advisory</span>
+              <span>AI Agronomic Advisory</span>
             </div>
 
             <div className="inline-flex items-center gap-1.5 bg-stone-800/80 border border-stone-700 px-3 py-1 rounded-full text-[11px] text-stone-300">
               <Layers className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Algorand USDC Micro-Settlements</span>
+              <span>Algorand Verified Escrows</span>
             </div>
           </div>
         </div>

@@ -19,8 +19,6 @@ import {
   ArrowRight,
   CheckCircle2,
   PhoneCall,
-  Tractor,
-  ShoppingCart,
   ShoppingBag,
   Landmark,
   Power,
@@ -36,7 +34,8 @@ import {
   Award,
   Wallet,
 } from 'lucide-react';
-import { MandiTicker } from '../components/MandiTicker';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
+import { HomeSearchBar } from '../components/HomeSearchBar';
 import { WeatherData } from '../../shared/types';
 import {
   SUPPORTED_LANGUAGES,
@@ -54,6 +53,12 @@ export const FarmerDashboard: React.FC = () => {
   const [isPumpLoading, setIsPumpLoading] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [quickQuestionInput, setQuickQuestionInput] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Daily Farm Checklist with Local Storage persistence
   const [dailyTasks, setDailyTasks] = useState<{ id: string; textHi: string; textEn: string; textGu: string; done: boolean; tag: string }[]>(() => {
@@ -178,94 +183,6 @@ export const FarmerDashboard: React.FC = () => {
     { hi: '💰 गोंडल मंडी में कपास का आज का भाव?', en: 'Cotton price in Gondal Mandi today?', gu: 'ગોંડલ યાર્ડમાં કપાસનો ભાવ?' },
   ];
 
-  // 6 Main Easy Services
-  const easyServices = [
-    {
-      id: 'disease-scanner',
-      titleHi: 'फसल रोग जांचें',
-      titleEn: 'Scan Crop Disease',
-      titleGu: 'રોગની તપાસ કરો',
-      descHi: 'पत्ती का फोटो खींचें व तुरंत देसी व पक्का इलाज पाएं',
-      descEn: 'Take a photo of diseased leaf for instant diagnosis',
-      descGu: 'પાંદડાનો ફોટો પાડો અને સચોટ દવા-ઉપાય મેળવો',
-      icon: Camera,
-      badgeHi: 'फोटो जांच',
-      badgeEn: 'Photo AI',
-      colorBg: 'bg-emerald-700 hover:bg-emerald-800 text-white',
-      accent: 'border-emerald-600',
-    },
-    {
-      id: 'ai-assistant',
-      titleHi: 'किसान AI मित्र (बोलकर पूछें)',
-      titleEn: 'Voice AI Doctor',
-      titleGu: 'કૃષિ મિત્ર (બોલીને પૂછો)',
-      descHi: 'अपनी भाषा में बोलें और खेती का तुरंत समाधान पाएं',
-      descEn: 'Talk in your language, ask anything about farming',
-      descGu: 'તમારી ભાષામાં બોલો અને તરત જ જવાબ મેળવો',
-      icon: Mic,
-      badgeHi: 'आवाज से 🎙️',
-      badgeEn: '24/7 Voice',
-      colorBg: 'bg-amber-600 hover:bg-amber-700 text-white',
-      accent: 'border-amber-500',
-    },
-    {
-      id: 'market-prices',
-      titleHi: 'लाइव मंडी भाव',
-      titleEn: 'Live Mandi Rates',
-      titleGu: 'લાઈવ માર્કેટ ભાવ',
-      descHi: 'राजकोट, गोंडल व आसपास की मंडियों के ताजा दाम',
-      descEn: 'Real-time APMC auction prices for your crops',
-      descGu: 'ગોંડલ, રાજકોટ અને નજીકના યાર્ડના તાજા ભાવ',
-      icon: TrendingUp,
-      badgeHi: 'कपास ₹7,620',
-      badgeEn: 'Cotton ₹7,620',
-      colorBg: 'bg-teal-700 hover:bg-teal-800 text-white',
-      accent: 'border-teal-600',
-    },
-    {
-      id: 'smart-irrigation',
-      titleHi: 'स्मार्ट सिंचाई व पंप',
-      titleEn: 'Irrigation & Pump',
-      titleGu: 'સિંચાઈ અને મોટર પંપ',
-      descHi: 'खेत की नमी जांचें और मोबाइल से पंप चालू/बंद करें',
-      descEn: 'Check root moisture & control water pump remotely',
-      descGu: 'જમીનમાં ભેજ ચકાસો અને મોટર ચાલુ-બંધ કરો',
-      icon: Droplets,
-      badgeHi: isPumpRunning ? 'पंप चालू ⚡' : 'नमी 42%',
-      badgeEn: isPumpRunning ? 'Pump ON ⚡' : 'Moisture 42%',
-      colorBg: 'bg-sky-700 hover:bg-sky-800 text-white',
-      accent: 'border-sky-600',
-    },
-    {
-      id: 'machinery',
-      titleHi: 'किराये पर ट्रैक्टर व ड्रोन',
-      titleEn: 'Tractor & Drone Rental',
-      titleGu: 'ટ્રેક્ટર અને ડ્રોન ભાડે',
-      descHi: 'आसपास के ट्रैक्टर, रोटावेटर व स्प्रे ड्रोन बुक करें',
-      descEn: 'Rent nearby tractors, cultivators & spray drones',
-      descGu: 'નજીકના ટ્રેક્ટર, રોટાવેટર અને ડ્રોન બુક કરો',
-      icon: Tractor,
-      badgeHi: 'सस्ती दर',
-      badgeEn: 'Best Rate',
-      colorBg: 'bg-stone-800 hover:bg-stone-900 text-white',
-      accent: 'border-stone-700',
-    },
-    {
-      id: 'bulk-buying',
-      titleHi: 'सस्ती खाद व बीज समूह',
-      titleEn: 'Seeds & Fertilizer Group',
-      titleGu: 'ખાતર અને બિયારણ ખરીદી',
-      descHi: 'गांव के किसानों के साथ मिलकर 15-20% सस्ते में खरीदें',
-      descEn: 'Buy certified seeds & fertilizers at bulk group discount',
-      descGu: 'જૂથમાં ખરીદી કરીને ૧૫-૨૦% ની બચત કરો',
-      icon: ShoppingCart,
-      badgeHi: 'समूह बचत 🛒',
-      badgeEn: 'Group Saver',
-      colorBg: 'bg-emerald-800 hover:bg-emerald-900 text-white',
-      accent: 'border-emerald-700',
-    },
-  ];
-
   // 5-Day Simple Forecast
   const simpleForecast = [
     { dayHi: 'सोमवार (आज)', dayEn: 'Mon (Today)', dayGu: 'સોમવાર (આજે)', icon: '⛅', temp: '30°C', rain: '20%', adviceHi: 'सामान्य धूप • सामान्य काम', adviceEn: 'Sunny • Routine farm work' },
@@ -275,14 +192,14 @@ export const FarmerDashboard: React.FC = () => {
     { dayHi: 'शुक्रवार', dayEn: 'Fri', dayGu: 'શુક્રવાર', icon: '☀️', temp: '31°C', rain: '10%', adviceHi: 'खिली धूप • दवा स्प्रे सुरक्षित', adviceEn: 'Sunny • Safe for spraying' },
   ];
 
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
+
   return (
     <div id="kisan-simple-home" className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 space-y-5 pb-24 md:pb-12 text-stone-900 dark:text-stone-100">
-      {/* Live APMC Mandi Ticker */}
-      <MandiTicker />
-
-
-
-
+      {/* Universal Agri Search & Voice Bar */}
+      <HomeSearchBar />
 
       {/* ========================================================= */}
       {/* 3. THE "BIG 4" PRIMARY ACTION TILES (EASY FOR ANY FARMER) */}
@@ -480,8 +397,9 @@ export const FarmerDashboard: React.FC = () => {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
           {[
+            { id: 'group-buying', labelHi: 'सामूहिक खरीद', labelEn: 'Group Buy', icon: ShoppingBag, color: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-700' },
             { id: 'crop-recommendation', labelHi: 'फसल सलाहकार', labelEn: 'Crop Advisor', icon: Sprout, color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' },
             { id: 'disease-scanner', labelHi: 'रोग डॉक्टर', labelEn: 'Disease Scanner', icon: Camera, color: 'bg-green-50 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800' },
             { id: 'smart-irrigation', labelHi: 'स्मार्ट सिंचाई', labelEn: 'Smart Irrigation', icon: Droplets, color: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800' },
@@ -516,63 +434,7 @@ export const FarmerDashboard: React.FC = () => {
 
 
 
-      {/* ========================================================= */}
-      {/* 5. 6 MAIN EASY FARM SERVICES GRID                         */}
-      {/* ========================================================= */}
-      <section id="easy-services-grid" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-100 flex items-center gap-2">
-            <Tractor className="w-5 h-5 text-emerald-700" />
-            <span>
-              {language === 'hi'
-                ? 'अन्य सभी उपयोगी सेवाएं'
-                : language === 'gu'
-                ? 'અન્ય ઉપયોગી સેવાઓ'
-                : 'All Useful Farming Services'}
-            </span>
-          </h2>
-          <span className="text-xs text-stone-500">
-            {language === 'hi' ? 'किसी भी सेवा पर टैप करें' : 'Tap any service'}
-          </span>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {easyServices.map((srv) => {
-            const Icon = srv.icon;
-            return (
-              <div
-                key={srv.id}
-                id={`srv-card-${srv.id}`}
-                onClick={() => setCurrentView(srv.id)}
-                className="bg-white dark:bg-[#161c14] border-2 border-stone-200 dark:border-stone-800 hover:border-emerald-500 dark:hover:border-emerald-600 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[160px] group"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className={`p-3 rounded-2xl ${srv.colorBg}`}>
-                      <Icon className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <span className="bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold text-xs px-2.5 py-1 rounded-full border border-stone-200 dark:border-stone-700">
-                      {language === 'hi' ? srv.badgeHi : srv.badgeEn}
-                    </span>
-                  </div>
-
-                  <h3 className="text-lg font-black text-stone-900 dark:text-stone-100 mt-3 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
-                    {language === 'hi' ? srv.titleHi : language === 'gu' ? srv.titleGu : srv.titleEn}
-                  </h3>
-                  <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                    {language === 'hi' ? srv.descHi : language === 'gu' ? srv.descGu : srv.descEn}
-                  </p>
-                </div>
-
-                <div className="mt-4 flex items-center text-xs font-bold text-emerald-800 dark:text-emerald-400 group-hover:underline gap-1">
-                  <span>{language === 'hi' ? 'खोलें' : 'Open'}</span>
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
 
       {/* ========================================================= */}
       {/* 6. 5-DAY SIMPLE WEATHER (EASY WORDS, NO CONFUSION)        */}

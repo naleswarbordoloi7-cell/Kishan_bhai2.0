@@ -20,6 +20,7 @@ import {
   DollarSign,
   Calendar,
   Zap,
+  Loader2,
 } from 'lucide-react';
 
 interface CropRecommendationWizardProps {
@@ -448,9 +449,13 @@ export const CropRecommendationWizard: React.FC<CropRecommendationWizardProps> =
               <button
                 type="submit"
                 disabled={isLoading}
-                className="bg-gradient-to-r from-emerald-600 to-[#1B3B11] hover:from-emerald-500 hover:to-[#244A17] text-white text-xs sm:text-sm font-extrabold px-8 py-3 rounded-2xl shadow-lg inline-flex items-center gap-2.5 cursor-pointer transition-all transform active:scale-95"
+                className="bg-gradient-to-r from-emerald-600 to-[#1B3B11] hover:from-emerald-500 hover:to-[#244A17] disabled:opacity-75 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-extrabold px-8 py-3 rounded-2xl shadow-lg inline-flex items-center gap-2.5 cursor-pointer transition-all transform active:scale-95"
               >
-                <Sparkles className="w-4 h-4 text-emerald-300" />
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 text-emerald-300 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 text-emerald-300" />
+                )}
                 <span>{isLoading ? 'Analyzing Agro-Climatic Data...' : 'Get My Crop Recommendations →'}</span>
               </button>
             </div>

@@ -24,27 +24,44 @@ import {
   Layers,
   ChevronDown,
   Info,
+  Radio,
+  BookOpen,
 } from 'lucide-react';
-import { AIChatMessage, AIConversationSession, X402PaymentRequirement } from '../../shared/types';
+import { AIChatMessage, AIConversationSession } from '../../shared/types';
 import { AIFarmContextBadge } from '../components/ai/AIFarmContextBadge';
 import { AIChatMessageItem } from '../components/ai/AIChatMessageItem';
 import { AIQuickPrompts } from '../components/ai/AIQuickPrompts';
 import { AIHistoryDrawer } from '../components/ai/AIHistoryDrawer';
 import { HandsFreeAssistantModal } from '../components/speech/HandsFreeAssistantModal';
-import { INDIAN_SPEECH_LANGUAGES, isSpeechRecognitionSupported } from '../services/webSpeechService';
+import { FieldVoiceBar } from '../components/speech/FieldVoiceBar';
+import { FieldVoiceDictatorModal } from '../components/speech/FieldVoiceDictatorModal';
+import { INDIAN_SPEECH_LANGUAGES, isSpeechRecognitionSupported, speakText, stopSpeech } from '../services/webSpeechService';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { uploadFileToStorage } from '../services/storageService';
 
 export const AIAssistantPage: React.FC = () => {
   const { currentUser, setCurrentUser, userRole } = useUserStore();
-  const { triggerPaymentModal, addToast, wallet, language, setLanguage, setCurrentView, pendingAiQuery, setPendingAiQuery } = useApp();
+  const {
+    addToast,
+    wallet,
+    language,
+    setLanguage,
+    setCurrentView,
+    pendingAiQuery,
+    setPendingAiQuery,
+    addDiaryEntry,
+  } = useApp();
 
   const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
   const [activeSessionId, setActiveSessionId] = useState<string>('sess_wheat_irrigation_01');
   const [sessions, setSessions] = useState<AIConversationSession[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isHandsFreeOpen, setIsHandsFreeOpen] = useState(false);
+  const [isFieldVoiceBarOpen, setIsFieldVoiceBarOpen] = useState(true);
+  const [isFieldVoiceModalOpen, setIsFieldVoiceModalOpen] = useState(false);
+  const [autoSpeakAnswer, setAutoSpeakAnswer] = useState(true);
+  const [isAudioSpeaking, setIsAudioSpeaking] = useState(false);
   const [speechLanguageCode, setSpeechLanguageCode] = useState<string>(() => {
     const matched = INDIAN_SPEECH_LANGUAGES.find((l) => l.code === language);
     return matched?.speechCode || 'hi-IN';
@@ -309,54 +326,46 @@ export const AIAssistantPage: React.FC = () => {
         }
       }
 
-      // Check if x402 payment is required for deep analysis
+      // Execute direct deep multispectral analysis if requested and image is provided
       if (aiData.suggestedPaidService === 'crop-analysis' && imageToSend) {
-        const paidRes = await fetch('/api/paid/crop-analysis', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cropName: currentUser?.crops?.[0] || 'BT Cotton (Shankar-6)',
-            symptoms: promptToSend || 'Foliar discoloration and necrotic lesions',
-            imageProvided: true,
-          }),
-        });
-
-        if (paidRes.status === 402) {
-          const x402Data = await paidRes.json();
-          const paymentReq: X402PaymentRequirement = x402Data.x402;
-
-          const paymentNoticeMsg: AIChatMessage = {
-            id: `msg_pay_${Date.now()}`,
-            role: 'assistant',
-            modelUsed: selectedModel,
-            content: `🌱 **Recommendation: Multispectral Pathogen Diagnosis Required**
-
-**Why?**
-- Deep computer vision pathogen identification is an on-chain protected service.
-- Settles instantly via **x402 Protocol** on **Algorand Testnet** (Price: **${paymentReq.priceUsdc} USDC**).
-
-**What to do:**
-1. Approve the 0.002 USDC micropayment on Algorand Testnet.
-2. Receive full pathogen isolation report, foliar dosage, and cluster containment advisory.
-
-⚠️ **Important Warning:** Ensure leaf is clear and well-lit for optimal multispectral precision.`,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            toolCall: {
-              toolName: 'crop_analysis',
-              status: 'needs_payment',
-              paymentRequirement: paymentReq,
-            },
-          };
-
-          setMessages((prev) => [...prev, paymentNoticeMsg]);
-          setIsProcessing(false);
-          setIsTypingAnimation(false);
-
-          triggerPaymentModal(paymentReq, async (proof) => {
-            handleExecutePaidService(paymentReq, proof);
+        try {
+          const paidRes = await fetch('/api/paid/crop-analysis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              cropName: currentUser?.crops?.[0] || 'BT Cotton (Shankar-6)',
+              symptoms: promptToSend || 'Foliar discoloration and necrotic lesions',
+              imageProvided: true,
+            }),
           });
-          return paymentNoticeMsg.content;
-        }
+
+          if (paidRes.ok) {
+            const resultJson = await paidRes.json();
+            const rep = resultJson.result;
+
+            const diagnosisMsg: AIChatMessage = {
+              id: `msg_report_${Date.now()}`,
+              role: 'assistant',
+              modelUsed: selectedModel,
+              content: `🌱 **Multispectral Pathogen Diagnosis: ${rep.diagnosis}**\n\n**Analysis Details:**\n- Pathogen confidence score: **${rep.confidenceScore}** (Severity: **${rep.severity}**)\n- Rapid spread potential tracked via ambient relative humidity.\n\n**Recommended Remediation Plan:**\n${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join('\n')}\n\n⚠️ **Cluster Advisory:** ${rep.clusterAdvisory}`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              toolCall: {
+                toolName: 'crop_analysis',
+                status: 'executed',
+                resultData: rep,
+              },
+              sources: [
+                'ICAR Plant Pathology Protocol',
+                'Kishan Bhai Computer Vision Diagnostic Node',
+              ],
+            };
+
+            setMessages((prev) => [...prev, diagnosisMsg]);
+            setIsProcessing(false);
+            setIsTypingAnimation(false);
+            return diagnosisMsg.content;
+          }
+        } catch {}
       }
 
       // Normal response
@@ -375,6 +384,17 @@ export const AIAssistantPage: React.FC = () => {
 
       setMessages((prev) => [...prev, botMsg]);
       fetchSessions();
+
+      // Read answer aloud if hands-free speech response is active
+      if (autoSpeakAnswer && aiData.text) {
+        setIsAudioSpeaking(true);
+        speakText(aiData.text, {
+          lang: speechLanguageCode,
+          onEnd: () => setIsAudioSpeaking(false),
+          onError: () => setIsAudioSpeaking(false),
+        });
+      }
+
       return aiData.text;
     } catch (err: any) {
       const errMsg = language === 'hi'
@@ -397,72 +417,45 @@ export const AIAssistantPage: React.FC = () => {
     }
   };
 
-  const handleExecutePaidService = async (
-    req: X402PaymentRequirement,
-    proof: { txId: string; sender: string }
-  ) => {
-    setIsProcessing(true);
-    try {
-      const res = await fetch('/api/paid/crop-analysis', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-PAYMENT': proof.txId,
-        },
-        body: JSON.stringify({
-          cropName: currentUser?.crops?.[0] || 'BT Cotton (Shankar-6)',
-          symptoms: 'Leaf yellowing, dark circular fungal spots and marginal chlorosis',
-          imageProvided: true,
-        }),
-      });
+  const handleSaveVoiceDiaryNote = (note: {
+    category: string;
+    crop: string;
+    title: string;
+    expenseAmountInr?: number;
+    revenueAmountInr?: number;
+    notes: string;
+  }) => {
+    addDiaryEntry({
+      date: new Date().toISOString().split('T')[0],
+      category: note.category,
+      crop: note.crop || currentUser?.crops?.[0] || 'BT Cotton',
+      title: note.title,
+      expenseAmountInr: note.expenseAmountInr,
+      revenueAmountInr: note.revenueAmountInr,
+      notes: note.notes,
+    });
 
-      if (res.ok) {
-        const resultJson = await res.json();
-        const rep = resultJson.result;
+    const isHi = language === 'hi';
+    const noteMsg: AIChatMessage = {
+      id: `msg_note_${Date.now()}`,
+      role: 'assistant',
+      modelUsed: 'Field Voice Recorder',
+      language,
+      content: isHi
+        ? `📝 **खेत डायरी में सुरक्षित (Hands-Free Note Recorded):**\n- **गतिविधि / शीर्षक:** ${note.title}\n- **श्रेणी:** ${note.category} | **फसल:** ${note.crop || 'BT Cotton'}\n${note.expenseAmountInr ? `- **दर्ज खर्च:** ₹${note.expenseAmountInr.toLocaleString('en-IN')}\n` : ''}${note.revenueAmountInr ? `- **दर्ज आय:** ₹${note.revenueAmountInr.toLocaleString('en-IN')}\n` : ''}- **विवरण:** ${note.notes}\n\n✅ यह प्रविष्टि आपके **डिजिटल फार्म लेजर (Farm Diary)** में सफलतापूर्वक जोड़ दी गई है।`
+        : `📝 **Hands-Free Farm Diary Entry Recorded:**\n- **Activity / Title:** ${note.title}\n- **Category:** ${note.category} | **Crop:** ${note.crop || 'BT Cotton'}\n${note.expenseAmountInr ? `- **Logged Expense:** ₹${note.expenseAmountInr.toLocaleString('en-IN')}\n` : ''}${note.revenueAmountInr ? `- **Logged Revenue:** ₹${note.revenueAmountInr.toLocaleString('en-IN')}\n` : ''}- **Details:** ${note.notes}\n\n✅ Stored in your **Digital Farm Ledger & Activity Log**.`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
 
-        const reportMsg: AIChatMessage = {
-          id: `msg_report_${Date.now()}`,
-          role: 'assistant',
-          modelUsed: selectedModel,
-          content: `✅ **x402 Micropayment Settled on Algorand Testnet**
-TxID: \`${proof.txId}\`
-
-🌱 **Recommendation: ${rep.diagnosis}**
-
-**Why?**
-- Pathogen confidence score: **${rep.confidenceScore}** (Severity: **${rep.severity}**).
-- Rapid spread accelerated by 78% ambient relative humidity.
-
-**What to do:**
-${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join('\n')}
-
-⚠️ **Important Warning:** ${rep.clusterAdvisory}`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          toolCall: {
-            toolName: 'crop_analysis',
-            status: 'paid',
-            txId: proof.txId,
-            resultData: rep,
-          },
-          sources: [
-            'Algorand Testnet Explorer Verified Tx',
-            'ICAR Plant Pathology Protocol',
-            'Kishan Bhai Computer Vision Diagnostic Node',
-          ],
-        };
-
-        setMessages((prev) => [...prev, reportMsg]);
-      }
-    } catch (err: any) {
-      addToast('Settlement Verification Failed', err.message, 'error');
-    } finally {
-      setIsProcessing(false);
-    }
+    setMessages((prev) => [...prev, noteMsg]);
   };
 
   const handleClearChat = () => {
     setMessages([initialWelcomeMessage]);
-    addToast('Chat Cleared', 'Starting a clean conversation with Kisan Bhai AI.', 'info');
+    setInputPrompt('');
+    setSelectedImage(null);
+    setInterimVoiceSpeech('');
+    addToast('Chat Cleared', 'Starting a clean conversation with Kishan Bhai AI.', 'info');
   };
 
   const handleSelectSession = (session: AIConversationSession) => {
@@ -526,7 +519,7 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="font-bold font-display text-xl text-white tracking-tight">
-                🤖 Kisan Bhai AI (किसान भाई AI)
+                🤖 Kishan Bhai AI (किसान भाई AI)
               </h1>
               <span className="bg-emerald-400/20 text-emerald-300 text-[11px] px-2.5 py-0.5 rounded-full font-mono border border-emerald-400/40 flex items-center gap-1.5 font-bold">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -539,8 +532,23 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
           </div>
         </div>
 
-        {/* Right Action Controls: Hands-Free Field Mode, Dialect, History, Clear */}
+        {/* Right Action Controls: Field Voice, Hands-Free Field Mode, Dialect, History, Clear */}
         <div className="flex items-center gap-2 relative z-10 w-full md:w-auto justify-end flex-wrap">
+          {/* Field Voice Bar Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsFieldVoiceBarOpen((prev) => !prev)}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer border active:scale-95 shrink-0 ${
+              isFieldVoiceBarOpen
+                ? 'bg-emerald-400 text-stone-950 border-white'
+                : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
+            }`}
+            title="Toggle Hands-Free Field Voice Bar"
+          >
+            <Mic className={`w-3.5 h-3.5 ${isFieldVoiceBarOpen ? 'text-stone-950 animate-pulse' : 'text-emerald-300'}`} />
+            <span>{language === 'hi' ? 'खेत वॉयस बार' : 'Field Voice Bar'}</span>
+          </button>
+
           {/* Hands-Free Assistant Trigger */}
           <button
             type="button"
@@ -548,8 +556,19 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
             className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-stone-950 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer border border-emerald-200/50 active:scale-95 shrink-0"
             title="Open Hands-Free Field Conversation Loop"
           >
-            <Mic className="w-3.5 h-3.5 text-stone-950 animate-pulse" />
+            <Radio className="w-3.5 h-3.5 text-stone-950 animate-pulse" />
             <span>{language === 'hi' ? 'बोलकर बात करें (Hands-Free)' : 'Hands-Free Field Mode'}</span>
+          </button>
+
+          {/* Voice Farm Diary Dictator Modal Button */}
+          <button
+            type="button"
+            onClick={() => setIsFieldVoiceModalOpen(true)}
+            className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-xl text-xs font-medium border border-white/20 transition-all cursor-pointer active:scale-95 shrink-0"
+            title="Open Voice Farm Diary Dictator Modal"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-300" />
+            <span className="hidden sm:inline">{language === 'hi' ? 'वॉयस डायरी' : 'Voice Diary'}</span>
           </button>
 
           {/* Voice Dialect Selector */}
@@ -651,7 +670,7 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
                   <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce" style={{ animationDelay: '300ms' }}></span>
                 </div>
                 <span className="font-medium text-stone-600">
-                  {language === 'hi' ? 'किसान भाई AI आपके खेत के डेटा का विश्लेषण कर रहा है...' : 'Kisan Bhai AI is reasoning across your farm telemetry...'}
+                  {language === 'hi' ? 'किशन भाई AI आपके खेत के डेटा का विश्लेषण कर रहा है...' : 'Kishan Bhai AI is reasoning across your farm telemetry...'}
                 </span>
               </div>
             </div>
@@ -662,6 +681,49 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
 
         {/* 5. Large Bottom AI Input Area */}
         <div className="p-3 sm:p-4 bg-white border-t border-stone-200/80 space-y-2.5">
+          {/* Audio Speaking Out Loud Banner */}
+          {isAudioSpeaking && (
+            <div className="flex items-center justify-between gap-2 bg-emerald-950 text-emerald-200 border border-emerald-600/70 px-3.5 py-2 rounded-xl text-xs animate-in fade-in">
+              <span className="flex items-center gap-2">
+                <Volume2 className="w-4 h-4 text-emerald-400 animate-bounce" />
+                <span className="font-semibold">
+                  {language === 'hi'
+                    ? 'कृषि सलाह बोलकर सुनाई जा रही है...'
+                    : 'Reading agronomic recommendation aloud...'}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  stopSpeech();
+                  setIsAudioSpeaking(false);
+                }}
+                className="bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors shadow-xs"
+              >
+                {language === 'hi' ? 'आवाज रोकें ⏹️' : 'Stop Audio ⏹️'}
+              </button>
+            </div>
+          )}
+
+          {/* Hands-Free Field Voice-to-Text Bar */}
+          {isFieldVoiceBarOpen && (
+            <FieldVoiceBar
+              isOpen={isFieldVoiceBarOpen}
+              onToggleOpen={() => setIsFieldVoiceBarOpen(false)}
+              onSendQuery={async (query) => {
+                await handleSend(query);
+              }}
+              onSaveDiaryNote={handleSaveVoiceDiaryNote}
+              language={language}
+              selectedDialect={speechLanguageCode}
+              onDialectChange={(code) => setSpeechLanguageCode(code)}
+              defaultCrop={currentUser?.crops?.[0] || 'BT Cotton'}
+              isProcessingQuery={isProcessing}
+              autoSpeakAnswer={autoSpeakAnswer}
+              onToggleAutoSpeak={(enabled) => setAutoSpeakAnswer(enabled)}
+            />
+          )}
+
           {/* Selected Image Thumbnail Preview */}
           {selectedImage && (
             <div className="flex items-center gap-3 bg-stone-100 p-2 rounded-xl border border-stone-200/80 w-fit">
@@ -713,15 +775,18 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
             {/* Voice Input Button */}
             <button
               type="button"
-              onClick={toggleVoiceInput}
+              onClick={() => {
+                setIsFieldVoiceBarOpen(true);
+                toggleVoiceInput();
+              }}
               className={`p-2.5 rounded-xl transition-all cursor-pointer shrink-0 ${
-                isListening
-                  ? 'bg-rose-600 text-white animate-pulse shadow-sm'
+                isListening || isFieldVoiceBarOpen
+                  ? 'bg-emerald-600 text-white animate-pulse shadow-sm'
                   : 'text-stone-500 hover:text-green-700 hover:bg-emerald-50'
               }`}
-              title="Voice query (Hindi/English)"
+              title="Hands-free field voice (Hindi/Regional)"
             >
-              {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              {isListening ? <MicOff className="w-5 h-5 text-rose-300" /> : <Mic className="w-5 h-5" />}
             </button>
 
             {/* Text Input */}
@@ -737,8 +802,8 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
               }}
               placeholder={
                 language === 'hi'
-                  ? 'किसान भाई से अपने खेत, फसल, मौसम या मंडी भाव के बारे में कुछ भी पूछें...'
-                  : 'Ask Kisan Bhai anything about your farm, crops, weather, or mandi prices...'
+                  ? 'किशन भाई से अपने खेत, फसल, मौसम या मंडी भाव के बारे में कुछ भी पूछें...'
+                  : 'Ask Kishan Bhai anything about your farm, crops, weather, or mandi prices...'
               }
               className="w-full bg-transparent text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none px-2"
             />
@@ -788,6 +853,24 @@ ${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join
         onSendQuery={async (query) => {
           const res = await handleSend(query);
           return res || 'Processed your farm query.';
+        }}
+      />
+
+      {/* 8. Voice Farm Diary Dictator Modal */}
+      <FieldVoiceDictatorModal
+        isOpen={isFieldVoiceModalOpen}
+        onClose={() => setIsFieldVoiceModalOpen(false)}
+        language={language}
+        defaultCrop={currentUser?.crops?.[0] || 'BT Cotton'}
+        onSaveEntry={(entry) => {
+          handleSaveVoiceDiaryNote({
+            category: entry.category,
+            crop: entry.crop,
+            title: entry.title,
+            expenseAmountInr: entry.expenseAmountInr,
+            revenueAmountInr: entry.revenueAmountInr,
+            notes: entry.notes,
+          });
         }}
       />
     </div>

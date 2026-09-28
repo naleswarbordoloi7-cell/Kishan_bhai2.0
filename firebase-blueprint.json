@@ -406,6 +406,66 @@
         }
       },
       "required": ["id", "farmerId", "ph"]
+    },
+    "SharedClusterCart": {
+      "title": "SharedClusterCart",
+      "description": "Collective shopping cart for farming clusters before group checkout",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique cart identifier",
+          "maxLength": 128
+        },
+        "clusterId": {
+          "type": "string",
+          "description": "Identifier of the cluster owning this cart",
+          "maxLength": 128
+        },
+        "clusterName": {
+          "type": "string",
+          "description": "Cluster display name",
+          "maxLength": 120
+        },
+        "village": {
+          "type": "string",
+          "description": "Village or panchayat hub",
+          "maxLength": 100
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the shared order",
+          "maxLength": 150
+        },
+        "status": {
+          "type": "string",
+          "description": "Cart status",
+          "enum": ["OPEN", "LOCKED", "ORDER_PLACED", "DELIVERED"]
+        },
+        "deliveryAddress": {
+          "type": "string",
+          "description": "Bulk delivery destination",
+          "maxLength": 255
+        },
+        "coordinatorName": {
+          "type": "string",
+          "description": "Cluster coordinator name",
+          "maxLength": 120
+        },
+        "totalRetailAmount": {
+          "type": "number",
+          "description": "Aggregated standard retail value"
+        },
+        "totalWholesaleAmount": {
+          "type": "number",
+          "description": "Negotiated bulk wholesale value"
+        },
+        "totalSavings": {
+          "type": "number",
+          "description": "Net cluster savings in INR"
+        }
+      },
+      "required": ["id", "clusterId", "status", "title"]
     }
   },
   "firestore": {
@@ -420,6 +480,10 @@
     "/bulkRequirements/{reqId}": {
       "schema": "BulkOrderRequirement",
       "description": "Aggregated group input demand orders"
+    },
+    "/sharedCarts/{cartId}": {
+      "schema": "SharedClusterCart",
+      "description": "Collective cluster shopping carts and checkout splits"
     },
     "/machinery/{machineryId}": {
       "schema": "MachineryItem",

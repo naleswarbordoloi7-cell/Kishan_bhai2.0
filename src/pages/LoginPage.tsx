@@ -428,8 +428,15 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-[calc(100vh-4.5rem)] flex flex-col items-center justify-center px-4 py-8 max-w-md mx-auto relative">
-      <div className="absolute top-2 right-4 left-4 z-10 flex justify-between items-center">
-        <div className="flex-1"></div>
+      <div className="w-full mb-4 flex justify-between items-center">
+        <button
+          type="button"
+          onClick={() => setCurrentView('farmer-dashboard')}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 transition-colors cursor-pointer shadow-xs"
+        >
+          <Sprout className="w-3.5 h-3.5 text-emerald-700" />
+          <span>{language === 'hi' ? 'सीधे ऐप खोलें (Skip)' : 'Explore App (Skip)'}</span>
+        </button>
         <div className="flex items-center gap-2">
           <PWAInstallButton />
           <LanguageSwitcher />
@@ -1113,8 +1120,8 @@ export const LoginPage: React.FC = () => {
           <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
           <span>
             {language === 'hi'
-              ? 'Google Firebase एवं x402 द्वारा 100% सुरक्षित'
-              : '100% Secure via Google Firebase & x402'}
+              ? 'Google Firebase द्वारा 100% सुरक्षित'
+              : '100% Secure via Google Firebase & End-to-End Encryption'}
           </span>
         </div>
       </div>

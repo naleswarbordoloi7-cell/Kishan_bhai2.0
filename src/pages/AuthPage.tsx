@@ -381,7 +381,7 @@ export const AuthPage: React.FC = () => {
               title: 'Platform Administrator',
               defaultName: 'Platform Administrator',
               icon: BarChart3,
-              desc: 'System operations monitor for Algorand Testnet telemetry, x402 GoPlausible settlement, and API budgets.',
+              desc: 'System operations monitor for Algorand Testnet telemetry, cluster synchronization, and API budgets.',
             },
           ].map((item) => {
             const Icon = item.icon;

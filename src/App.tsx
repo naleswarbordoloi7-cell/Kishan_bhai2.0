@@ -1,16 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 import { Navbar } from "./components/Navbar";
 import { Sidebar } from "./components/Sidebar";
-import { PaymentModal } from "./components/PaymentModal";
-import { WalletConnect } from "./components/WalletConnect";
 import { NfcModal } from "./components/NfcModal";
 import { ToastContainer } from "./components/ToastContainer";
 import { ApiRetryNotification } from "./components/ApiRetryNotification";
 import { LogoIntroSplash } from "./components/LogoIntroSplash";
 import { MobileBottomNav } from "./components/MobileBottomNav";
 import { OfflineManagerModal } from "./components/OfflineManagerModal";
-import { BiometricPromptModal } from "./components/BiometricPromptModal";
+import { ScrollToTopButton } from "./components/ScrollToTopButton";
+import { DevicePreviewToolbar, DeviceMode } from "./components/DevicePreviewToolbar";
+import { motion, AnimatePresence } from "motion/react";
 
 // Pages
 import { LandingPage } from "./pages/LandingPage";
@@ -18,7 +18,6 @@ import { FarmerDashboard } from "./pages/FarmerDashboard";
 import { ChampionDashboard } from "./pages/ChampionDashboard";
 import { BuyerDashboard } from "./pages/BuyerDashboard";
 import { AdminDashboard } from "./pages/AdminDashboard";
-import { AdminX402Analytics } from "./pages/AdminX402Analytics";
 import { VirtualFarmClustersPage } from "./pages/VirtualFarmClusters";
 import { BulkBuyingPage } from "./pages/BulkBuying";
 import { HarvestPoolingPage } from "./pages/HarvestPooling";
@@ -49,10 +48,9 @@ const AppContent: React.FC = () => {
     currentView,
     isLogoSplashOpen,
     setIsLogoSplashOpen,
-    isBiometricModalOpen,
-    setIsBiometricModalOpen,
-    biometricPromptOptions,
   } = useApp();
+
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>('full');
 
   const renderCurrentView = () => {
     switch (currentView) {
@@ -66,11 +64,10 @@ const AppContent: React.FC = () => {
         return <BuyerDashboard />;
       case "admin-dashboard":
         return <AdminDashboard />;
-      case "admin-x402":
-        return <AdminX402Analytics />;
       case "clusters":
         return <VirtualFarmClustersPage />;
       case "bulk-buying":
+      case "group-buying":
         return <BulkBuyingPage />;
       case "harvest":
         return <HarvestPoolingPage />;
@@ -125,43 +122,81 @@ const AppContent: React.FC = () => {
     currentView === "auth" ||
     currentView === "login";
 
+  // Device frame wrapper style classes
+  let frameContainerClass = "min-h-screen bg-transparent flex flex-col text-stone-900 font-sans antialiased selection:bg-green-200 w-full";
+  let innerFrameStyle: React.CSSProperties = {};
+
+  if (deviceMode === 'mobile') {
+    frameContainerClass = "my-auto mx-auto w-[375px] h-[812px] max-h-[92vh] rounded-[40px] border-[12px] border-stone-800 bg-white shadow-2xl flex flex-col overflow-hidden relative transition-all duration-300";
+  } else if (deviceMode === 'tablet') {
+    frameContainerClass = "my-auto mx-auto w-[768px] h-[1024px] max-h-[94vh] rounded-[32px] border-[16px] border-stone-800 bg-white shadow-2xl flex flex-col overflow-hidden relative transition-all duration-300";
+  } else if (deviceMode === 'desktop') {
+    frameContainerClass = "my-auto mx-auto w-[1280px] max-w-[96vw] min-h-[85vh] rounded-2xl border border-stone-300 bg-white shadow-2xl flex flex-col overflow-hidden relative transition-all duration-300 my-6";
+  }
+
+  const wrapperClass = deviceMode !== 'full' 
+    ? "min-h-screen bg-stone-950/90 flex items-center justify-center p-2 sm:p-6 overflow-auto" 
+    : "min-h-screen bg-transparent flex flex-col text-stone-900 font-sans antialiased selection:bg-green-200 w-full";
+
   return (
-    <div className="min-h-screen bg-transparent flex flex-col text-stone-900 font-sans antialiased selection:bg-green-200">
-      <div className="md:hidden">
-        <Navbar />
-      </div>
+    <div className={wrapperClass}>
+      <div className={frameContainerClass}>
+        {/* Realistic Mobile / Tablet Status Bar */}
+        {(deviceMode === 'mobile' || deviceMode === 'tablet') && (
+          <div className="bg-stone-900 text-white px-6 py-2 flex items-center justify-between text-xs font-mono select-none shrink-0 z-50">
+            <span>9:41</span>
+            {deviceMode === 'mobile' && (
+              <div className="w-24 h-4 bg-black rounded-full mx-auto flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-stone-800"></div>
+              </div>
+            )}
+            <div className="flex items-center space-x-2 text-[10px]">
+              <span>5G</span>
+              <span>100%</span>
+            </div>
+          </div>
+        )}
 
-      <div className="flex-1 flex w-full relative">
-        <main className="flex-1 overflow-y-auto min-h-[calc(100vh-4rem)] pb-20 scroll-smooth">
-          {renderCurrentView()}
-        </main>
-      </div>
+        <div className="shrink-0 z-40">
+          <Navbar />
+        </div>
 
-      {/* Global Modals & Notifications */}
-      <ApiRetryNotification />
-      <PaymentModal />
-      <WalletConnect />
-      <NfcModal />
-      <OfflineManagerModal />
-      <BiometricPromptModal
-        isOpen={isBiometricModalOpen}
-        onClose={() => setIsBiometricModalOpen(false)}
-        title={biometricPromptOptions.title}
-        subtitle={biometricPromptOptions.subtitle}
-        actionReason={biometricPromptOptions.actionReason}
-        targetUserId={biometricPromptOptions.targetUserId}
-        onSuccess={(user) => {
-          if (biometricPromptOptions.onSuccess) {
-            biometricPromptOptions.onSuccess(user);
-          }
-        }}
-      />
-      <LogoIntroSplash
-        isOpen={isLogoSplashOpen}
-        onClose={() => setIsLogoSplashOpen(false)}
-      />
-      <ToastContainer />
-      {!isLanding && <MobileBottomNav />}
+        <div className="flex-1 flex w-full relative overflow-hidden">
+          <main className="flex-1 overflow-y-auto min-h-[calc(100vh-4rem)] pb-20 scroll-smooth">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentView}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="w-full h-full"
+              >
+                {renderCurrentView()}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+        </div>
+
+        {/* Realistic Home Indicator for Mobile */}
+        {deviceMode === 'mobile' && (
+          <div className="bg-white dark:bg-stone-900 py-2 flex items-center justify-center shrink-0 z-50">
+            <div className="w-32 h-1 bg-stone-300 dark:bg-stone-700 rounded-full"></div>
+          </div>
+        )}
+
+        {/* Global Modals & Notifications */}
+        <ApiRetryNotification />
+        <NfcModal />
+        <OfflineManagerModal />
+        <LogoIntroSplash
+          isOpen={isLogoSplashOpen}
+          onClose={() => setIsLogoSplashOpen(false)}
+        />
+        <ToastContainer />
+        <ScrollToTopButton />
+        {!isLanding && <MobileBottomNav />}
+      </div>
     </div>
   );
 };

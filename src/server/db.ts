@@ -18,7 +18,10 @@ import {
   CropRecommendationResult,
   SoilHealthData,
   SoilRecordHistoryItem,
-  BiometricCredential,
+  ClusterChatMessage,
+  SharedClusterCart,
+  SharedCartItem,
+  SharedCartItemContributor,
 } from '../../shared/types.js';
 import {
   CROP_RECOMMENDATIONS_DATABASE,
@@ -28,9 +31,9 @@ import {
 
 class InMemoryDB {
   users: Map<string, UserProfile> = new Map();
-  biometricCredentials: Map<string, BiometricCredential> = new Map();
-  biometricChallenges: Map<string, { challenge: string; expiresAt: number; userId?: string }> = new Map();
   clusters: Map<string, VirtualCluster> = new Map();
+  clusterChatMessages: Map<string, ClusterChatMessage[]> = new Map();
+  sharedCarts: Map<string, SharedClusterCart> = new Map();
   bulkRequirements: Map<string, BulkOrderRequirement> = new Map();
   machinery: Map<string, MachineryItem> = new Map();
   harvestLots: Map<string, HarvestPoolLot> = new Map();
@@ -64,8 +67,6 @@ class InMemoryDB {
 
   public clearAllData() {
     this.users.clear();
-    this.biometricCredentials.clear();
-    this.biometricChallenges.clear();
     this.clusters.clear();
     this.bulkRequirements.clear();
     this.machinery.clear();
@@ -120,14 +121,6 @@ class InMemoryDB {
       farmSizeAcres: 4.5,
       crops: ['Cotton (Bt)', 'Groundnut (TG-37A)', 'Wheat (Sharbati)'],
       preferredLanguage: 'hi',
-      biometricSettings: {
-        biometricsEnabled: true,
-        requireForProfileEdits: true,
-        requireForTransactions: true,
-        requireForLandRecords: true,
-        autoLockTimeoutMinutes: 15,
-      },
-      enrolledBiometricsCount: 1,
       createdAt: '2026-06-15T08:30:00Z',
     };
 
@@ -143,14 +136,6 @@ class InMemoryDB {
       farmSizeAcres: 8.0,
       crops: ['Cotton', 'Cumin', 'Wheat'],
       preferredLanguage: 'hi',
-      biometricSettings: {
-        biometricsEnabled: true,
-        requireForProfileEdits: false,
-        requireForTransactions: true,
-        requireForLandRecords: false,
-        autoLockTimeoutMinutes: 30,
-      },
-      enrolledBiometricsCount: 1,
       createdAt: '2026-05-10T11:00:00Z',
     };
 
@@ -164,46 +149,12 @@ class InMemoryDB {
       state: 'Gujarat',
       verified: true,
       preferredLanguage: 'en',
-      biometricSettings: {
-        biometricsEnabled: false,
-        requireForProfileEdits: false,
-        requireForTransactions: false,
-        requireForLandRecords: false,
-        autoLockTimeoutMinutes: -1,
-      },
-      enrolledBiometricsCount: 0,
       createdAt: '2026-05-20T14:15:00Z',
     };
 
     this.users.set(u1.id, u1);
     this.users.set(u2.id, u2);
     this.users.set(u3.id, u3);
-
-    // Initial Enrolled Biometric Passkeys
-    const bioCred1: BiometricCredential = {
-      id: 'bio_cred_ramesh_pixel',
-      userId: u1.id,
-      userEmail: u1.email,
-      userFullName: u1.fullName,
-      userRole: u1.role,
-      deviceName: 'Pixel Biometrics (Fingerprint Sensor & Face Unlock)',
-      authenticatorType: 'fingerprint',
-      createdAt: '2026-06-16T10:00:00Z',
-      lastUsedAt: '2026-08-30T14:20:00Z',
-    };
-    const bioCred2: BiometricCredential = {
-      id: 'bio_cred_vikram_tab',
-      userId: u2.id,
-      userEmail: u2.email,
-      userFullName: u2.fullName,
-      userRole: u2.role,
-      deviceName: 'Samsung Galaxy Tab Active (Knox Touch ID)',
-      authenticatorType: 'touch_id',
-      createdAt: '2026-05-11T09:30:00Z',
-      lastUsedAt: '2026-08-28T16:45:00Z',
-    };
-    this.biometricCredentials.set(bioCred1.id, bioCred1);
-    this.biometricCredentials.set(bioCred2.id, bioCred2);
 
     // 2. Verified Active Virtual Clusters
     const c1: VirtualCluster = {
@@ -294,57 +245,421 @@ class InMemoryDB {
     this.clusters.set(c2.id, c2);
     this.clusters.set(c3.id, c3);
 
-    // 3. Active Bulk Buying Demands
+    // Seed Cluster Buying Chat Messages (Real-time cluster discussion for buying needs)
+    this.clusterChatMessages.set('cluster_anandpur_01', [
+      {
+        id: 'cmsg_1',
+        clusterId: 'cluster_anandpur_01',
+        senderId: 'usr_champ_vikram',
+        senderName: 'Vikramsinh Jadeja',
+        senderVillage: 'Anandpur Hub',
+        senderRole: 'CHAMPION',
+        text: 'राम राम किसान भाइयों! खरीफ सीजन के लिए खाद और सोलर पंप की सामूहिक मांग तैयार हो रही है। अगर किसी को बीज या ड्रिप पाइप की ज़रूरत हो तो यहां शेयर करें।',
+        timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
+      },
+      {
+        id: 'cmsg_2',
+        clusterId: 'cluster_anandpur_01',
+        senderId: 'usr_farmer_ramesh',
+        senderName: 'Ramesh Patel',
+        senderVillage: 'Anandpur',
+        senderRole: 'FARMER',
+        text: 'मुझे अपने 4.5 एकड़ खेत के लिए 25 बोरी डीएपी और 15 बोरी यूरिया की आवश्यकता है। क्या कोई और किसान भाई साथ में ऑर्डर करेगा ताकि 24% थोक छूट मिल सके?',
+        buyingNeed: {
+          item: 'Coromandel Gromor DAP + IFFCO Neem Urea',
+          category: 'Fertilizer',
+          quantityNeeded: 40,
+          unit: 'Bags (50kg)',
+          targetPriceInr: 1120,
+          pledgedCount: 1,
+          status: 'OPEN',
+        },
+        timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
+      },
+      {
+        id: 'cmsg_3',
+        clusterId: 'cluster_anandpur_01',
+        senderId: 'usr_farmer_suresh',
+        senderName: 'Suresh Bhai Ahir',
+        senderVillage: 'Anandpur',
+        senderRole: 'FARMER',
+        text: 'रमेश भाई, मैं भी 20 बोरी डीएपी में शामिल होता हूँ! साथ में लेने से ट्रांसपोर्ट का खर्चा भी बच जाएगा।',
+        timestamp: new Date(Date.now() - 3600000 * 3).toISOString(),
+      },
+      {
+        id: 'cmsg_4',
+        clusterId: 'cluster_anandpur_01',
+        senderId: 'usr_farmer_kanti',
+        senderName: 'Kantibhai Makwana',
+        senderVillage: 'Dharampuri',
+        senderRole: 'FARMER',
+        text: 'क्या क्लस्टर में कोई 5HP सोलर सबमर्सिबल पंप लेने की योजना बना रहा है? अगर हम 5 लोग मिलकर OEM कंपनी से बात करें तो ₹50,000 की बचत हो सकती है।',
+        buyingNeed: {
+          item: 'Shakti 5HP DC Solar Submersible Pump & Controller',
+          category: 'Solar & Irrigation',
+          quantityNeeded: 5,
+          unit: 'Sets',
+          targetPriceInr: 118000,
+          pledgedCount: 2,
+          status: 'OPEN',
+        },
+        timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
+      },
+      {
+        id: 'cmsg_5',
+        clusterId: 'cluster_anandpur_01',
+        senderId: 'usr_champ_vikram',
+        senderName: 'Vikramsinh Jadeja',
+        senderVillage: 'Anandpur Hub',
+        senderRole: 'CHAMPION',
+        text: 'कांतिभाई, शक्ति सोलर के जोनल मैनेजर से बात हो गई है। जैसे ही हमारे क्लस्टर में 5 पंप का प्लेज पूरा होगा, कंपनी इंजीनियर आकर खेत पर फ्री इंस्टॉलेशन करेगा।',
+        timestamp: new Date(Date.now() - 3600000 * 1).toISOString(),
+      },
+    ]);
+
+    this.clusterChatMessages.set('cluster_malwa_02', [
+      {
+        id: 'mmsg_1',
+        clusterId: 'cluster_malwa_02',
+        senderId: 'usr_champ_rajendra',
+        senderName: 'Rajendra Singh Tomar',
+        senderVillage: 'Dharampuri',
+        senderRole: 'CHAMPION',
+        text: 'मालवा क्लस्टर के सभी गेहूं उत्पादक साथी ध्यान दें: शरबती गेहूं बीज (C-306) का प्रमाणित लॉट आ रहा है। अपनी ज़रूरत दर्ज करें।',
+        buyingNeed: {
+          item: 'Certified Sharbati Wheat Seeds (C-306 Grade-A)',
+          category: 'Seeds',
+          quantityNeeded: 100,
+          unit: 'Quintals',
+          targetPriceInr: 3400,
+          pledgedCount: 8,
+          status: 'OPEN',
+        },
+        timestamp: new Date(Date.now() - 3600000 * 6).toISOString(),
+      },
+    ]);
+
+    this.clusterChatMessages.set('cluster_vidarbha_03', [
+      {
+        id: 'vmsg_1',
+        clusterId: 'cluster_vidarbha_03',
+        senderId: 'usr_champ_anil',
+        senderName: 'Anil Rao Deshmukh',
+        senderVillage: 'Wardha Rural',
+        senderRole: 'CHAMPION',
+        text: 'कपास बुवाई के लिए महिको बोलगार्ड-2 बीज का संयुक्त ऑर्डर आज शाम 6 बजे फाइनल हो रहा है। जिन्हें भी चाहिए तुरंत बताएं।',
+        buyingNeed: {
+          item: 'Mahyco Bollgard-II Hybrid Cotton Seeds',
+          category: 'Seeds',
+          quantityNeeded: 80,
+          unit: 'Packets',
+          targetPriceInr: 735,
+          pledgedCount: 12,
+          status: 'OPEN',
+        },
+        timestamp: new Date(Date.now() - 3600000 * 8).toISOString(),
+      },
+    ]);
+
+    // 2.1 Shared Cluster Shopping Carts
+    const cartAnandpur: SharedClusterCart = {
+      id: 'cart_anandpur_01',
+      clusterId: 'cluster_anandpur_01',
+      clusterName: 'Anandpur Sahakari Cotton & Groundnut Mesh',
+      village: 'Anandpur, Rajkot',
+      title: 'Rabi 2026 Cooperative Bulk Supplies Cart',
+      status: 'OPEN',
+      deliveryAddress: 'Anandpur Primary Kisan Sahakari Godown, Rajkot Highway, Gujarat 360005',
+      coordinatorName: 'Vikramsinh Jadeja',
+      coordinatorPhone: '+91 97240 88219',
+      items: [
+        {
+          id: 'item_dap_01',
+          title: 'Coromandel Gromor 28-28-0 Complex Fertilizer',
+          category: 'Fertilizer',
+          unit: 'Bags (50kg)',
+          retailPrice: 1850,
+          wholesalePrice: 1480,
+          targetTierQty: 50,
+          totalQuantity: 45,
+          supplierName: 'Coromandel International Cooperative Hub',
+          imageUrl: 'https://images.unsplash.com/photo-1592417817098-8f3d69103851?w=300&auto=format&fit=crop&q=80',
+          contributors: [
+            {
+              userId: 'usr_farmer_ramesh',
+              userName: 'Ramesh Patel',
+              userVillage: 'Anandpur',
+              quantity: 15,
+              notes: 'Needed for block A & B cotton fields',
+              addedAt: new Date(Date.now() - 3600000 * 6).toISOString(),
+            },
+            {
+              userId: 'usr_champ_vikram',
+              userName: 'Vikramsinh Jadeja',
+              userVillage: 'Anandpur Hub',
+              quantity: 20,
+              notes: 'Groundnut sowing requirement',
+              addedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+            },
+            {
+              userId: 'usr_farmer_suresh',
+              userName: 'Suresh Bhai Ahir',
+              userVillage: 'Anandpur',
+              quantity: 10,
+              notes: 'Deliver to north borewell point',
+              addedAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+            },
+          ],
+        },
+        {
+          id: 'item_urea_02',
+          title: 'IFFCO Neem Coated Certified Urea',
+          category: 'Fertilizer',
+          unit: 'Bags (45kg)',
+          retailPrice: 266.5,
+          wholesalePrice: 242.0,
+          targetTierQty: 50,
+          totalQuantity: 35,
+          supplierName: 'IFFCO State Regional Distribution Hub',
+          imageUrl: 'https://images.unsplash.com/photo-1628352081506-83c43123ed6d?w=300&auto=format&fit=crop&q=80',
+          contributors: [
+            {
+              userId: 'usr_farmer_ramesh',
+              userName: 'Ramesh Patel',
+              userVillage: 'Anandpur',
+              quantity: 10,
+              addedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+            },
+            {
+              userId: 'usr_farmer_kanti',
+              userName: 'Kantibhai Makwana',
+              userVillage: 'Dharampuri',
+              quantity: 25,
+              addedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+            },
+          ],
+        },
+        {
+          id: 'item_drip_03',
+          title: 'Jain Irrigation Drip Lateral Pipe (16mm, 400m bundle)',
+          category: 'Solar & Irrigation',
+          unit: 'Rolls',
+          retailPrice: 3600,
+          wholesalePrice: 2850,
+          targetTierQty: 10,
+          totalQuantity: 6,
+          supplierName: 'Jain Irrigation Systems Ltd Authorized Hub',
+          imageUrl: 'https://images.unsplash.com/photo-1563514227147-6d2ff665a6a0?w=300&auto=format&fit=crop&q=80',
+          contributors: [
+            {
+              userId: 'usr_farmer_ramesh',
+              userName: 'Ramesh Patel',
+              userVillage: 'Anandpur',
+              quantity: 2,
+              notes: 'For cumin intercropping rows',
+              addedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+            },
+            {
+              userId: 'usr_farmer_suresh',
+              userName: 'Suresh Bhai Ahir',
+              userVillage: 'Anandpur',
+              quantity: 4,
+              addedAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+            },
+          ],
+        },
+      ],
+      totalRetailAmount: 45 * 1850 + 35 * 266.5 + 6 * 3600,
+      totalWholesaleAmount: 45 * 1480 + 35 * 242.0 + 6 * 2850,
+      totalSavings: (45 * 1850 + 35 * 266.5 + 6 * 3600) - (45 * 1480 + 35 * 242.0 + 6 * 2850),
+      createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const cartMalwa: SharedClusterCart = {
+      id: 'cart_malwa_02',
+      clusterId: 'cluster_malwa_02',
+      clusterName: 'Malwa Organic Wheat Federation',
+      village: 'Dharampuri, Dhar',
+      title: 'Malwa Organic Inputs & Sharbati Wheat Seed Pooling',
+      status: 'OPEN',
+      deliveryAddress: 'Dharampuri Cooperative Collection Mandi, Dhar, MP',
+      coordinatorName: 'Kailash Mandloi',
+      coordinatorPhone: '+91 94250 11928',
+      items: [
+        {
+          id: 'item_sharbati_seed_01',
+          title: 'Certified Sharbati Wheat Foundation Seeds (C-306)',
+          category: 'Seeds',
+          unit: 'Quintals',
+          retailPrice: 4200,
+          wholesalePrice: 3450,
+          targetTierQty: 20,
+          totalQuantity: 14,
+          supplierName: 'MP Rajya Beej Nigam Certified Depot',
+          imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=300&auto=format&fit=crop&q=80',
+          contributors: [
+            {
+              userId: 'usr_farmer_ramesh',
+              userName: 'Ramesh Patel',
+              userVillage: 'Anandpur',
+              quantity: 4,
+              addedAt: new Date(Date.now() - 3600000 * 8).toISOString(),
+            },
+            {
+              userId: 'usr_champ_kailash',
+              userName: 'Kailash Mandloi',
+              userVillage: 'Dharampuri',
+              quantity: 10,
+              addedAt: new Date(Date.now() - 3600000 * 6).toISOString(),
+            },
+          ],
+        },
+      ],
+      totalRetailAmount: 14 * 4200,
+      totalWholesaleAmount: 14 * 3450,
+      totalSavings: 14 * (4200 - 3450),
+      createdAt: new Date(Date.now() - 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.sharedCarts.set('cluster_anandpur_01', cartAnandpur);
+    this.sharedCarts.set('cluster_malwa_02', cartMalwa);
+
+    // 3. Active Bulk Buying & Group Purchasing Demands
     const b1: BulkOrderRequirement = {
       id: 'req_urea_anandpur_01',
       clusterId: 'cluster_anandpur_01',
       clusterName: 'Anandpur Sahakari Cotton & Groundnut Mesh',
+      groupName: 'Anandpur Sahakari Fertilizer Circle',
       category: 'Fertilizer',
       itemName: 'IFFCO Neem-Coated Technical Urea (45kg)',
+      itemDescription: 'Government-approved neem-coated technical grade slow-release urea for kharif crop top-dressing.',
       targetQuantity: 500,
       currentQuantity: 425,
       unit: 'Bags (50kg)',
       standardRetailPrice: 350,
       negotiatedBulkPrice: 266.5,
+      tierDiscounts: [
+        { minQty: 100, discountPct: 12, priceInr: 308, label: 'Tier 1 (100 bags)' },
+        { minQty: 250, discountPct: 18, priceInr: 287, label: 'Tier 2 (250 bags)' },
+        { minQty: 500, discountPct: 24, priceInr: 266.5, label: 'Tier 3 (500 bags - Factory Bulk)' },
+      ],
       savingsPercentage: 24,
       deadlineDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'AGGREGATING',
+      location: 'Anandpur APMC Hub, Gujarat',
+      creatorName: 'Vikramsinh Jadeja',
+      creatorId: 'usr_champ_vikram',
+      connectedMembersCount: 28,
       farmerPledges: [
         {
+          id: 'pld_1',
           farmerId: 'usr_farmer_ramesh',
           farmerName: 'Ramesh Patel',
+          village: 'Anandpur',
           quantity: 20,
           pledgedAt: new Date(Date.now() - 3600000 * 8).toISOString(),
+          notes: 'Required for Plot 2 cotton field',
         },
         {
+          id: 'pld_2',
           farmerId: 'usr_farmer_suresh',
           farmerName: 'Suresh Bhai Ahir',
+          village: 'Anandpur',
           quantity: 35,
           pledgedAt: new Date(Date.now() - 3600000 * 14).toISOString(),
+          notes: 'Need delivery by Saturday',
+        },
+        {
+          id: 'pld_3',
+          farmerId: 'usr_farmer_bhupat',
+          farmerName: 'Bhupatbhai Solanki',
+          village: 'Navagam',
+          quantity: 50,
+          pledgedAt: new Date(Date.now() - 3600000 * 20).toISOString(),
+        },
+      ],
+      chatMessages: [
+        {
+          id: 'msg_1',
+          senderId: 'usr_champ_vikram',
+          senderName: 'Vikramsinh Jadeja',
+          senderRole: 'Village Champion',
+          text: 'IFFCO regional warehouse confirmed delivery directly to Anandpur warehouse as soon as we hit 500 bags! Only 75 bags left.',
+          timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
+        },
+        {
+          id: 'msg_2',
+          senderId: 'usr_farmer_ramesh',
+          senderName: 'Ramesh Patel',
+          senderRole: 'Farmer',
+          text: 'Just pledged 20 bags. Will the bags be unloaded at the panchayat warehouse?',
+          timestamp: new Date(Date.now() - 3600000 * 7).toISOString(),
+        },
+        {
+          id: 'msg_3',
+          senderId: 'usr_champ_vikram',
+          senderName: 'Vikramsinh Jadeja',
+          senderRole: 'Village Champion',
+          text: 'Yes Ramesh bhai, free unloading at Panchayat depot. We will distribute with tractor trolleys.',
+          timestamp: new Date(Date.now() - 3600000 * 6).toISOString(),
         },
       ],
     };
 
     const b2: BulkOrderRequirement = {
-      id: 'req_dap_anandpur_02',
+      id: 'req_solar_pump_02',
       clusterId: 'cluster_anandpur_01',
       clusterName: 'Anandpur Sahakari Cotton & Groundnut Mesh',
-      category: 'Fertilizer',
-      itemName: 'Coromandel Gromor DAP (18:46:0) 50kg',
-      targetQuantity: 300,
-      currentQuantity: 260,
-      unit: 'Bags (50kg)',
-      standardRetailPrice: 1350,
-      negotiatedBulkPrice: 1120,
-      savingsPercentage: 17,
-      deadlineDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+      groupName: 'Saurashtra Solar Irrigation Pool',
+      category: 'Solar & Irrigation',
+      itemName: 'Shakti 5HP Solar Submersible Pump & Smart Dual-Axis Controller',
+      itemDescription: 'MNRE approved 5HP BLDC stainless steel submersible borewell pump with MPPT solar tracking inverter and 5-year on-site warranty.',
+      targetQuantity: 15,
+      currentQuantity: 11,
+      unit: 'Sets',
+      standardRetailPrice: 168000,
+      negotiatedBulkPrice: 118000,
+      tierDiscounts: [
+        { minQty: 5, discountPct: 15, priceInr: 142800, label: 'Tier 1 (5 sets)' },
+        { minQty: 10, discountPct: 25, priceInr: 126000, label: 'Tier 2 (10 sets)' },
+        { minQty: 15, discountPct: 30, priceInr: 118000, label: 'Tier 3 (15 sets - Direct OEM)' },
+      ],
+      savingsPercentage: 30,
+      deadlineDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'AGGREGATING',
+      location: 'Rajkot Regional Sub-Depot',
+      creatorName: 'Vikramsinh Jadeja',
+      creatorId: 'usr_champ_vikram',
+      connectedMembersCount: 16,
       farmerPledges: [
         {
+          id: 'pld_s1',
           farmerId: 'usr_farmer_ramesh',
           farmerName: 'Ramesh Patel',
-          quantity: 12,
-          pledgedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+          village: 'Anandpur',
+          quantity: 1,
+          pledgedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+          notes: 'For North plot 180ft borewell',
+        },
+        {
+          id: 'pld_s2',
+          farmerId: 'usr_farmer_kanti',
+          farmerName: 'Kantibhai Makwana',
+          village: 'Dharampuri',
+          quantity: 2,
+          pledgedAt: new Date(Date.now() - 3600000 * 18).toISOString(),
+        },
+      ],
+      chatMessages: [
+        {
+          id: 'msg_s1',
+          senderId: 'usr_champ_vikram',
+          senderName: 'Vikramsinh Jadeja',
+          senderRole: 'Champion',
+          text: 'Factory technician will come to do installation for all 15 farmers in 3 days batch.',
+          timestamp: new Date(Date.now() - 3600000 * 10).toISOString(),
         },
       ],
     };
@@ -353,22 +668,159 @@ class InMemoryDB {
       id: 'req_seed_btcotton_03',
       clusterId: 'cluster_vidarbha_03',
       clusterName: 'Vidarbha High-Yield Pulse & Cotton Mesh',
+      groupName: 'Vidarbha Seed Growers Circle',
       category: 'Seeds',
-      itemName: 'Mahyco Bollgard-II Hybrid Cotton Seeds (475g)',
+      itemName: 'Mahyco Bollgard-II Hybrid Cotton Seeds (475g Pack)',
+      itemDescription: 'Certified high-germination Bollgard-II hybrid cotton with sucking pest tolerance and long staple yield.',
       targetQuantity: 200,
       currentQuantity: 185,
-      unit: 'Kilograms',
+      unit: 'Packets',
       standardRetailPrice: 920,
       negotiatedBulkPrice: 735,
+      tierDiscounts: [
+        { minQty: 50, discountPct: 10, priceInr: 828, label: 'Tier 1 (50 pkts)' },
+        { minQty: 100, discountPct: 15, priceInr: 782, label: 'Tier 2 (100 pkts)' },
+        { minQty: 200, discountPct: 20, priceInr: 735, label: 'Tier 3 (200 pkts - Wholesale)' },
+      ],
       savingsPercentage: 20,
       deadlineDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'AGGREGATING',
+      location: 'Wardha APMC Yard, Maharashtra',
+      creatorName: 'Anil Rao Deshmukh',
+      creatorId: 'usr_champ_anil',
+      connectedMembersCount: 22,
+      farmerPledges: [
+        {
+          id: 'pld_c1',
+          farmerId: 'usr_farmer_anil',
+          farmerName: 'Prakash Rao',
+          village: 'Wardha Rural',
+          quantity: 25,
+          pledgedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+        },
+      ],
+      chatMessages: [
+        {
+          id: 'msg_c1',
+          senderId: 'usr_farmer_anil',
+          senderName: 'Prakash Rao',
+          senderRole: 'Farmer',
+          text: 'Does this batch have the QR code seal for certified purity testing?',
+          timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
+        },
+        {
+          id: 'msg_c2',
+          senderId: 'usr_champ_anil',
+          senderName: 'Anil Rao Deshmukh',
+          senderRole: 'Champion',
+          text: 'Yes, 100% genuine Mahyco hologram sealed with batch test report included.',
+          timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
+        },
+      ],
+    };
+
+    const b4: BulkOrderRequirement = {
+      id: 'req_drip_anandpur_04',
+      clusterId: 'cluster_anandpur_01',
+      clusterName: 'Anandpur Sahakari Cotton & Groundnut Mesh',
+      groupName: 'Anandpur Micro-Irrigation Collective',
+      category: 'Solar & Irrigation',
+      itemName: 'Jain Drip Inline 16mm Lateral Coil (400m Roll)',
+      itemDescription: 'Virgin HDPE cylindrical inline drippers spaced at 40cm, 2.4 LPH flow rate with anti-clog labyrinth design.',
+      targetQuantity: 120,
+      currentQuantity: 96,
+      unit: 'Rolls',
+      standardRetailPrice: 3800,
+      negotiatedBulkPrice: 2850,
+      tierDiscounts: [
+        { minQty: 30, discountPct: 15, priceInr: 3230, label: 'Tier 1 (30 rolls)' },
+        { minQty: 60, discountPct: 20, priceInr: 3040, label: 'Tier 2 (60 rolls)' },
+        { minQty: 120, discountPct: 25, priceInr: 2850, label: 'Tier 3 (120 rolls)' },
+      ],
+      savingsPercentage: 25,
+      deadlineDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'AGGREGATING',
+      location: 'Anandpur Cluster Hub',
+      creatorName: 'Vikramsinh Jadeja',
+      creatorId: 'usr_champ_vikram',
+      connectedMembersCount: 19,
+      farmerPledges: [
+        {
+          id: 'pld_d1',
+          farmerId: 'usr_farmer_ramesh',
+          farmerName: 'Ramesh Patel',
+          village: 'Anandpur',
+          quantity: 8,
+          pledgedAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+        },
+      ],
+      chatMessages: [],
+    };
+
+    const b5: BulkOrderRequirement = {
+      id: 'req_weeder_anandpur_05',
+      clusterId: 'cluster_anandpur_01',
+      clusterName: 'Anandpur Sahakari Cotton & Groundnut Mesh',
+      groupName: 'Kisan Small Equipment Club',
+      category: 'Machinery & Tools',
+      itemName: 'Honda GX-200 4-Stroke 7HP Multipurpose Power Weeder',
+      itemDescription: 'High-torque petrol power weeder with 32-blade rotary tiller attachment, adjustable furrower, and transport wheels.',
+      targetQuantity: 20,
+      currentQuantity: 17,
+      unit: 'Units',
+      standardRetailPrice: 42000,
+      negotiatedBulkPrice: 31500,
+      tierDiscounts: [
+        { minQty: 5, discountPct: 12, priceInr: 36960, label: 'Tier 1 (5 units)' },
+        { minQty: 10, discountPct: 20, priceInr: 33600, label: 'Tier 2 (10 units)' },
+        { minQty: 20, discountPct: 25, priceInr: 31500, label: 'Tier 3 (20 units)' },
+      ],
+      savingsPercentage: 25,
+      deadlineDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'AGGREGATING',
+      location: 'Central Machinery Hub, Anandpur',
+      creatorName: 'Vikramsinh Jadeja',
+      creatorId: 'usr_champ_vikram',
+      connectedMembersCount: 24,
       farmerPledges: [],
+      chatMessages: [],
+    };
+
+    const b6: BulkOrderRequirement = {
+      id: 'req_cattle_feed_06',
+      clusterId: 'cluster_anandpur_01',
+      clusterName: 'Anandpur Sahakari Cotton & Groundnut Mesh',
+      groupName: 'Anandpur Dairy & Livestock Group',
+      category: 'Cattle Feed',
+      itemName: 'Amul Dan Balanced Compound Cattle Feed (50kg Bag)',
+      itemDescription: 'Fortified with 20% crude protein, minerals and bypass fat for improved milk fat percentage and dairy cow health.',
+      targetQuantity: 250,
+      currentQuantity: 210,
+      unit: 'Bags (50kg)',
+      standardRetailPrice: 1250,
+      negotiatedBulkPrice: 960,
+      tierDiscounts: [
+        { minQty: 50, discountPct: 10, priceInr: 1125, label: 'Tier 1 (50 bags)' },
+        { minQty: 100, discountPct: 16, priceInr: 1050, label: 'Tier 2 (100 bags)' },
+        { minQty: 250, discountPct: 23, priceInr: 960, label: 'Tier 3 (250 bags)' },
+      ],
+      savingsPercentage: 23,
+      deadlineDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'AGGREGATING',
+      location: 'Village Dairy Milk Chilling Centre',
+      creatorName: 'Suresh Bhai Ahir',
+      creatorId: 'usr_farmer_suresh',
+      connectedMembersCount: 31,
+      farmerPledges: [],
+      chatMessages: [],
     };
 
     this.bulkRequirements.set(b1.id, b1);
     this.bulkRequirements.set(b2.id, b2);
     this.bulkRequirements.set(b3.id, b3);
+    this.bulkRequirements.set(b4.id, b4);
+    this.bulkRequirements.set(b5.id, b5);
+    this.bulkRequirements.set(b6.id, b6);
 
     // 4. Quality Assayed Pooled Harvest Lots
     const h1: HarvestPoolLot = {

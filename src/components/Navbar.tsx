@@ -3,46 +3,66 @@ import { useApp } from '../context/AppContext';
 import { useUserStore } from '../store/userStore';
 import {
   Sprout,
-  Wallet,
-  Globe,
-  Radio,
-  UserCheck,
-  Menu,
-  X,
-  ChevronDown,
+  LayoutDashboard,
+  TrendingUp,
+  Scan,
+  Users,
   Sparkles,
-  ShieldCheck,
+  SlidersHorizontal,
+  ChevronDown,
+  Globe,
+  Sun,
+  Moon,
   LogIn,
   LogOut,
   User,
-  Wifi,
-  WifiOff,
-  Sun,
-  Moon,
+  Menu,
+  X,
+  CloudSun,
+  Droplets,
+  Award,
+  BookOpen,
+  Calculator,
+  Radio,
+  Check,
+  ShoppingBag,
 } from 'lucide-react';
 import { UserRole } from '../../shared/types';
 import { NotificationCenter } from './NotificationCenter';
 import { AnimatedKishanLogo } from './AnimatedKishanLogo';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 import { signOutFirebaseUser } from '../services/firebaseAuthService';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const Navbar: React.FC = () => {
   const { currentUser, setCurrentUser, userRole, setUserRole } = useUserStore();
-  const { language, setLanguage, t, wallet, currentView, setCurrentView, setIsWalletModalOpen, setIsNfcModalOpen, setIsLogoSplashOpen, isOnline, setIsOfflineModalOpen, addToast, isDarkMode, toggleDarkMode } = useApp();
+  const {
+    language,
+    setLanguage,
+    t,
+    currentView,
+    setCurrentView,
+    setIsNfcModalOpen,
+    setIsLogoSplashOpen,
+    addToast,
+    isDarkMode,
+    toggleDarkMode,
+  } = useApp();
 
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const currentLangObj =
     SUPPORTED_LANGUAGES.find((l) => l.code === language) || SUPPORTED_LANGUAGES[0];
 
-  const roles: { role: UserRole; label: string; desc: string }[] = [
-    { role: 'FARMER', label: 'Farmer (किसान भाई)', desc: 'Farm management, clusters & AI' },
-    { role: 'CHAMPION', label: 'Village Champion (ग्राम प्रधान)', desc: 'Coordinate village clusters' },
-    { role: 'BUYER', label: 'Institutional Buyer (क्रेता)', desc: 'Procure bulk cluster harvests' },
-    { role: 'ADMIN', label: 'Admin & System Ops', desc: 'x402 protocol & API budget' },
+  const roles: { role: UserRole; label: string; desc: string; icon: string }[] = [
+    { role: 'FARMER', label: 'Farmer (किसान)', desc: 'Crop health, mandi rates & clusters', icon: '🌾' },
+    { role: 'CHAMPION', label: 'Village Champion (प्रधान)', desc: 'Coordinate village clusters & pooling', icon: '⭐' },
+    { role: 'BUYER', label: 'Institutional Buyer (क्रेता)', desc: 'Procure bulk cluster harvests', icon: '🏢' },
+    { role: 'ADMIN', label: 'Admin Console', desc: 'Platform operations & telemetry', icon: '⚙️' },
   ];
 
   const handleRoleSelect = (role: UserRole) => {
@@ -64,361 +84,380 @@ export const Navbar: React.FC = () => {
     setCurrentView('login');
   };
 
-  const navLinks = [
-    { id: 'farmer-dashboard', label: t('dashboard', 'डैशबोर्ड') },
-    { id: 'ai-assistant', label: t('voiceAssistant', 'किसान AI') },
-    { id: 'disease-scanner', label: t('diseaseScanner', 'रोग पहचान') },
-    { id: 'smart-irrigation', label: t('smartIrrigation', 'स्मार्ट सिंचाई') },
-    { id: 'market-prices', label: t('marketPrices', 'मंडी भाव') },
-    { id: 'government-schemes', label: t('schemes', 'सरकारी योजनाएं') },
-    { id: 'clusters', label: t('virtualClusters', 'फार्म क्लस्टर') },
+  // Primary App Dock items
+  const primaryDock = [
+    {
+      id: 'farmer-dashboard',
+      label: language === 'hi' ? 'डैशबोर्ड' : 'Overview',
+      icon: LayoutDashboard,
+    },
+    {
+      id: 'market-prices',
+      label: language === 'hi' ? 'मंडी भाव' : 'Mandi Radar',
+      icon: TrendingUp,
+      livePulse: true,
+    },
+    {
+      id: 'disease-scanner',
+      label: language === 'hi' ? 'फसल जांच' : 'Crop Doctor',
+      icon: Scan,
+    },
+    {
+      id: 'clusters',
+      label: language === 'hi' ? 'फार्म क्लस्टर' : 'Clusters',
+      icon: Users,
+    },
+  ];
+
+  // Secondary Tools App Drawer items
+  const secondaryTools = [
+    { id: 'group-buying', label: language === 'hi' ? 'सामूहिक खरीद' : 'Group Buying', icon: ShoppingBag, desc: 'Connect in groups & buy anything at 35% discount' },
+    { id: 'smart-irrigation', label: language === 'hi' ? 'स्मार्ट सिंचाई' : 'Smart Irrigation', icon: Droplets, desc: 'Evapotranspiration pump controls' },
+    { id: 'weather', label: language === 'hi' ? 'मौसम पूर्वानुमान' : 'Weather Radar', icon: CloudSun, desc: 'Hyperlocal Doppler alerts' },
+    { id: 'government-schemes', label: language === 'hi' ? 'सरकारी योजनाएं' : 'Govt Schemes', icon: Award, desc: 'PM-Kisan, PMFBY subsidies' },
+    { id: 'farm-diary', label: language === 'hi' ? 'कृषि डायरी' : 'Farm Journal', icon: BookOpen, desc: 'Daily expense & yield logbook' },
+    { id: 'profit-calculator', label: language === 'hi' ? 'मुनाफ़ा कैलकुलेटर' : 'Yield Calculator', icon: Calculator, desc: 'Cost vs MSP return estimates' },
+    { id: 'community', label: language === 'hi' ? 'किसान चौपाल' : 'Kisan Chaupal', icon: Users, desc: 'Village farmer Q&A community' },
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#121810]/95 backdrop-blur-xl border-b border-stone-200/80 dark:border-stone-800 shadow-xs transition-colors">
-      {/* Main Navbar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Brand Logo with Animatic Vector Engine */}
+    <header className="sticky top-0 z-40 px-3 sm:px-6 py-2.5 bg-gradient-to-b from-[#FAF8F5]/95 via-[#FAF8F5]/85 to-transparent dark:from-[#0B100C]/95 dark:via-[#0B100C]/85 dark:to-transparent backdrop-blur-md transition-all">
+      {/* Targeted Element: Redesigned as Modern Floating App Navigation Dock */}
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-5 py-2 rounded-2xl bg-white/95 dark:bg-stone-900/95 border border-stone-200/90 dark:border-stone-800 shadow-sm shadow-stone-200/40 dark:shadow-none flex items-center justify-between gap-2 sm:gap-4 transition-all">
+        
+        {/* LEFT ZONE: Brand & Workspace Launcher */}
+        <div className="flex items-center gap-3 shrink-0">
           <div
             onClick={() => setCurrentView('landing')}
-            className="flex items-center cursor-pointer"
+            className="flex items-center cursor-pointer select-none group"
+            title="Kishan Bhai Home"
           >
             <AnimatedKishanLogo
               size="sm"
               showText={true}
               interactive={true}
-              withSound={true}
-              subtitle={language === 'hi' ? 'स्मार्ट कृषि नेटवर्क' : 'Seed to Sale Platform'}
+              withSound={false}
+              subtitle={language === 'hi' ? 'स्मार्ट कृषि ऐप' : 'Bharat Agri-App'}
             />
           </div>
+        </div>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center space-x-1">
-            {navLinks.slice(0, 6).map((link) => {
-              const isActive = currentView === link.id;
-              return (
-                <button
-                  key={link.id}
-                  onClick={() => setCurrentView(link.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-green-700/10 text-green-700 font-semibold border border-green-700/15 backdrop-blur-xs'
-                      : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
-                  }`}
-                >
-                  {link.label}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Right Controls: Language, Role Selector, Notifications, Wallet */}
-          <div className="hidden md:flex items-center space-x-2">
-            {/* Offline / Online Service Worker Indicator */}
-            <button
-              onClick={() => setIsOfflineModalOpen(true)}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-xl border backdrop-blur-md transition-all cursor-pointer shadow-2xs ${
-                isOnline
-                  ? 'bg-emerald-50/80 hover:bg-emerald-100/90 text-emerald-900 border-emerald-200/80'
-                  : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-950 border-amber-500/40 animate-pulse'
-              }`}
-              title={isOnline ? 'Service Worker Active • Online Mode' : 'Offline Mode Active • Running from Cache'}
-            >
-              {isOnline ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <Wifi className="w-3.5 h-3.5 text-emerald-700" />
-                  <span className="hidden xl:inline font-mono text-[11px]">Online</span>
-                </>
-              ) : (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                  <WifiOff className="w-3.5 h-3.5 text-amber-700" />
-                  <span className="font-mono text-[11px] text-amber-900 font-bold">Offline Active</span>
-                </>
-              )}
-            </button>
-
-            {/* Animatic Logo Reveal Button */}
-            <button
-              onClick={() => setIsLogoSplashOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-500/30 px-2.5 py-1.5 rounded-xl backdrop-blur-md transition-all cursor-pointer shadow-2xs group"
-              title="Play Kisan Bhai Animatic Logo Intro"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600 group-hover:rotate-12 transition-transform" />
-              <span className="hidden xl:inline">{language === 'hi' ? 'लोगो इंट्रो' : 'Logo Intro'}</span>
-            </button>
-
-            {/* Notification Center */}
-            <NotificationCenter />
-
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className="p-1.5 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white rounded-xl bg-white/60 dark:bg-stone-800/60 hover:bg-white/90 border border-stone-200/80 dark:border-stone-700 transition-colors shadow-2xs cursor-pointer"
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-stone-600" />}
-            </button>
-
-            {/* Language Selector Dropdown */}
-            <div className="relative">
+        {/* CENTER ZONE: Rearranged Segmented App Dock */}
+        <nav className="hidden lg:flex items-center p-1 bg-stone-100/90 dark:bg-stone-800/70 rounded-xl border border-stone-200/70 dark:border-stone-700/60 shadow-2xs">
+          {primaryDock.map((item) => {
+            const isActive = currentView === item.id;
+            const Icon = item.icon;
+            return (
               <button
-                onClick={() => {
-                  setIsLangMenuOpen(!isLangMenuOpen);
-                  setIsRoleMenuOpen(false);
-                  setIsUserMenuOpen(false);
-                }}
-                className="flex items-center gap-1.5 text-xs font-semibold bg-white/70 dark:bg-stone-800/70 hover:bg-white dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 px-3 py-1.5 rounded-xl border border-stone-200/80 dark:border-stone-700 backdrop-blur-md transition-all cursor-pointer shadow-2xs"
-                title="Change Application Language"
-              >
-                <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>{currentLangObj.flag} {currentLangObj.nativeName}</span>
-                <ChevronDown className="w-3 h-3 text-stone-400" />
-              </button>
-
-              {isLangMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#161c14] rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 py-2 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-80 overflow-y-auto">
-                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider text-stone-400 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
-                    <span>भाषा / Language</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-normal">12 Languages</span>
-                  </div>
-                  <div className="p-1 grid grid-cols-1 gap-0.5">
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <button
-                        key={lang.code}
-                        onClick={() => {
-                          setLanguage(lang.code);
-                          setIsLangMenuOpen(false);
-                          addToast('Language Changed', `Switched to ${lang.nativeName} (${lang.name})`, 'info');
-                        }}
-                        className={`w-full text-left px-3 py-2 text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
-                          language === lang.code
-                            ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-bold border-l-2 border-emerald-600'
-                            : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span>{lang.flag}</span>
-                          <span className="font-semibold">{lang.nativeName}</span>
-                        </span>
-                        <span className="text-[11px] text-stone-400 font-normal">{lang.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Role Switcher */}
-            <div className="relative">
-              <button
-                onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
-                className="flex items-center gap-2 bg-white/60 hover:bg-white/90 text-stone-800 text-xs font-medium px-3 py-1.5 rounded-xl border border-stone-200/80 backdrop-blur-md transition-all cursor-pointer shadow-2xs"
-              >
-                <div className="w-2 h-2 rounded-full bg-green-700"></div>
-                <span className="font-semibold">
-                  {userRole === 'FARMER' && 'Farmer View'}
-                  {userRole === 'CHAMPION' && 'Champion View'}
-                  {userRole === 'BUYER' && 'Buyer View'}
-                  {userRole === 'ADMIN' && 'Admin View'}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 text-stone-400" />
-              </button>
-
-              {isRoleMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white/90 backdrop-blur-2xl rounded-2xl shadow-xl border border-white/80 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider text-stone-400 border-b border-stone-100/80">
-                    Switch Active Persona
-                  </div>
-                  {roles.map((r) => (
-                    <button
-                      key={r.role}
-                      onClick={() => handleRoleSelect(r.role)}
-                      className={`w-full text-left px-3 py-2 text-xs flex flex-col hover:bg-emerald-50/70 transition-colors ${
-                        userRole === r.role ? 'bg-emerald-50/90 border-l-2 border-green-700' : ''
-                      }`}
-                    >
-                      <span className="font-semibold text-stone-900">{r.label}</span>
-                      <span className="text-[11px] text-stone-500">{r.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Algorand Testnet Wallet Button */}
-            <button
-              onClick={() => setIsWalletModalOpen(true)}
-              className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-xs font-medium px-3.5 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer border border-white/20"
-            >
-              <Wallet className="w-3.5 h-3.5 text-emerald-200" />
-              <div className="flex items-center gap-1.5">
-                <span className="font-mono font-semibold">{wallet.usdcBalance.toFixed(2)} USDC</span>
-                <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded-md text-emerald-200 font-mono">
-                  Testnet
-                </span>
-              </div>
-            </button>
-
-            {/* User Account / Sign In (Extreme Right Side) */}
-            {currentUser ? (
-              <div className="relative">
-                <button
-                  id="navbar-account-profile-btn"
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 bg-white/70 hover:bg-white text-stone-900 text-xs font-semibold px-3 py-1.5 rounded-xl border border-stone-200/80 backdrop-blur-md transition-all cursor-pointer shadow-2xs"
-                >
-                  <div className="w-6 h-6 rounded-full bg-emerald-600/20 text-emerald-900 font-bold flex items-center justify-center text-[10px]">
-                    {currentUser.fullName.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="max-w-[100px] truncate">{currentUser.fullName}</span>
-                  <ChevronDown className="w-3 h-3 text-stone-400" />
-                </button>
-
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-xl border border-white/80 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                    <div className="px-3.5 py-2 border-b border-stone-100">
-                      <div className="font-bold text-xs text-stone-900 truncate">{currentUser.fullName}</div>
-                      <div className="text-[11px] text-stone-500 truncate">{currentUser.email || currentUser.phone}</div>
-                      <div className="text-[10px] text-emerald-700 font-mono mt-0.5">
-                        {currentUser.village} • {currentUser.role}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setCurrentView('profile');
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3.5 py-2 text-xs text-stone-700 hover:bg-emerald-50/70 flex items-center gap-2 transition-colors cursor-pointer"
-                    >
-                      <User className="w-3.5 h-3.5 text-stone-500" />
-                      <span>Farm Profile & ID</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setCurrentView('login');
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3.5 py-2 text-xs text-stone-700 hover:bg-emerald-50/70 flex items-center gap-2 transition-colors cursor-pointer"
-                    >
-                      <LogIn className="w-3.5 h-3.5 text-stone-500" />
-                      <span>Switch / Link Account</span>
-                    </button>
-
-                    <div className="border-t border-stone-100 my-1"></div>
-
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-3.5 py-2 text-xs text-rose-700 hover:bg-rose-50/70 flex items-center gap-2 transition-colors cursor-pointer font-medium"
-                    >
-                      <LogOut className="w-3.5 h-3.5 text-rose-500" />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button
-                id="navbar-account-profile-btn"
-                onClick={() => setCurrentView('login')}
-                className={`flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer border active:scale-[0.99] ${
-                  currentView === 'login'
-                    ? 'bg-[#1E3614] text-white border-emerald-400/50 ring-2 ring-emerald-500/25'
-                    : 'bg-green-700 hover:bg-green-800 text-white border-white/20'
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none ${
+                  isActive
+                    ? 'bg-white dark:bg-stone-900 text-emerald-800 dark:text-emerald-300 shadow-xs'
+                    : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-200/50 dark:hover:bg-stone-700/50'
                 }`}
               >
-                <LogIn className="w-3.5 h-3.5 text-emerald-200" />
-                <span>Sign In / Register</span>
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-stone-500'}`} />
+                <span>{item.label}</span>
+                {item.livePulse && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                )}
               </button>
+            );
+          })}
+
+          {/* Secondary "More Tools" Dock Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsToolsMenuOpen(!isToolsMenuOpen)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                isToolsMenuOpen
+                  ? 'bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs'
+                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-stone-500" />
+              <span>{language === 'hi' ? 'अन्य टूल्स' : 'Tools'}</span>
+              <ChevronDown className="w-3 h-3 text-stone-400" />
+            </button>
+
+            {isToolsMenuOpen && (
+              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-72 bg-white dark:bg-stone-900 rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100 dark:border-stone-800">
+                  {language === 'hi' ? 'कृषि सुविधाएं' : 'Agritech Modules'}
+                </div>
+                <div className="grid grid-cols-1 gap-1 pt-1">
+                  {secondaryTools.map((tool) => {
+                    const ToolIcon = tool.icon;
+                    return (
+                      <button
+                        key={tool.id}
+                        onClick={() => {
+                          setCurrentView(tool.id);
+                          setIsToolsMenuOpen(false);
+                        }}
+                        className={`w-full text-left p-2 rounded-xl flex items-start gap-2.5 transition-colors cursor-pointer ${
+                          currentView === tool.id
+                            ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-300'
+                            : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200'
+                        }`}
+                      >
+                        <ToolIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-xs font-semibold">{tool.label}</div>
+                          <div className="text-[11px] text-stone-500 dark:text-stone-400 leading-tight">{tool.desc}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </nav>
+
+        {/* RIGHT ZONE: Rearranged Quick Actions, Persona & User Profile */}
+        <div className="hidden md:flex items-center gap-2">
+          {/* Direct AI Assistant Trigger */}
+          <button
+            onClick={() => setCurrentView('ai-assistant')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold shadow-2xs hover:shadow-xs transition-all cursor-pointer active:scale-95"
+            title="Open Kishan Bhai AI Voice & Crop Assistant"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>{language === 'hi' ? 'पूछें AI' : 'Kishan AI'}</span>
+          </button>
+
+          {/* Notification Bell */}
+          <NotificationCenter />
+
+          {/* Light / Dark Mode Toggle */}
+          <button
+            onClick={toggleDarkMode}
+            className="p-1.5 w-8 h-8 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors cursor-pointer"
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-stone-600" />}
+          </button>
+
+          {/* Language Selector Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsLangMenuOpen(!isLangMenuOpen);
+                setIsRoleMenuOpen(false);
+                setIsUserMenuOpen(false);
+                setIsToolsMenuOpen(false);
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 transition-colors cursor-pointer"
+              title="Change Language"
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{currentLangObj.flag}</span>
+              <span className="text-[11px] uppercase font-mono">{currentLangObj.code}</span>
+              <ChevronDown className="w-3 h-3 text-stone-400" />
+            </button>
+
+            {isLangMenuOpen && (
+              <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-stone-900 rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-72 overflow-y-auto">
+                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100 dark:border-stone-800">
+                  Select Language (भाषा)
+                </div>
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      setLanguage(lang.code);
+                      setIsLangMenuOpen(false);
+                      addToast('Language Changed', `Switched to ${lang.nativeName}`, 'info');
+                    }}
+                    className={`w-full text-left px-2.5 py-1.5 text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                      language === lang.code
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-bold'
+                        : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>{lang.flag}</span>
+                      <span>{lang.nativeName}</span>
+                    </span>
+                    {language === lang.code && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex md:hidden items-center space-x-1.5">
+          {/* Active Persona Pill */}
+          <div className="relative">
             <button
-              onClick={toggleDarkMode}
-              className="p-2 text-stone-700 dark:text-stone-300 bg-white/60 dark:bg-stone-800/60 backdrop-blur-md rounded-xl border border-stone-200/80 dark:border-stone-700"
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
-            </button>
-            <button
-              onClick={() => setIsOfflineModalOpen(true)}
-              className={`p-2 rounded-xl border text-xs font-semibold flex items-center justify-center ${
-                isOnline
-                  ? 'bg-emerald-50/80 text-emerald-900 border-emerald-200'
-                  : 'bg-amber-500/20 text-amber-950 border-amber-500 animate-pulse'
-              }`}
-              title="Offline Field Hub"
-            >
-              {isOnline ? <Wifi className="w-4 h-4 text-emerald-700" /> : <WifiOff className="w-4 h-4 text-amber-700" />}
-            </button>
-            <button
-              onClick={() => setIsWalletModalOpen(true)}
-              className="p-2 text-stone-700 bg-white/60 backdrop-blur-md rounded-xl border border-stone-200/80"
-              title="Algorand Testnet Wallet"
-            >
-              <Wallet className="w-4 h-4" />
-            </button>
-            {/* Mobile Account Profile Button on Right */}
-            <button
-              id="mobile-navbar-account-profile-btn"
               onClick={() => {
-                if (currentUser) {
-                  setCurrentView('profile');
-                } else {
-                  setCurrentView('login');
-                }
+                setIsRoleMenuOpen(!isRoleMenuOpen);
+                setIsLangMenuOpen(false);
+                setIsUserMenuOpen(false);
+                setIsToolsMenuOpen(false);
               }}
-              className="p-1.5 text-stone-700 bg-white/70 backdrop-blur-md rounded-xl border border-stone-200/80 text-xs font-semibold flex items-center gap-1"
-              title={currentUser ? currentUser.fullName : 'Sign In'}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-semibold transition-colors cursor-pointer"
             >
-              {currentUser ? (
-                <div className="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[10px]">
+              <span>{roles.find((r) => r.role === userRole)?.icon || '🌾'}</span>
+              <span>
+                {userRole === 'FARMER' && 'Farmer'}
+                {userRole === 'CHAMPION' && 'Champion'}
+                {userRole === 'BUYER' && 'Buyer'}
+                {userRole === 'ADMIN' && 'Admin'}
+              </span>
+              <ChevronDown className="w-3 h-3 text-stone-400" />
+            </button>
+
+            {isRoleMenuOpen && (
+              <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-stone-900 rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100 dark:border-stone-800">
+                  Switch App View
+                </div>
+                {roles.map((r) => (
+                  <button
+                    key={r.role}
+                    onClick={() => handleRoleSelect(r.role)}
+                    className={`w-full text-left px-2.5 py-2 text-xs rounded-xl flex items-start gap-2 transition-colors cursor-pointer ${
+                      userRole === r.role
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-bold'
+                        : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+                    }`}
+                  >
+                    <span className="text-sm mt-0.5">{r.icon}</span>
+                    <div className="flex-1">
+                      <div className="font-semibold">{r.label}</div>
+                      <div className="text-[10px] text-stone-500 font-normal leading-tight">{r.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* User Account / Profile */}
+          {currentUser ? (
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsUserMenuOpen(!isUserMenuOpen);
+                  setIsLangMenuOpen(false);
+                  setIsRoleMenuOpen(false);
+                  setIsToolsMenuOpen(false);
+                }}
+                className="flex items-center gap-1.5 p-1 pr-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-900 dark:text-stone-100 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                <div className="w-6 h-6 rounded-full bg-emerald-800 text-white font-bold flex items-center justify-center text-[10px]">
                   {currentUser.fullName.charAt(0).toUpperCase()}
                 </div>
-              ) : (
-                <LogIn className="w-4 h-4 text-green-700" />
+                <span className="max-w-[80px] truncate">{currentUser.fullName}</span>
+                <ChevronDown className="w-3 h-3 text-stone-400" />
+              </button>
+
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-stone-900 rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3 py-2 border-b border-stone-100 dark:border-stone-800">
+                    <div className="font-bold text-xs text-stone-900 dark:text-stone-100 truncate">{currentUser.fullName}</div>
+                    <div className="text-[11px] text-stone-500 truncate">{currentUser.email || currentUser.phone}</div>
+                    <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono mt-0.5">
+                      {currentUser.village} • {currentUser.role}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setCurrentView('profile');
+                      setIsUserMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl flex items-center gap-2 transition-colors cursor-pointer mt-1"
+                  >
+                    <User className="w-3.5 h-3.5 text-stone-500" />
+                    <span>Farm Profile & ID</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setCurrentView('login');
+                      setIsUserMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <LogIn className="w-3.5 h-3.5 text-stone-500" />
+                    <span>Switch Account</span>
+                  </button>
+
+                  <div className="border-t border-stone-100 dark:border-stone-800 my-1"></div>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-xs text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer font-medium"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
+          ) : (
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-stone-700 hover:text-stone-900 bg-white/60 backdrop-blur-md rounded-xl border border-stone-200/80"
+              onClick={() => setCurrentView('login')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-stone-100 hover:bg-stone-800 dark:hover:bg-white text-white dark:text-stone-900 text-xs font-semibold transition-all cursor-pointer"
             >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
             </button>
-          </div>
+          )}
+        </div>
+
+        {/* MOBILE CONTROLS */}
+        <div className="flex lg:hidden items-center gap-1.5">
+          <button
+            onClick={() => setCurrentView('ai-assistant')}
+            className="p-1.5 rounded-xl bg-emerald-800 text-white text-xs font-medium flex items-center gap-1"
+            title="Kishan AI"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          </button>
+
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 rounded-xl"
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 rounded-xl"
+            aria-label="Open mobile menu"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* MOBILE DRAWER */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white/90 backdrop-blur-2xl border-b border-stone-200/80 px-4 pt-2 pb-6 space-y-3">
-          {/* User Status Bar in Mobile Drawer */}
-          <div className="p-3 bg-white/80 rounded-2xl border border-stone-200/80 flex items-center justify-between">
+        <div className="lg:hidden mt-2 p-4 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          {/* User Status Bar */}
+          <div className="p-3 bg-stone-50 dark:bg-stone-800/60 rounded-xl flex items-center justify-between">
             {currentUser ? (
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-green-700 text-white font-bold text-xs flex items-center justify-center">
+                <div className="w-7 h-7 rounded-full bg-emerald-800 text-white font-bold text-xs flex items-center justify-center">
                   {currentUser.fullName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-stone-900">{currentUser.fullName}</div>
+                  <div className="text-xs font-bold text-stone-900 dark:text-stone-100">{currentUser.fullName}</div>
                   <div className="text-[10px] text-stone-500">{currentUser.role}</div>
                 </div>
               </div>
             ) : (
-              <div className="text-xs text-stone-600 font-medium">Guest Visitor</div>
+              <div className="text-xs text-stone-600 dark:text-stone-400 font-medium">Guest Farmer</div>
             )}
 
             {currentUser ? (
-              <button
-                onClick={handleLogout}
-                className="text-[11px] text-rose-700 font-semibold hover:underline"
-              >
+              <button onClick={handleLogout} className="text-[11px] text-rose-700 font-semibold hover:underline">
                 Sign Out
               </button>
             ) : (
@@ -427,94 +466,117 @@ export const Navbar: React.FC = () => {
                   setCurrentView('login');
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-xs bg-green-700 text-white font-semibold px-3 py-1.5 rounded-xl"
+                className="text-xs bg-emerald-800 text-white font-semibold px-3 py-1.5 rounded-xl"
               >
                 Sign In
               </button>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2 pb-3 border-b border-stone-200/80">
-            <button
-              onClick={() => {
-                setIsLogoSplashOpen(true);
-                setIsMobileMenuOpen(false);
-              }}
-              className="col-span-2 text-xs text-center py-2 bg-amber-50 text-amber-900 font-semibold rounded-xl border border-amber-300/60 flex items-center justify-center gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" />
-              <span>{language === 'hi' ? '✨ एनिमेटेड लोगो इंट्रो देखें' : '✨ Play Animatic Logo Intro'}</span>
-            </button>
-            <div className="col-span-2 pt-1 pb-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block px-1 mb-1.5">
-                {t('settings', 'भाषा')} / Language
-              </span>
-              <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto p-1 bg-stone-50 dark:bg-stone-900/50 rounded-xl border border-stone-200/60 dark:border-stone-800">
-                {SUPPORTED_LANGUAGES.map((lang) => (
+
+          {/* Quick Primary Navigation */}
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block px-1">
+              Main Modules
+            </span>
+            <div className="grid grid-cols-2 gap-1.5">
+              {primaryDock.map((item) => {
+                const Icon = item.icon;
+                return (
                   <button
-                    key={lang.code}
+                    key={item.id}
                     onClick={() => {
-                      setLanguage(lang.code);
-                      addToast('Language Changed', `Switched to ${lang.nativeName}`, 'info');
+                      setCurrentView(item.id);
+                      setIsMobileMenuOpen(false);
                     }}
-                    className={`py-1.5 px-2 rounded-lg text-xs flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                      language === lang.code
-                        ? 'bg-green-700 text-white font-bold shadow-xs'
-                        : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 border border-stone-200/50 dark:border-stone-700/50'
+                    className={`p-2.5 rounded-xl text-left flex items-center gap-2 text-xs font-semibold transition-all ${
+                      currentView === item.id
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-bold'
+                        : 'bg-stone-50 dark:bg-stone-800/60 text-stone-700 dark:text-stone-300'
                     }`}
                   >
-                    <span className="text-sm leading-tight">{lang.flag}</span>
-                    <span className="text-[11px] font-medium leading-tight">{lang.nativeName}</span>
+                    <Icon className="w-4 h-4 text-emerald-600" />
+                    <span>{item.label}</span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
-            <button
-              onClick={() => setIsNfcModalOpen(true)}
-              className="col-span-2 text-xs text-center py-2 bg-white/70 rounded-xl font-medium flex items-center justify-center gap-1 border border-stone-200/60"
-            >
-              <Radio className="w-3.5 h-3.5 text-emerald-700" />
-              NFC ID
-            </button>
           </div>
 
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block px-2">
-              Navigation
+          {/* Secondary Tools */}
+          <div className="space-y-1 pt-2 border-t border-stone-100 dark:border-stone-800">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block px-1">
+              Agritech Tools
             </span>
-            {navLinks.map((link) => (
-              <button
-                key={link.id}
-                onClick={() => {
-                  setCurrentView(link.id);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium ${
-                  currentView === link.id ? 'bg-green-700/10 text-green-700 font-semibold' : 'text-stone-700'
-                }`}
-              >
-                {link.label}
-              </button>
-            ))}
+            <div className="grid grid-cols-2 gap-1.5">
+              {secondaryTools.map((tool) => {
+                const ToolIcon = tool.icon;
+                return (
+                  <button
+                    key={tool.id}
+                    onClick={() => {
+                      setCurrentView(tool.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="p-2 rounded-xl bg-stone-50 dark:bg-stone-800/60 text-left text-xs text-stone-700 dark:text-stone-300 flex items-center gap-2"
+                  >
+                    <ToolIcon className="w-3.5 h-3.5 text-stone-500" />
+                    <span className="truncate">{tool.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="pt-3 border-t border-stone-200/80 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block px-2">
+          {/* Language Selector */}
+          <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block px-1 mb-1.5">
+              भाषा / Language
+            </span>
+            <div className="grid grid-cols-4 gap-1">
+              {SUPPORTED_LANGUAGES.slice(0, 8).map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    setLanguage(lang.code);
+                    addToast('Language Changed', `Switched to ${lang.nativeName}`, 'info');
+                  }}
+                  className={`py-1 rounded-lg text-center text-xs ${
+                    language === lang.code
+                      ? 'bg-emerald-800 text-white font-bold'
+                      : 'bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-300'
+                  }`}
+                >
+                  <span className="block text-sm">{lang.flag}</span>
+                  <span className="text-[10px] truncate block">{lang.code.toUpperCase()}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Active Role Selector */}
+          <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block px-1 mb-1.5">
               Persona / Role
             </span>
-            {roles.map((r) => (
-              <button
-                key={r.role}
-                onClick={() => {
-                  handleRoleSelect(r.role);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 text-xs rounded-xl font-medium ${
-                  userRole === r.role ? 'bg-green-700 text-white' : 'text-stone-700 hover:bg-stone-100/70'
-                }`}
-              >
-                {r.label}
-              </button>
-            ))}
+            <div className="grid grid-cols-2 gap-1.5">
+              {roles.map((r) => (
+                <button
+                  key={r.role}
+                  onClick={() => {
+                    handleRoleSelect(r.role);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`p-2 rounded-xl text-left text-xs font-semibold flex items-center gap-1.5 ${
+                    userRole === r.role
+                      ? 'bg-emerald-800 text-white'
+                      : 'bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-300'
+                  }`}
+                >
+                  <span>{r.icon}</span>
+                  <span>{r.label.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

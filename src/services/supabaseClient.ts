@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS public.farms (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 3. TRANSACTIONS TABLE (x402 & Algorand Settlements)
+-- 3. TRANSACTIONS TABLE (Algorand Settlements)
 CREATE TABLE IF NOT EXISTS public.transactions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -473,7 +473,7 @@ export async function upsertFarm(farm: Partial<FarmRow> & { id: string; user_id:
 }
 
 /**
- * Record a settled blockchain / x402 transaction
+ * Record a settled blockchain transaction
  */
 export async function recordTransaction(tx: Omit<TransactionRow, 'created_at'>): Promise<TransactionRow | null> {
   const supabase = getSupabase();

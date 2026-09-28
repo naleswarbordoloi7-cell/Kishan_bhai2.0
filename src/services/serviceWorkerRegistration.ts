@@ -45,7 +45,7 @@ export function registerServiceWorker(options?: {
   onError?: (error: Error) => void;
 }): void {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
-    console.log('[Kisan Bhai] Service Workers not supported in this browser.');
+    console.log('[Kishan Bhai] Service Workers not supported in this browser.');
     return;
   }
 
@@ -55,7 +55,7 @@ export function registerServiceWorker(options?: {
     navigator.serviceWorker
       .register(swUrl)
       .then((registration) => {
-        console.log('[Kisan Bhai SW] Service Worker registered with scope:', registration.scope);
+        console.log('[Kishan Bhai SW] Service Worker registered with scope:', registration.scope);
 
         // Check if there is an updated worker waiting
         if (registration.waiting) {
@@ -69,10 +69,10 @@ export function registerServiceWorker(options?: {
           installingWorker.onstatechange = () => {
             if (installingWorker.state === 'installed') {
               if (navigator.serviceWorker.controller) {
-                console.log('[Kisan Bhai SW] New content available; please refresh.');
+                console.log('[Kishan Bhai SW] New content available; please refresh.');
                 options?.onUpdate?.(registration);
               } else {
-                console.log('[Kisan Bhai SW] Content cached for offline use.');
+                console.log('[Kishan Bhai SW] Content cached for offline use.');
                 options?.onSuccess?.(registration);
               }
             }
@@ -81,11 +81,11 @@ export function registerServiceWorker(options?: {
 
         // Immediately seed essential farm datasets into SW cache
         syncCriticalFarmDataToCache().catch((err) => {
-          console.warn('[Kisan Bhai SW] Initial farm data cache sync note:', err);
+          console.warn('[Kishan Bhai SW] Initial farm data cache sync note:', err);
         });
       })
       .catch((error) => {
-        console.error('[Kisan Bhai SW] Error during Service Worker registration:', error);
+        console.error('[Kishan Bhai SW] Error during Service Worker registration:', error);
         options?.onError?.(error);
       });
   });
@@ -209,7 +209,7 @@ export async function syncCriticalFarmDataToCache(): Promise<{ success: boolean;
       localStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
       return { success: true, count: endpointsToCache.length };
     } catch (err) {
-      console.warn('[Kisan Bhai] Direct cache storage fallback:', err);
+      console.warn('[Kishan Bhai] Direct cache storage fallback:', err);
     }
   }
 
@@ -295,7 +295,7 @@ export async function clearAllCaches(): Promise<boolean> {
       localStorage.removeItem(LAST_SYNC_KEY);
       return true;
     } catch (err) {
-      console.error('[Kisan Bhai] Failed to clear caches:', err);
+      console.error('[Kishan Bhai] Failed to clear caches:', err);
       return false;
     }
   }

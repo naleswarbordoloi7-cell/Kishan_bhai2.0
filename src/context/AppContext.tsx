@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   UserProfile,
   UserRole,
-  X402PaymentRequirement,
   TransactionRecord,
   CropLifecycleItem,
   DiseaseScanResult,
@@ -14,12 +13,11 @@ import {
   CropDetail,
   CropRecommendationInput,
   CropRecommendationResult,
+  CropRecommendationResultItem,
   MandiPriceRecord,
   FarmDiaryEntry,
   CommunityPost,
   FarmAlert,
-  BiometricCredential,
-  BiometricSecuritySettings,
   CropPatch,
   PatchTimelineEvent,
 } from '../../shared/types.js';
@@ -50,17 +48,6 @@ import {
   clearOfflineQueue,
   clearAllCaches,
 } from '../services/serviceWorkerRegistration';
-import {
-  checkBiometricCapability,
-  getLocalBiometricSettings,
-  saveLocalBiometricSettings,
-  getLocalPasskeys,
-  saveLocalPasskey,
-  registerBiometricPasskey,
-  deleteBiometricCredential,
-  fetchUserBiometricCredentials,
-  BiometricDeviceCapability,
-} from '../services/biometricAuth';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
@@ -89,11 +76,6 @@ interface AppContextType {
   refreshWalletBalance: () => Promise<void>;
   currentView: string;
   setCurrentView: (view: string) => void;
-  pendingPaymentReq: X402PaymentRequirement | null;
-  setPendingPaymentReq: (req: X402PaymentRequirement | null) => void;
-  paymentCallback: ((proof: { txId: string; sender: string }) => void) | null;
-  setPaymentCallback: (cb: any) => void;
-  triggerPaymentModal: (req: X402PaymentRequirement, onSettled: (proof: { txId: string; sender: string }) => void) => void;
   toasts: { id: string; title: string; message: string; type: 'success' | 'info' | 'error' }[];
   addToast: (title: string, message: string, type?: 'success' | 'info' | 'error') => void;
   removeToast: (id: string) => void;
@@ -120,32 +102,6 @@ interface AppContextType {
   clearCacheAndReset: () => Promise<void>;
   offlineQueue: OfflineSyncQueueItem[];
   queueOfflineAction: (type: OfflineSyncQueueItem['type'], payload: any) => void;
-
-  // Biometric Authentication & Passkey State
-  isBiometricSupported: boolean;
-  biometricCapability: BiometricDeviceCapability | null;
-  biometricSettings: BiometricSecuritySettings;
-  updateBiometricSettings: (settings: Partial<BiometricSecuritySettings>) => Promise<void>;
-  enrolledPasskeys: BiometricCredential[];
-  refreshEnrolledPasskeys: () => Promise<void>;
-  registerNewPasskey: (deviceName?: string) => Promise<{ success: boolean; credential?: BiometricCredential; error?: string }>;
-  deletePasskey: (credentialId: string) => Promise<void>;
-  isBiometricModalOpen: boolean;
-  setIsBiometricModalOpen: (open: boolean) => void;
-  biometricPromptOptions: {
-    title?: string;
-    subtitle?: string;
-    actionReason?: string;
-    targetUserId?: string;
-    onSuccess?: (user?: UserProfile) => void;
-  };
-  triggerBiometricPrompt: (options: {
-    title?: string;
-    subtitle?: string;
-    actionReason?: string;
-    targetUserId?: string;
-    onSuccess: (user?: UserProfile) => void;
-  }) => void;
 
   // Agricultural Modules State
   crops: CropLifecycleItem[];
@@ -240,20 +196,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [language]
   );
 
-  // When someone visits our app for a new user, firstly show the login page
+  // Open directly into Farmer Dashboard with full active capability
   const [currentView, setCurrentViewState] = useState<string>(() => {
     try {
-      const savedUser = localStorage.getItem('kb_user');
-      const isAuthenticated = localStorage.getItem('kb_user_authenticated') === 'true';
-      // If no authenticated user session exists, default to the login page
-      if (!savedUser || (!isAuthenticated && JSON.parse(savedUser)?.id === 'usr_farmer_ramesh')) {
-        return 'login';
-      }
       const savedView = localStorage.getItem('kb_current_view');
       if (savedView && savedView !== 'login') return savedView;
       return 'farmer-dashboard';
     } catch {
-      return 'login';
+      return 'farmer-dashboard';
     }
   });
 
@@ -263,8 +213,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('kb_current_view', view);
     } catch {}
   }, []);
-  const [pendingPaymentReq, setPendingPaymentReq] = useState<X402PaymentRequirement | null>(null);
-  const [paymentCallback, setPaymentCallback] = useState<((proof: { txId: string; sender: string }) => void) | null>(null);
   const [toasts, setToasts] = useState<{ id: string; title: string; message: string; type: 'success' | 'info' | 'error' }[]>([]);
 
   const addToast = useCallback((title: string, message: string, type: 'success' | 'info' | 'error' = 'info') => {
@@ -466,118 +414,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Biometric Authentication & Passkey State
-  const [biometricCapability, setBiometricCapability] = useState<BiometricDeviceCapability | null>(null);
-  const [biometricSettings, setBiometricSettings] = useState<BiometricSecuritySettings>(() => getLocalBiometricSettings());
-  const [enrolledPasskeys, setEnrolledPasskeys] = useState<BiometricCredential[]>(() => getLocalPasskeys());
-  const [isBiometricModalOpen, setIsBiometricModalOpen] = useState(false);
-  const [biometricPromptOptions, setBiometricPromptOptions] = useState<{
-    title?: string;
-    subtitle?: string;
-    actionReason?: string;
-    targetUserId?: string;
-    onSuccess?: (user?: UserProfile) => void;
-  }>({});
-
-  useEffect(() => {
-    checkBiometricCapability().then((cap) => {
-      setBiometricCapability(cap);
-    });
-  }, []);
-
-  const refreshEnrolledPasskeys = useCallback(async () => {
-    if (currentUser?.id) {
-      const creds = await fetchUserBiometricCredentials(currentUser.id);
-      setEnrolledPasskeys(creds);
-    } else {
-      setEnrolledPasskeys(getLocalPasskeys());
-    }
-  }, [currentUser?.id]);
-
-  useEffect(() => {
-    refreshEnrolledPasskeys();
-  }, [refreshEnrolledPasskeys]);
-
-  const updateBiometricSettings = useCallback(
-    async (newSettings: Partial<BiometricSecuritySettings>) => {
-      const merged = { ...biometricSettings, ...newSettings };
-      setBiometricSettings(merged);
-      saveLocalBiometricSettings(merged);
-
-      if (currentUser?.id) {
-        try {
-          await fetch('/api/auth/biometric/update-settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUser.id, settings: merged }),
-          });
-        } catch {}
-      }
-
-      addToast(
-        'Biometric Security Updated',
-        'Your biometric verification preferences have been saved.',
-        'success'
-      );
-    },
-    [biometricSettings, currentUser?.id, addToast]
-  );
-
-  const registerNewPasskey = useCallback(
-    async (customDeviceName?: string) => {
-      const targetUser = currentUser || {
-        id: 'usr_farmer_ramesh',
-        fullName: 'Ramesh Patel',
-        email: 'ramesh.patel@kishanbhai.in',
-        role: 'FARMER',
-      };
-
-      const result = await registerBiometricPasskey({
-        id: targetUser.id,
-        email: targetUser.email,
-        fullName: targetUser.fullName,
-        role: targetUser.role,
-      });
-
-      if (result.success && result.credential) {
-        await refreshEnrolledPasskeys();
-        addToast(
-          'Biometric Passkey Enrolled',
-          `Successfully registered ${result.credential.deviceName} with hardware protection.`,
-          'success'
-        );
-      } else {
-        addToast('Enrollment Failed', result.error || 'Could not enroll biometric passkey.', 'error');
-      }
-
-      return result;
-    },
-    [currentUser, refreshEnrolledPasskeys, addToast]
-  );
-
-  const deletePasskey = useCallback(
-    async (credentialId: string) => {
-      await deleteBiometricCredential(credentialId, currentUser?.id);
-      await refreshEnrolledPasskeys();
-      addToast('Passkey Revoked', 'Biometric credential removed from this account.', 'info');
-    },
-    [currentUser?.id, refreshEnrolledPasskeys, addToast]
-  );
-
-  const triggerBiometricPrompt = useCallback(
-    (options: {
-      title?: string;
-      subtitle?: string;
-      actionReason?: string;
-      targetUserId?: string;
-      onSuccess: (user?: UserProfile) => void;
-    }) => {
-      setBiometricPromptOptions(options);
-      setIsBiometricModalOpen(true);
-    },
-    []
-  );
-
   // Agricultural module states with local persistence
   const [crops, setCrops] = useState<CropLifecycleItem[]>(() => {
     try {
@@ -628,13 +464,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [soilImprovementPlans] = useState<SoilImprovementPlanItem[]>(SOIL_IMPROVEMENT_PLANS);
   const [soilCropSuitability] = useState<SoilCropSuitabilityInsight>(SOIL_CROP_SUITABILITY);
   const [cropsCatalog] = useState<CropDetail[]>(CROP_RECOMMENDATIONS_DATABASE);
+  const formatCropToItem = useCallback((crop: CropDetail, input?: CropRecommendationInput): CropRecommendationResultItem => ({
+    cropId: crop.id,
+    cropName: crop.cropName,
+    hindiName: crop.hindiName,
+    variety: crop.variety,
+    season: crop.bestSeason,
+    suitabilityScore: crop.suitabilityScore,
+    expectedYieldRange: crop.expectedYieldPerAcre || `${crop.expectedYieldQuintals} Quintals`,
+    estimatedCostPerAcreInr: crop.estimatedCostPerAcre,
+    estimatedRevenuePerAcreInr: crop.potentialRevenuePerAcre,
+    estimatedNetProfitPerAcreInr: crop.estimatedProfitPerAcre,
+    durationDays: `${crop.durationDays} Days`,
+    waterRequirement: crop.waterRequirement,
+    marketRisk: crop.marketRisk,
+    soilCompatibility: crop.suitableSoils?.[0] || 'Black Cotton',
+    sowingWindow: crop.sowingPeriod,
+    reasons: [
+      crop.whyThisCrop || 'High suitability match with your soil profile and agro-climatic zone.',
+      `Estimated net profit ₹${crop.estimatedProfitPerAcre.toLocaleString('en-IN')}/acre with ${crop.marketRisk} market risk.`,
+      `Water efficiency: ${crop.waterRequirement}.`,
+      crop.marketInformation?.mspPricePerQuintal ? `Assured MSP support: ₹${crop.marketInformation.mspPricePerQuintal}/quintal.` : 'Strong APMC Mandi demand.',
+    ],
+    mandiPriceReference: crop.marketInformation ? `₹${crop.marketInformation.currentMandiPricePerQuintal || crop.marketInformation.mspPricePerQuintal}/Qtl` : undefined,
+  }), []);
+
   const [lastCropRecommendation, setLastCropRecommendation] = useState<CropRecommendationResult | null>(() => {
     try {
       const saved = localStorage.getItem('kb_last_crop_rec');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed) {
+          if (!parsed.topRecommendations || parsed.topRecommendations.length === 0) {
+            parsed.topRecommendations = (parsed.topCrops || CROP_RECOMMENDATIONS_DATABASE).map((c: CropDetail) => formatCropToItem(c, parsed.inputSummary));
+          }
+          return parsed;
+        }
+      }
+    } catch {}
+
+    // Baseline initial recommendation so Crop Advisor always renders rich actionable cards immediately
+    const ranked = [...CROP_RECOMMENDATIONS_DATABASE].sort((a, b) => b.suitabilityScore - a.suitabilityScore);
+    const defaultInput: CropRecommendationInput = {
+      state: 'Gujarat',
+      district: 'Rajkot',
+      village: 'Anandpur',
+      farmSizeAcres: 4.5,
+      availableWater: 'Moderate',
+      irrigationType: 'Drip',
+      farmingExperience: 'Intermediate (3-10 yrs)',
+      budgetPerAcre: 28000,
+      soilType: 'Medium Black Cotton',
+      soilPh: 7.4,
+      nitrogenKgHa: 165,
+      phosphorusKgHa: 24,
+      potassiumKgHa: 340,
+      organicCarbonPct: 0.62,
+      season: 'Rabi',
+      farmingGoal: 'Maximum Profit',
+    };
+    const topRecs = ranked.map((c) => formatCropToItem(c, defaultInput));
+    return {
+      topCrops: ranked,
+      topRecommendations: topRecs,
+      aiAdvice: {
+        kishanBhaiAdvice: `Based on your farm in Rajkot, Gujarat with Medium Black Cotton soil and Moderate water supply, ${ranked[0].cropName} (${ranked[0].hindiName}) is your top recommended crop for the Rabi season.`,
+        kisanBhaiAdvice: `Based on your farm in Rajkot, Gujarat with Medium Black Cotton soil and Moderate water supply, ${ranked[0].cropName} (${ranked[0].hindiName}) is your top recommended crop for the Rabi season.`,
+        whyReasons: [
+          `${ranked[0].cropName} yields estimated ₹${ranked[0].estimatedProfitPerAcre.toLocaleString('en-IN')}/acre with low risk profile.`,
+          `Optimal match for your Vertisol soil texture and current season.`,
+          `Strong local APMC Mandi demand with government procurement security.`,
+        ],
+        topPickName: ranked[0].cropName,
+        seasonalNote: `Sowing window is optimal during ${ranked[0].sowingPeriod}.`,
+        resourceAlignment: `Budget requirement of ₹${ranked[0].estimatedCostPerAcre.toLocaleString('en-IN')}/acre fits within your parameters.`,
+      },
+      aiExplanation: `Based on your farm in Rajkot, Gujarat with Medium Black Cotton soil and Moderate water supply, ${ranked[0].cropName} (${ranked[0].hindiName}) is your top recommended crop for the Rabi season.`,
+      district: 'Rajkot',
+      season: 'Rabi',
+      farmingGoal: 'Maximum Profit',
+      inputSummary: defaultInput,
+      timestamp: new Date().toISOString(),
+      isDemo: true,
+    };
   });
   const [selectedCropDetailId, setSelectedCropDetailId] = useState<string | null>(null);
 
@@ -732,9 +644,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (res.ok) {
         const data = await res.json();
         if (data.result) {
-          setLastCropRecommendation(data.result);
-          addToast('Crop Analysis Complete', `Top recommendation: ${data.result.topCrops[0]?.cropName}`, 'success');
-          return data.result;
+          const resObj = data.result;
+          if (!resObj.topRecommendations || resObj.topRecommendations.length === 0) {
+            resObj.topRecommendations = (resObj.topCrops || CROP_RECOMMENDATIONS_DATABASE).map((c: CropDetail) => formatCropToItem(c, input));
+          }
+          if (!resObj.district) resObj.district = input.district || 'Rajkot';
+          if (!resObj.season) resObj.season = input.season || 'Rabi';
+          if (!resObj.farmingGoal) resObj.farmingGoal = input.farmingGoal || 'Maximum Profit';
+          if (!resObj.aiExplanation && (resObj.aiAdvice?.kishanBhaiAdvice || resObj.aiAdvice?.kisanBhaiAdvice)) {
+            resObj.aiExplanation = resObj.aiAdvice?.kishanBhaiAdvice || resObj.aiAdvice?.kisanBhaiAdvice;
+          }
+          setLastCropRecommendation(resObj);
+          const topCropName = resObj.topCrops?.[0]?.cropName || resObj.topRecommendations?.[0]?.cropName || 'Recommended Crop';
+          addToast('Crop Analysis Complete', `Top recommendation: ${topCropName}`, 'success');
+          return resObj;
         }
       }
     } catch (e) {
@@ -743,9 +666,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Fast client-side fallback
     const ranked = [...CROP_RECOMMENDATIONS_DATABASE].sort((a, b) => b.suitabilityScore - a.suitabilityScore);
+    const topRecs = ranked.map((c) => formatCropToItem(c, input));
     const fallbackResult: CropRecommendationResult = {
       topCrops: ranked,
+      topRecommendations: topRecs,
       aiAdvice: {
+        kishanBhaiAdvice: `Based on your farm in ${input.district || 'Rajkot'}, ${input.state || 'Gujarat'} with ${input.soilType || 'Black'} soil and ${input.availableWater || 'Moderate'} water supply, ${ranked[0].cropName} (${ranked[0].hindiName}) is your top recommended crop.`,
         kisanBhaiAdvice: `Based on your farm in ${input.district || 'Rajkot'}, ${input.state || 'Gujarat'} with ${input.soilType || 'Black'} soil and ${input.availableWater || 'Moderate'} water supply, ${ranked[0].cropName} (${ranked[0].hindiName}) is your top recommended crop.`,
         whyReasons: [
           `${ranked[0].cropName} yields estimated ₹${ranked[0].estimatedProfitPerAcre.toLocaleString('en-IN')}/acre with low risk profile.`,
@@ -756,6 +682,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         seasonalNote: `Sowing window is optimal during ${ranked[0].sowingPeriod}.`,
         resourceAlignment: `Budget requirement of ₹${ranked[0].estimatedCostPerAcre.toLocaleString('en-IN')}/acre fits within your parameters.`,
       },
+      aiExplanation: `Based on your farm in ${input.district || 'Rajkot'}, ${input.state || 'Gujarat'} with ${input.soilType || 'Black'} soil and ${input.availableWater || 'Moderate'} water supply, ${ranked[0].cropName} (${ranked[0].hindiName}) is your top recommended crop.`,
+      district: input.district || 'Rajkot',
+      season: input.season || 'Rabi',
+      farmingGoal: input.farmingGoal || 'Maximum Profit',
       inputSummary: input,
       timestamp: new Date().toISOString(),
       isDemo: false,
@@ -889,11 +819,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem('kb_alerts', JSON.stringify(alerts));
   }, [alerts]);
-
-  const triggerPaymentModal = (req: X402PaymentRequirement, onSettled: (proof: { txId: string; sender: string }) => void) => {
-    setPendingPaymentReq(req);
-    setPaymentCallback(() => onSettled);
-  };
 
   const addCrop = (crop: CropLifecycleItem) => {
     setCrops((prev) => [crop, ...prev]);
@@ -1173,11 +1098,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         refreshWalletBalance,
         currentView,
         setCurrentView,
-        pendingPaymentReq,
-        setPendingPaymentReq,
-        paymentCallback,
-        setPaymentCallback,
-        triggerPaymentModal,
         toasts,
         addToast,
         removeToast,
@@ -1196,18 +1116,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearCacheAndReset,
         offlineQueue,
         queueOfflineAction,
-        isBiometricSupported: Boolean(biometricCapability?.supported),
-        biometricCapability,
-        biometricSettings,
-        updateBiometricSettings,
-        enrolledPasskeys,
-        refreshEnrolledPasskeys,
-        registerNewPasskey,
-        deletePasskey,
-        isBiometricModalOpen,
-        setIsBiometricModalOpen,
-        biometricPromptOptions,
-        triggerBiometricPrompt,
         themeMode,
         setThemeMode,
         isDarkMode,

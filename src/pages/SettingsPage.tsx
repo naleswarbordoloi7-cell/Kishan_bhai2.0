@@ -583,7 +583,7 @@ export const SettingsPage: React.FC = () => {
       <div className="bg-white dark:bg-[#161c14] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
         <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base flex items-center gap-2">
           <Wallet className="w-5 h-5 text-green-700 dark:text-emerald-400" />
-          <span>Algorand x402 Micropayment Wallet & Diagnostics</span>
+          <span>Algorand Testnet Wallet & Diagnostics</span>
         </h3>
 
         <div className="p-4 bg-stone-50 dark:bg-[#1a2218]/60 rounded-2xl border border-stone-200/80 dark:border-stone-800 space-y-2">

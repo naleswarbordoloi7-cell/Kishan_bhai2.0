@@ -288,9 +288,8 @@ export async function executeMockApiFallback(
         platform: 'Kishan Bhai',
         deployment: 'Netlify Standalone / Client Resilience Mode',
         network: 'Algorand Testnet',
-        x402Protocol: 'Enabled (v1.0)',
         facilitator: 'GoPlausible',
-        facilitatorUrl: 'https://goplausible.xyz/x402/facilitator',
+        facilitatorUrl: 'https://testnet.goplausible.xyz',
         receiverAddress: '7KISHANBHAIALGORANDTESTNETRECEIVERADDR999',
         usdcAssetId: 10458941,
       },
@@ -570,7 +569,7 @@ export async function executeMockApiFallback(
       minimumTargetPricePerKg: Number(minimumTargetPricePerKg) || 75,
       status: 'AVAILABLE',
       moisturePercentage: 8.4,
-      notes: notes || 'Pooled via Kisan Bhai Marketplace',
+      notes: notes || 'Pooled via Kishan Bhai Marketplace',
     };
 
     lots.unshift(newLot);
@@ -848,6 +847,7 @@ export async function executeMockApiFallback(
       timestamp: new Date().toISOString(),
       aiAdvice: {
         topPickName: topCrop.cropName,
+        kishanBhaiAdvice: `Based on your ${input.soilType || 'Medium Black'} soil in ${input.season || 'Rabi'} season, ${topCrop.cropName} is the highest-yielding crop with an estimated net return of ₹${topCrop.estimatedProfitPerAcre.toLocaleString()}/Acre.`,
         kisanBhaiAdvice: `Based on your ${input.soilType || 'Medium Black'} soil in ${input.season || 'Rabi'} season, ${topCrop.cropName} is the highest-yielding crop with an estimated net return of ₹${topCrop.estimatedProfitPerAcre.toLocaleString()}/Acre.`,
         whyReasons: [
           'Optimal alignment with seasonal temperature and moisture index.',
@@ -914,7 +914,7 @@ export async function executeMockApiFallback(
     return { ok: true, status: 200, data: { transactions } };
   }
 
-  if (pathname === '/api/admin/stats' || pathname === '/api/admin/x402-analytics') {
+  if (pathname === '/api/admin/stats' || pathname === '/api/admin/telemetry') {
     return {
       ok: true,
       status: 200,
@@ -935,7 +935,7 @@ export async function executeMockApiFallback(
         },
         systemStatus: 'Optimal (All nodes operational)',
         facilitatorName: 'GoPlausible',
-        facilitatorUrl: 'https://goplausible.xyz/x402/facilitator',
+        facilitatorUrl: 'https://testnet.goplausible.xyz',
         totalRequests: 54,
         successfulPayments: 42,
         failedPayments: 0,

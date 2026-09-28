@@ -43,6 +43,7 @@ import {
 } from 'recharts';
 import { PriceAlertModal } from './components/PriceAlertModal';
 import { MarketPricesTable } from './components/MarketPricesTable';
+import { MandiTicker } from '../../components/MandiTicker';
 
 export const MarketPricesPage: React.FC = () => {
   const farmerProfile = useUserStore(state => state.farmerProfile);
@@ -194,6 +195,9 @@ export const MarketPricesPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Real-time Multi-State APMC Live Ticker */}
+      <MandiTicker />
 
       {/* Interactive Price Trend Chart for Selected Crop */}
       {activeRecord && (

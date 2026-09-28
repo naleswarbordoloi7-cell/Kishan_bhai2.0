@@ -14,10 +14,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 // Initialize Service Worker for offline field capability
 registerServiceWorker({
   onSuccess: () => {
-    console.log('[Kisan Bhai] Offline farm data and core application cached successfully.');
+    console.log('[Kishan Bhai] Offline farm data and core application cached successfully.');
   },
   onUpdate: () => {
-    console.log('[Kisan Bhai] New version available for update.');
+    console.log('[Kishan Bhai] New version available for update.');
   },
 });
 

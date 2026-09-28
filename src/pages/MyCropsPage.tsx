@@ -15,13 +15,20 @@ import {
   Sparkles,
   ArrowRight,
   X,
+  Bell,
 } from 'lucide-react';
 import { CropLifecycleItem } from '../../shared/types';
+import { HarvestReminderModal } from '../components/HarvestReminderModal';
 
 export const MyCropsPage: React.FC = () => {
   const { crops, addCrop, updateCrop, removeCrop, language, setCurrentView } = useApp();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedCrop, setSelectedCrop] = useState<CropLifecycleItem | null>(null);
+  const [reminderCrop, setReminderCrop] = useState<CropLifecycleItem | null>(null);
+
+  const handleSaveReminder = (cropId: string, reminderConfig: NonNullable<CropLifecycleItem['harvestReminder']>) => {
+    updateCrop(cropId, { harvestReminder: reminderConfig });
+  };
 
   // New Crop Form state
   const [newCropName, setNewCropName] = useState('Wheat');
@@ -213,22 +220,46 @@ export const MyCropsPage: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2 pt-2 border-t border-stone-100">
-                <button
-                  onClick={() => setCurrentView('disease-scanner')}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-stone-100 hover:bg-emerald-100 text-stone-800 hover:text-emerald-900 text-xs font-bold rounded-xl transition-all cursor-pointer"
-                >
-                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                  <span>{language === 'hi' ? 'रोग जांच' : 'Scan Disease'}</span>
-                </button>
+              <div className="space-y-2 pt-2 border-t border-stone-100">
+                {crop.harvestReminder?.enabled && (
+                  <div className="flex items-center justify-between px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-xl text-[11px] font-bold border border-emerald-200">
+                    <div className="flex items-center gap-1.5">
+                      <Bell className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                      <span>Harvest Reminder Active ({crop.harvestReminder.reminderDaysBefore.join(', ')}d prior)</span>
+                    </div>
+                    <button
+                      onClick={() => setReminderCrop(crop)}
+                      className="text-emerald-700 hover:underline cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentView('disease-scanner')}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-stone-100 hover:bg-emerald-100 text-stone-800 hover:text-emerald-900 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                    <span>{language === 'hi' ? 'रोग जांच' : 'Scan'}</span>
+                  </button>
 
-                <button
-                  onClick={() => setCurrentView('smart-irrigation')}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-700 hover:bg-green-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
-                >
-                  <Droplets className="w-4 h-4 text-emerald-200" />
-                  <span>{language === 'hi' ? 'सिंचाई जांच' : 'Check Water'}</span>
-                </button>
+                  <button
+                    onClick={() => setCurrentView('smart-irrigation')}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-700 hover:bg-green-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+                  >
+                    <Droplets className="w-4 h-4 text-emerald-200" />
+                    <span>{language === 'hi' ? 'सिंचाई' : 'Water'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setReminderCrop(crop)}
+                    className="flex items-center justify-center px-3 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold rounded-xl transition-all cursor-pointer border border-amber-200 shadow-2xs"
+                    title="Schedule Harvest Reminder"
+                  >
+                    <Bell className="w-4 h-4 text-amber-600" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -339,6 +370,17 @@ export const MyCropsPage: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Harvest Reminder Scheduler Modal */}
+      {reminderCrop && (
+        <HarvestReminderModal
+          crop={reminderCrop}
+          isOpen={!!reminderCrop}
+          onClose={() => setReminderCrop(null)}
+          onSave={handleSaveReminder}
+          language={language}
+        />
       )}
     </div>
   );

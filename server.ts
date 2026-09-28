@@ -1,17 +1,18 @@
 /**
  * Kishan Bhai - Express Backend Server
  * Monorepo Entry Point & API Gateway
- * Integrated with x402 Protocol, Algorand Testnet & GoPlausible Facilitator
+ * Integrated with Algorand Testnet & GoPlausible Facilitator
  */
 
 import express from 'express';
+import http from 'http';
+import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './src/server/db.js';
 import { algorandService } from './src/server/algorand.js';
-import { requireX402Payment, X402Request } from './src/server/x402.js';
 import { askKishanAI, generatePaidCropAnalysis, analyzeCropDiseaseImage } from './src/server/gemini.js';
 import { analyzeCropDisease, validateCropImage } from './src/server/diseaseScanner.js';
 import { getWeatherData } from './src/server/weather.js';
@@ -33,7 +34,7 @@ import {
   getSoilHistory,
 } from './src/server/soilAdvisor.js';
 import { ALGORAND_TESTNET_CONFIG, DEFAULT_SERVICE_PRICING, GOPLAUSIBLE_CONFIG } from './shared/constants.js';
-import { BulkOrderRequirement, CropRecommendationInput, SoilHealthData, SoilRecordHistoryItem } from './shared/types.js';
+import { BulkOrderRequirement, CropRecommendationInput, SoilHealthData, SoilRecordHistoryItem, ClusterChatMessage, SharedClusterCart, SharedCartItem, TransactionRecord } from './shared/types.js';
 import { securityHeaders } from './src/server/middleware/securityHeaders.js';
 import { requestLogger } from './src/server/middleware/requestLogger.js';
 import { createRateLimiter } from './src/server/middleware/rateLimiter.js';
@@ -43,6 +44,7 @@ import { weatherService } from './src/server/services/WeatherService.js';
 import { marketService } from './src/server/services/MarketService.js';
 import { diseaseScannerService } from './src/server/services/DiseaseScannerService.js';
 import { auditService } from './src/server/services/AuditService.js';
+import { schemeService } from './src/server/services/SchemeService.js';
 import { sendSuccess, sendError, AppError } from './src/server/core/errors.js';
 import { config } from './src/server/core/config.js';
 import {
@@ -119,14 +121,13 @@ app.post('/api/firebase/ping', async (req, res) => {
   });
 });
 
-// 1. SYSTEM HEALTH & x402 PROTOCOL DISCOVERY
+// 1. SYSTEM HEALTH & PLATFORM DISCOVERY
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
     platform: 'Kishan Bhai',
     tagline: 'Small Farms. One Powerful Network.',
     network: 'Algorand Testnet',
-    x402Protocol: 'Enabled (v1.0)',
     facilitator: GOPLAUSIBLE_CONFIG.facilitatorName,
     facilitatorUrl: GOPLAUSIBLE_CONFIG.facilitatorUrl,
     receiverAddress: algorandService.getReceiverAddress(),
@@ -278,196 +279,6 @@ app.post('/api/auth/update-profile', (req, res) => {
   res.json({ success: true, user });
 });
 
-// Biometric Authentication & Passkey Endpoints
-app.get('/api/auth/biometric/challenge', (req, res) => {
-  const challenge = Buffer.from(Math.random().toString(36).substring(2) + Date.now().toString(36)).toString('base64url');
-  const userId = req.query.userId as string | undefined;
-  
-  db.biometricChallenges.set(challenge, {
-    challenge,
-    expiresAt: Date.now() + 5 * 60 * 1000,
-    userId,
-  });
-
-  res.json({
-    challenge,
-    rp: {
-      name: 'Kishan Bhai Agricultural ID',
-      id: req.hostname === 'localhost' ? 'localhost' : req.hostname,
-    },
-    userVerification: 'preferred',
-    timeout: 60000,
-    allowCredentials: userId
-      ? Array.from(db.biometricCredentials.values())
-          .filter((c) => c.userId === userId)
-          .map((c) => ({ id: c.id, type: 'public-key' }))
-      : [],
-  });
-});
-
-app.post('/api/auth/biometric/register', (req, res) => {
-  const { userId, credentialId, authenticatorType, deviceName, credentialPublicKey } = req.body;
-  if (!userId) {
-    return res.status(400).json({ error: 'User ID is required for biometric registration.' });
-  }
-
-  const user = db.users.get(userId);
-  if (!user) {
-    return res.status(404).json({ error: 'User profile not found.' });
-  }
-
-  const newCredential = {
-    id: credentialId || `bio_cred_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-    userId: user.id,
-    userEmail: user.email,
-    userFullName: user.fullName,
-    userRole: user.role,
-    deviceName: deviceName || 'Personal Biometric Device (Fingerprint / Face ID)',
-    authenticatorType: authenticatorType || 'fingerprint',
-    credentialPublicKey: credentialPublicKey || 'mock_pub_key_secp256r1',
-    createdAt: new Date().toISOString(),
-    lastUsedAt: new Date().toISOString(),
-  };
-
-  db.biometricCredentials.set(newCredential.id, newCredential);
-
-  // Update user profile biometric count & settings
-  user.enrolledBiometricsCount = (user.enrolledBiometricsCount || 0) + 1;
-  if (!user.biometricSettings) {
-    user.biometricSettings = {
-      biometricsEnabled: true,
-      requireForProfileEdits: true,
-      requireForTransactions: true,
-      requireForLandRecords: true,
-      autoLockTimeoutMinutes: 15,
-    };
-  } else {
-    user.biometricSettings.biometricsEnabled = true;
-  }
-  db.users.set(user.id, user);
-
-  res.json({
-    success: true,
-    message: 'Biometric passkey registered successfully.',
-    credential: newCredential,
-    user,
-  });
-});
-
-app.post('/api/auth/biometric/login', (req, res) => {
-  const { credentialId, userId, identifier } = req.body;
-  
-  let targetUser = null;
-  let matchedCredential = null;
-
-  if (credentialId) {
-    matchedCredential = db.biometricCredentials.get(credentialId);
-    if (matchedCredential) {
-      targetUser = db.users.get(matchedCredential.userId);
-      matchedCredential.lastUsedAt = new Date().toISOString();
-      db.biometricCredentials.set(matchedCredential.id, matchedCredential);
-    }
-  }
-
-  if (!targetUser && userId) {
-    targetUser = db.users.get(userId);
-  }
-
-  if (!targetUser && identifier) {
-    const searchKey = identifier.toLowerCase().trim();
-    targetUser = Array.from(db.users.values()).find(
-      (u) =>
-        u.email.toLowerCase() === searchKey ||
-        u.phone.replace(/\s+/g, '') === searchKey.replace(/\s+/g, '') ||
-        u.id.toLowerCase() === searchKey
-    );
-  }
-
-  // If no specific match, default to the primary verified farmer profile for seamless demo testing
-  if (!targetUser) {
-    targetUser = db.users.get('usr_farmer_ramesh') || Array.from(db.users.values())[0];
-  }
-
-  if (!targetUser) {
-    return res.status(404).json({
-      success: false,
-      error: 'No registered farmer profile found for this biometric signature.',
-    });
-  }
-
-  res.json({
-    success: true,
-    user: targetUser,
-    message: `Biometric authentication verified for ${targetUser.fullName}.`,
-    credential: matchedCredential,
-  });
-});
-
-app.get('/api/auth/biometric/credentials', (req, res) => {
-  const userId = req.query.userId as string;
-  if (!userId) {
-    return res.json({ credentials: Array.from(db.biometricCredentials.values()) });
-  }
-
-  const userCreds = Array.from(db.biometricCredentials.values()).filter((c) => c.userId === userId);
-  res.json({ credentials: userCreds });
-});
-
-app.post('/api/auth/biometric/delete-credential', (req, res) => {
-  const { credentialId, userId } = req.body;
-  if (!credentialId) {
-    return res.status(400).json({ error: 'Credential ID is required.' });
-  }
-
-  const deleted = db.biometricCredentials.delete(credentialId);
-  if (userId) {
-    const user = db.users.get(userId);
-    if (user) {
-      const remaining = Array.from(db.biometricCredentials.values()).filter((c) => c.userId === userId).length;
-      user.enrolledBiometricsCount = remaining;
-      if (remaining === 0 && user.biometricSettings) {
-        user.biometricSettings.biometricsEnabled = false;
-      }
-      db.users.set(user.id, user);
-    }
-  }
-
-  res.json({ success: deleted, message: 'Biometric passkey removed.' });
-});
-
-app.post('/api/auth/biometric/update-settings', (req, res) => {
-  const { userId, settings } = req.body;
-  if (!userId || !settings) {
-    return res.status(400).json({ error: 'User ID and biometric settings required.' });
-  }
-
-  const user = db.users.get(userId);
-  if (!user) {
-    return res.status(404).json({ error: 'User not found.' });
-  }
-
-  user.biometricSettings = {
-    ...user.biometricSettings,
-    ...settings,
-  };
-  db.users.set(user.id, user);
-
-  res.json({ success: true, biometricSettings: user.biometricSettings, user });
-});
-
-app.post('/api/auth/biometric/verify-action', (req, res) => {
-  const { userId, actionType } = req.body;
-  const user = db.users.get(userId || 'usr_farmer_ramesh');
-  
-  res.json({
-    success: true,
-    verified: true,
-    action: actionType || 'profile_update',
-    user: user || null,
-    timestamp: new Date().toISOString(),
-  });
-});
-
 // 3. VIRTUAL FARM CLUSTERS
 app.get('/api/clusters', (req, res) => {
   res.json({ clusters: Array.from(db.clusters.values()) });
@@ -533,60 +344,606 @@ app.post('/api/clusters/join', (req, res) => {
   res.json({ success: true, cluster });
 });
 
-// 4. BULK BUYING MODULE
+// 3.1 REAL-TIME CLUSTER BUYING CHAT (COMMUNITY MODULE)
+interface ClientConnection {
+  ws: WebSocket;
+  clusterId: string;
+  userId: string;
+  userName: string;
+}
+
+const clusterClients = new Map<string, Set<ClientConnection>>();
+
+function broadcastToCluster(clusterId: string, payload: any) {
+  const clients = clusterClients.get(clusterId);
+  if (!clients) return;
+  const data = JSON.stringify(payload);
+  for (const client of clients) {
+    if (client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(data);
+    }
+  }
+}
+
+app.get('/api/cluster-chat/:clusterId', (req, res) => {
+  const { clusterId } = req.params;
+  const messages = db.clusterChatMessages.get(clusterId) || [];
+  const cluster = db.clusters.get(clusterId);
+  const activeSockets = clusterClients.get(clusterId)?.size || 0;
+  res.json({
+    success: true,
+    clusterId,
+    clusterName: cluster?.name || 'Farm Cluster Mesh',
+    village: cluster?.village || 'Anandpur',
+    messages,
+    memberCount: (cluster?.memberCount || 24) + activeSockets,
+    onlineCount: Math.max(1, activeSockets + 4),
+  });
+});
+
+app.post('/api/cluster-chat/:clusterId/message', (req, res) => {
+  const { clusterId } = req.params;
+  const { senderId, senderName, senderVillage, senderRole, text, buyingNeed } = req.body;
+  if (!text && !buyingNeed) {
+    return res.status(400).json({ error: 'Message text or buying need is required' });
+  }
+
+  const newMsg: ClusterChatMessage = {
+    id: `cmsg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    clusterId,
+    senderId: senderId || 'usr_farmer',
+    senderName: senderName || 'Farmer Member',
+    senderVillage: senderVillage || 'Anandpur',
+    senderRole: senderRole || 'FARMER',
+    text: text || (buyingNeed ? `📢 Buying Need: ${buyingNeed.quantityNeeded} ${buyingNeed.unit} of ${buyingNeed.item}` : ''),
+    buyingNeed: buyingNeed || undefined,
+    timestamp: new Date().toISOString(),
+  };
+
+  const list = db.clusterChatMessages.get(clusterId) || [];
+  list.push(newMsg);
+  db.clusterChatMessages.set(clusterId, list);
+
+  // Broadcast to all connected WebSocket clients in this cluster room
+  broadcastToCluster(clusterId, {
+    type: 'message',
+    message: newMsg,
+  });
+
+  res.json({ success: true, message: newMsg });
+});
+
+// 3.2 SHARED SHOPPING CART (CLUSTER GROUP ORDER) MODULE
+function recalculateCartTotals(cart: SharedClusterCart) {
+  let retail = 0;
+  let wholesale = 0;
+  for (const item of cart.items) {
+    const qty = item.contributors.reduce((acc, c) => acc + c.quantity, 0);
+    item.totalQuantity = qty;
+    retail += qty * item.retailPrice;
+    wholesale += qty * item.wholesalePrice;
+  }
+  cart.totalRetailAmount = retail;
+  cart.totalWholesaleAmount = wholesale;
+  cart.totalSavings = Math.max(0, retail - wholesale);
+  cart.updatedAt = new Date().toISOString();
+}
+
+app.get('/api/shared-cart/:clusterId', (req, res) => {
+  const { clusterId } = req.params;
+  let cart = db.sharedCarts.get(clusterId);
+  if (!cart) {
+    const cluster = db.clusters.get(clusterId);
+    cart = {
+      id: `cart_${clusterId}_${Date.now()}`,
+      clusterId,
+      clusterName: cluster?.name || 'Farm Cluster Mesh',
+      village: cluster?.village || 'Anandpur, Rajkot',
+      title: `${cluster?.name || 'Cluster'} Collective Farm Supplies Cart`,
+      status: 'OPEN',
+      deliveryAddress: `${cluster?.village || 'Cluster APMC Mandi'}, Cooperative Center`,
+      coordinatorName: cluster?.championName || 'Village Coordinator',
+      coordinatorPhone: '+91 97240 88219',
+      items: [],
+      totalRetailAmount: 0,
+      totalWholesaleAmount: 0,
+      totalSavings: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.sharedCarts.set(clusterId, cart);
+  }
+  res.json({ success: true, cart });
+});
+
+app.post('/api/shared-cart/:clusterId/item', (req, res) => {
+  const { clusterId } = req.params;
+  let cart = db.sharedCarts.get(clusterId);
+  if (!cart) {
+    const cluster = db.clusters.get(clusterId);
+    cart = {
+      id: `cart_${clusterId}_${Date.now()}`,
+      clusterId,
+      clusterName: cluster?.name || 'Farm Cluster Mesh',
+      village: cluster?.village || 'Anandpur',
+      title: `${cluster?.name || 'Cluster'} Collective Farm Supplies Cart`,
+      status: 'OPEN',
+      deliveryAddress: `${cluster?.village || 'Cluster Mandi'}, Cooperative Center`,
+      coordinatorName: cluster?.championName || 'Village Coordinator',
+      coordinatorPhone: '+91 97240 88219',
+      items: [],
+      totalRetailAmount: 0,
+      totalWholesaleAmount: 0,
+      totalSavings: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.sharedCarts.set(clusterId, cart);
+  }
+
+  if (cart.status === 'LOCKED' || cart.status === 'ORDER_PLACED') {
+    return res.status(400).json({ error: 'This group cart is locked or order has already been placed.' });
+  }
+
+  const {
+    title,
+    category,
+    unit,
+    retailPrice,
+    wholesalePrice,
+    targetTierQty,
+    quantity,
+    userId,
+    userName,
+    userVillage,
+    notes,
+    supplierName,
+    imageUrl,
+  } = req.body;
+
+  if (!title || !quantity) {
+    return res.status(400).json({ error: 'Title and quantity are required.' });
+  }
+
+  const qty = Number(quantity) || 1;
+
+  // Check if an item with the same title already exists in the cart
+  const existingItem = cart.items.find((i) => i.title.toLowerCase().trim() === title.toLowerCase().trim());
+  if (existingItem) {
+    // Add or increment contributor
+    const existingContributor = existingItem.contributors.find((c) => c.userId === userId);
+    if (existingContributor) {
+      existingContributor.quantity += qty;
+      if (notes) existingContributor.notes = notes;
+    } else {
+      existingItem.contributors.push({
+        userId: userId || 'usr_farmer',
+        userName: userName || 'Farmer Member',
+        userVillage: userVillage || cart.village,
+        quantity: qty,
+        notes: notes || undefined,
+        addedAt: new Date().toISOString(),
+      });
+    }
+  } else {
+    // Add new item
+    const newItem: SharedCartItem = {
+      id: `item_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      title,
+      category: category || 'General Farm Supplies',
+      unit: unit || 'Bags (50kg)',
+      retailPrice: Number(retailPrice) || 1000,
+      wholesalePrice: Number(wholesalePrice) || Math.round((Number(retailPrice) || 1000) * 0.8),
+      targetTierQty: Number(targetTierQty) || 50,
+      totalQuantity: qty,
+      supplierName: supplierName || 'Certified Cooperative Input Provider',
+      imageUrl: imageUrl || undefined,
+      contributors: [
+        {
+          userId: userId || 'usr_farmer',
+          userName: userName || 'Farmer Member',
+          userVillage: userVillage || cart.village,
+          quantity: qty,
+          notes: notes || undefined,
+          addedAt: new Date().toISOString(),
+        },
+      ],
+    };
+    cart.items.push(newItem);
+  }
+
+  recalculateCartTotals(cart);
+
+  // Broadcast update to cluster
+  broadcastToCluster(clusterId, {
+    type: 'shared_cart_update',
+    cart,
+    action: 'item_added',
+    userName: userName || 'Farmer Member',
+    itemTitle: title,
+    quantity: qty,
+  });
+
+  // Post auto-announcement into cluster chat so everyone is notified
+  const autoChatMsg: ClusterChatMessage = {
+    id: `cmsg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    clusterId,
+    senderId: 'sys_cart',
+    senderName: '🛒 साझा कार्ट बॉट (Group Cart)',
+    senderVillage: cart.village,
+    senderRole: 'CHAMPION',
+    text: `🛒 ${userName || 'एक किसान भाई'} ने साझा कार्ट में ${qty} ${unit || 'इकाई'} "${title}" जोड़े हैं। वर्तमान कुल बचत: ₹${cart.totalSavings.toLocaleString('en-IN')}!`,
+    timestamp: new Date().toISOString(),
+  };
+  const chatList = db.clusterChatMessages.get(clusterId) || [];
+  chatList.push(autoChatMsg);
+  db.clusterChatMessages.set(clusterId, chatList);
+  broadcastToCluster(clusterId, { type: 'message', message: autoChatMsg });
+
+  res.json({ success: true, cart });
+});
+
+app.post('/api/shared-cart/:clusterId/item/:itemId/contribute', (req, res) => {
+  const { clusterId, itemId } = req.params;
+  const cart = db.sharedCarts.get(clusterId);
+  if (!cart) return res.status(404).json({ error: 'Cart not found' });
+  if (cart.status !== 'OPEN') return res.status(400).json({ error: 'Cart is locked' });
+
+  const item = cart.items.find((i) => i.id === itemId);
+  if (!item) return res.status(404).json({ error: 'Item not found in cart' });
+
+  const { userId, userName, userVillage, quantity, notes } = req.body;
+  const qty = Number(quantity) || 1;
+
+  const existing = item.contributors.find((c) => c.userId === userId);
+  if (existing) {
+    existing.quantity += qty;
+    if (notes) existing.notes = notes;
+  } else {
+    item.contributors.push({
+      userId: userId || 'usr_farmer',
+      userName: userName || 'Farmer Member',
+      userVillage: userVillage || cart.village,
+      quantity: qty,
+      notes: notes || undefined,
+      addedAt: new Date().toISOString(),
+    });
+  }
+
+  recalculateCartTotals(cart);
+
+  broadcastToCluster(clusterId, {
+    type: 'shared_cart_update',
+    cart,
+    action: 'contributed',
+  });
+
+  res.json({ success: true, cart });
+});
+
+app.delete('/api/shared-cart/:clusterId/item/:itemId', (req, res) => {
+  const { clusterId, itemId } = req.params;
+  const { userId } = req.query;
+  const cart = db.sharedCarts.get(clusterId);
+  if (!cart) return res.status(404).json({ error: 'Cart not found' });
+  if (cart.status !== 'OPEN') return res.status(400).json({ error: 'Cart is locked' });
+
+  const itemIndex = cart.items.findIndex((i) => i.id === itemId);
+  if (itemIndex === -1) return res.status(404).json({ error: 'Item not found' });
+
+  if (userId) {
+    // Only remove this user's contribution
+    const item = cart.items[itemIndex];
+    item.contributors = item.contributors.filter((c) => c.userId !== userId);
+    if (item.contributors.length === 0) {
+      cart.items.splice(itemIndex, 1);
+    }
+  } else {
+    // Remove the entire item
+    cart.items.splice(itemIndex, 1);
+  }
+
+  recalculateCartTotals(cart);
+
+  broadcastToCluster(clusterId, {
+    type: 'shared_cart_update',
+    cart,
+    action: 'item_removed',
+  });
+
+  res.json({ success: true, cart });
+});
+
+app.patch('/api/shared-cart/:clusterId/status', (req, res) => {
+  const { clusterId } = req.params;
+  const { status } = req.body;
+  const cart = db.sharedCarts.get(clusterId);
+  if (!cart) return res.status(404).json({ error: 'Cart not found' });
+
+  if (status === 'LOCKED') {
+    cart.status = 'LOCKED';
+    cart.lockedAt = new Date().toISOString();
+  } else if (status === 'OPEN') {
+    cart.status = 'OPEN';
+    cart.lockedAt = undefined;
+  }
+
+  cart.updatedAt = new Date().toISOString();
+
+  broadcastToCluster(clusterId, {
+    type: 'shared_cart_update',
+    cart,
+    action: 'status_changed',
+  });
+
+  res.json({ success: true, cart });
+});
+
+app.post('/api/shared-cart/:clusterId/checkout', (req, res) => {
+  const { clusterId } = req.params;
+  const { paymentMethod, deliveryDate, pickupLocation } = req.body;
+  const cart = db.sharedCarts.get(clusterId);
+  if (!cart) return res.status(404).json({ error: 'Cart not found' });
+  if (cart.items.length === 0) return res.status(400).json({ error: 'Cart is empty' });
+
+  // Group contributors and calculate their individual bill splits
+  const contributorMap = new Map<string, { userId: string; userName: string; itemCount: number; amountDue: number; paidStatus: 'PAID' | 'PENDING' }>();
+
+  for (const item of cart.items) {
+    for (const contrib of item.contributors) {
+      const existing = contributorMap.get(contrib.userId) || {
+        userId: contrib.userId,
+        userName: contrib.userName,
+        itemCount: 0,
+        amountDue: 0,
+        paidStatus: 'PENDING',
+      };
+      existing.itemCount += contrib.quantity;
+      existing.amountDue += contrib.quantity * item.wholesalePrice;
+      contributorMap.set(contrib.userId, existing);
+    }
+  }
+
+  const contributorSplits = Array.from(contributorMap.values());
+  const receiptNumber = `KB-GRP-${Date.now().toString().slice(-6)}`;
+
+  cart.status = 'ORDER_PLACED';
+  cart.orderPlacedAt = new Date().toISOString();
+  cart.checkoutDetails = {
+    paymentMethod: paymentMethod || 'SPLIT_UPI',
+    deliveryDate: deliveryDate || new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
+    pickupLocation: pickupLocation || cart.deliveryAddress,
+    receiptNumber,
+    contributorSplits,
+  };
+  cart.updatedAt = new Date().toISOString();
+
+  // Create transaction record in farm ledger
+  const tx: TransactionRecord = {
+    id: `tx_${Date.now()}_grp`,
+    serviceId: 'srv_cluster_bulk_order',
+    serviceName: `Cluster Bulk Order: ${cart.title}`,
+    amountUsdc: Math.round(((cart.totalWholesaleAmount || 0) / 85) * 100) / 100,
+    asset: 'USDC',
+    network: 'Algorand Testnet',
+    status: 'SETTLED',
+    txId: receiptNumber,
+    senderAddress: cart.coordinatorPhone || 'KB-COOP-SHARED-ESCROW',
+    receiverAddress: 'KB-COOP-SUPPLIER-SETTLEMENT',
+    timestamp: new Date().toISOString(),
+    facilitator: 'GoPlausible Escrow Facilitator',
+    explorerUrl: `https://testnet.algoexplorer.io/tx/${receiptNumber}`,
+    isRealBlockchainTx: false,
+  };
+  db.transactions.set(tx.id, tx);
+
+  // Broadcast to cluster
+  broadcastToCluster(clusterId, {
+    type: 'shared_cart_update',
+    cart,
+    action: 'checkout_completed',
+  });
+
+  // Post congratulatory announcement into cluster chat
+  const orderMsg: ClusterChatMessage = {
+    id: `cmsg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    clusterId,
+    senderId: 'sys_cart',
+    senderName: '🎉 क्लस्टर ऑर्डर कन्फर्मेशन',
+    senderVillage: cart.village,
+    senderRole: 'CHAMPION',
+    text: `🎉 बधाई हो किसान भाइयों! सामूहिक आर्डर सफलतापूर्वक सबमिट हो गया है।\nरसीद संख्या: ${receiptNumber}\nकुल थोक मूल्य: ₹${cart.totalWholesaleAmount.toLocaleString('en-IN')}\nकुल क्लस्टर बचत: ₹${cart.totalSavings.toLocaleString('en-IN')}\nडिलीवरी स्थान: ${cart.checkoutDetails.pickupLocation}`,
+    timestamp: new Date().toISOString(),
+  };
+  const chatList = db.clusterChatMessages.get(clusterId) || [];
+  chatList.push(orderMsg);
+  db.clusterChatMessages.set(clusterId, chatList);
+  broadcastToCluster(clusterId, { type: 'message', message: orderMsg });
+
+  res.json({
+    success: true,
+    message: 'Group order placed successfully',
+    cart,
+    receiptNumber,
+    totalWholesaleAmount: cart.totalWholesaleAmount,
+    totalSavings: cart.totalSavings,
+  });
+});
+
+// 4. BULK BUYING & GROUP PURCHASING MODULE
 app.get('/api/bulk-buying', (req, res) => {
   res.json({ requirements: Array.from(db.bulkRequirements.values()) });
 });
 
 app.post('/api/bulk-buying/pledge', (req, res) => {
-  const { requirementId, farmerId, farmerName, quantity } = req.body;
+  const { requirementId, farmerId, farmerName, village, quantity, notes } = req.body;
   const reqItem = db.bulkRequirements.get(requirementId);
   if (!reqItem) return res.status(404).json({ error: 'Requirement not found' });
 
   const pledgeQty = Number(quantity) || 10;
+  const existingFarmer = reqItem.farmerPledges.find((p) => p.farmerId === farmerId);
+
   reqItem.farmerPledges.push({
-    farmerId,
-    farmerName: farmerName || 'Farmer',
+    id: `pld_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    farmerId: farmerId || 'usr_farmer',
+    farmerName: farmerName || 'Farmer Member',
+    village: village || 'Anandpur',
     quantity: pledgeQty,
     pledgedAt: new Date().toISOString(),
+    notes: notes || undefined,
   });
+
   reqItem.currentQuantity += pledgeQty;
+
+  if (!existingFarmer) {
+    reqItem.connectedMembersCount = (reqItem.connectedMembersCount || 10) + 1;
+  }
+
+  // Update dynamic tier discount if reached
+  if (reqItem.tierDiscounts && reqItem.tierDiscounts.length > 0) {
+    const reachedTier = [...reqItem.tierDiscounts]
+      .reverse()
+      .find((t) => reqItem.currentQuantity >= t.minQty);
+    if (reachedTier) {
+      reqItem.negotiatedBulkPrice = reachedTier.priceInr;
+      reqItem.savingsPercentage = reachedTier.discountPct;
+    }
+  }
 
   if (reqItem.currentQuantity >= reqItem.targetQuantity) {
     reqItem.status = 'ORDER_PLACED';
   }
+
+  // Auto-post chat confirmation announcement
+  if (!reqItem.chatMessages) reqItem.chatMessages = [];
+  reqItem.chatMessages.push({
+    id: `msg_${Date.now()}`,
+    senderId: 'sys_bot',
+    senderName: 'Group Buy Bot',
+    senderRole: 'Coordinator',
+    text: `🎉 ${farmerName || 'A new member'} pledged ${pledgeQty} ${reqItem.unit}! Total is now ${reqItem.currentQuantity}/${reqItem.targetQuantity} ${reqItem.unit}.`,
+    timestamp: new Date().toISOString(),
+  });
+
+  db.bulkRequirements.set(reqItem.id, reqItem);
+  res.json({ success: true, requirement: reqItem });
+});
+
+app.post('/api/bulk-buying/message', (req, res) => {
+  const { requirementId, senderId, senderName, senderRole, text } = req.body;
+  const reqItem = db.bulkRequirements.get(requirementId);
+  if (!reqItem) return res.status(404).json({ error: 'Requirement not found' });
+
+  if (!text || !text.trim()) {
+    return res.status(400).json({ error: 'Message cannot be empty.' });
+  }
+
+  if (!reqItem.chatMessages) reqItem.chatMessages = [];
+  const newMsg = {
+    id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    senderId: senderId || 'usr_farmer',
+    senderName: senderName || 'Farmer Member',
+    senderRole: senderRole || 'Member',
+    text: text.trim(),
+    timestamp: new Date().toISOString(),
+  };
+
+  reqItem.chatMessages.push(newMsg);
+  db.bulkRequirements.set(reqItem.id, reqItem);
+
+  res.json({ success: true, message: newMsg, requirement: reqItem });
+});
+
+app.post('/api/bulk-buying/join-group', (req, res) => {
+  const { requirementId, farmerName, village } = req.body;
+  const reqItem = db.bulkRequirements.get(requirementId);
+  if (!reqItem) return res.status(404).json({ error: 'Requirement not found' });
+
+  reqItem.connectedMembersCount = (reqItem.connectedMembersCount || 5) + 1;
+  if (!reqItem.chatMessages) reqItem.chatMessages = [];
+  reqItem.chatMessages.push({
+    id: `msg_${Date.now()}`,
+    senderId: 'sys_bot',
+    senderName: 'Group Hub',
+    senderRole: 'Coordinator',
+    text: `🤝 ${farmerName || 'New member'}${village ? ` from ${village}` : ''} connected to this buying group!`,
+    timestamp: new Date().toISOString(),
+  });
 
   db.bulkRequirements.set(reqItem.id, reqItem);
   res.json({ success: true, requirement: reqItem });
 });
 
 app.post('/api/bulk-buying/create', (req, res) => {
-  const { clusterId, category, itemName, targetQuantity, unit, standardRetailPrice, negotiatedBulkPrice, deadlineDate } = req.body;
+  const {
+    clusterId,
+    groupName,
+    category,
+    itemName,
+    itemDescription,
+    targetQuantity,
+    unit,
+    standardRetailPrice,
+    negotiatedBulkPrice,
+    deadlineDate,
+    location,
+    creatorName,
+    creatorId,
+  } = req.body;
+
   const cluster = (clusterId ? db.clusters.get(clusterId) : null) || Array.from(db.clusters.values())[0];
-  
   if (!cluster) {
     return res.status(400).json({ error: 'No Virtual Cluster found. Please create a cluster first.' });
   }
 
   const retail = Number(standardRetailPrice) || 1200;
-  const bulk = Number(negotiatedBulkPrice) || 950;
-  const savings = Math.round(((retail - bulk) / retail) * 100 * 10) / 10;
+  const bulk = Number(negotiatedBulkPrice) || Math.round(retail * 0.78);
+  const savings = Math.max(5, Math.round(((retail - bulk) / retail) * 100 * 10) / 10);
+  const target = Number(targetQuantity) || 50;
+
+  // Auto-generate tiered discounts
+  const t1Qty = Math.max(1, Math.round(target * 0.25));
+  const t2Qty = Math.max(t1Qty + 1, Math.round(target * 0.5));
+  const t3Qty = target;
+
+  const tierDiscounts = [
+    { minQty: t1Qty, discountPct: Math.round(savings * 0.5), priceInr: Math.round(retail * (1 - (savings * 0.5) / 100)), label: `Tier 1 (${t1Qty} ${unit || 'Units'})` },
+    { minQty: t2Qty, discountPct: Math.round(savings * 0.75), priceInr: Math.round(retail * (1 - (savings * 0.75) / 100)), label: `Tier 2 (${t2Qty} ${unit || 'Units'})` },
+    { minQty: t3Qty, discountPct: Math.round(savings), priceInr: bulk, label: `Tier 3 (${t3Qty} ${unit || 'Units'} - Group Target)` },
+  ];
 
   const newBulk: BulkOrderRequirement = {
     id: `bulk_${Date.now()}`,
     clusterId: cluster.id,
     clusterName: cluster.name,
-    category: (category as any) || 'Fertilizer',
-    itemName: itemName || 'Bio-Potash & Micronutrient Mix',
-    targetQuantity: Number(targetQuantity) || 100,
+    groupName: groupName || `${cluster.name} Buying Circle`,
+    category: (category as any) || 'General Hardware',
+    itemName: itemName || 'Custom Group Procurement Request',
+    itemDescription: itemDescription || 'Bulk cooperative buying order pool initiated by local group members.',
+    targetQuantity: target,
     currentQuantity: 0,
-    unit: (unit as any) || 'Bags (50kg)',
+    unit: (unit as any) || 'Units',
     standardRetailPrice: retail,
     negotiatedBulkPrice: bulk,
+    tierDiscounts,
     savingsPercentage: savings,
-    deadlineDate: deadlineDate || '2026-09-30',
+    deadlineDate: deadlineDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
     status: 'AGGREGATING',
+    location: location || `${cluster.village || 'Anandpur'} Hub`,
+    creatorName: creatorName || 'Farmer Member',
+    creatorId: creatorId || 'usr_farmer',
+    connectedMembersCount: 4,
     farmerPledges: [],
+    chatMessages: [
+      {
+        id: `msg_init_${Date.now()}`,
+        senderId: creatorId || 'usr_farmer',
+        senderName: creatorName || 'Group Initiator',
+        senderRole: 'Organizer',
+        text: `Welcome! I started this group buy for "${itemName}". Invite neighbors to connect and pledge so we can hit the ${savings}% discount tier together!`,
+        timestamp: new Date().toISOString(),
+      },
+    ],
   };
 
   db.bulkRequirements.set(newBulk.id, newBulk);
@@ -1528,6 +1885,89 @@ app.post('/api/crops/compare', (req, res) => {
   }
 });
 
+// ==========================================
+// GOVERNMENT SCHEMES & REAL-TIME APPLICATION DATES API
+// ==========================================
+app.get('/api/schemes', (req, res) => {
+  try {
+    const category = req.query.category as string | undefined;
+    const status = req.query.status as string | undefined;
+    const state = (req.query.state as string | undefined) || 'All';
+    const filterMode = (req.query.filterMode as 'all' | 'stateOnly' | 'recommended' | undefined) || 'all';
+    const result = schemeService.getLiveSchemes(category, status, state, filterMode);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch live government schemes', details: err.message });
+  }
+});
+
+app.get('/api/schemes/states', (req, res) => {
+  try {
+    const states = schemeService.getSupportedStates();
+    res.json({ success: true, count: states.length, states });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch supported states', details: err.message });
+  }
+});
+
+app.get('/api/schemes/state-intel', (req, res) => {
+  try {
+    const state = (req.query.state as string) || 'All India';
+    const intel = schemeService.getStateIntelligence(state);
+    res.json({ success: true, stateIntelligence: intel });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch state intelligence', details: err.message });
+  }
+});
+
+app.get('/api/schemes/stats', (req, res) => {
+  try {
+    const stats = schemeService.getLiveStats();
+    res.json(stats);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch schemes live stats', details: err.message });
+  }
+});
+
+app.get('/api/schemes/my-applications', (req, res) => {
+  try {
+    const farmerName = (req.query.farmerName as string) || 'Ramesh Patel';
+    const result = schemeService.getFarmerApplications(farmerName);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch applications', details: err.message });
+  }
+});
+
+app.get('/api/schemes/:id', (req, res) => {
+  try {
+    const schemeDetail = schemeService.getSchemeById(req.params.id);
+    if (!schemeDetail) return res.status(404).json({ error: 'Scheme not found' });
+    res.json(schemeDetail);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch scheme details', details: err.message });
+  }
+});
+
+app.post('/api/schemes/apply', (req, res) => {
+  try {
+    const { schemeId, schemeName, farmerName, applicationDate, appliedAmountOrBenefit } = req.body;
+    if (!schemeId || !schemeName) {
+      return res.status(400).json({ error: 'Scheme ID and name are required' });
+    }
+    const result = schemeService.registerFarmerApplication({
+      schemeId,
+      schemeName,
+      farmerName,
+      applicationDate,
+      appliedAmountOrBenefit,
+    });
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to register application', details: err.message });
+  }
+});
+
 // 12. SOIL HEALTH INTELLIGENCE MODULE
 app.get('/api/soil/health', (req, res) => {
   try {
@@ -1690,11 +2130,11 @@ app.get('/api/soil/history', (req, res) => {
   }
 });
 
-// 10. PROTECTED PAID APIS - GENUINELY GUARDED BY x402 PROTOCOL
-// SERVICE 1: AI Crop Analysis (0.002 USDC)
-app.post('/api/paid/crop-analysis', requireX402Payment('crop-analysis'), async (req: X402Request, res) => {
+// 10. ADVANCED AI SERVICES - INSTANT DIAGNOSIS & INTELLIGENCE
+// SERVICE 1: AI Crop Analysis
+app.post('/api/paid/crop-analysis', async (req, res) => {
   const { cropName, symptoms, imageProvided } = req.body;
-  const txId = req.x402Payment?.txId || 'ALGORAND_CONFIRMED_TX';
+  const txId = 'AI_VERIFIED_DIAGNOSIS';
 
   const report = await generatePaidCropAnalysis(
     cropName || 'Cotton / Wheat',
@@ -1706,20 +2146,18 @@ app.post('/api/paid/crop-analysis', requireX402Payment('crop-analysis'), async (
   res.json({
     success: true,
     service: 'crop-analysis',
-    x402Settlement: req.x402Payment,
     result: report,
   });
 });
 
-// SERVICE 2: Advanced Farm Intelligence Report (0.005 USDC)
-app.post('/api/paid/farm-intelligence', requireX402Payment('farm-intelligence'), async (req: X402Request, res) => {
+// SERVICE 2: Advanced Farm Intelligence Report
+app.post('/api/paid/farm-intelligence', async (req, res) => {
   const { clusterId, acreage } = req.body;
-  const txId = req.x402Payment?.txId || 'ALGORAND_CONFIRMED_TX';
+  const txId = 'AI_CLUSTER_INTELLIGENCE';
 
   res.json({
     success: true,
     service: 'farm-intelligence',
-    x402Settlement: req.x402Payment,
     result: {
       reportId: `FIR_${Date.now()}`,
       clusterId: clusterId || 'cluster_anandpur_cotton',
@@ -1734,15 +2172,14 @@ app.post('/api/paid/farm-intelligence', requireX402Payment('farm-intelligence'),
   });
 });
 
-// SERVICE 3: Advanced Weather Intelligence (0.001 USDC)
-app.post('/api/paid/weather-intelligence', requireX402Payment('weather-intelligence'), async (req: X402Request, res) => {
+// SERVICE 3: Advanced Weather Intelligence
+app.post('/api/paid/weather-intelligence', async (req, res) => {
   const { coordinates } = req.body;
-  const txId = req.x402Payment?.txId || 'ALGORAND_CONFIRMED_TX';
+  const txId = 'AI_WEATHER_INTEL';
 
   res.json({
     success: true,
     service: 'weather-intelligence',
-    x402Settlement: req.x402Payment,
     result: {
       intelId: `WIR_${Date.now()}`,
       modelConfidence: '97.1%',
@@ -1784,7 +2221,7 @@ app.post('/api/wallet/execute-testnet-payment', async (req, res) => {
       mnemonic,
       receiverAddress || algorandService.getReceiverAddress(),
       Number(amountUsdc) || 0.002,
-      `x402:${serviceId}`
+      `escrow:${serviceId}`
     );
     res.json({ success: true, ...tx });
   } catch (err: any) {
@@ -1792,7 +2229,7 @@ app.post('/api/wallet/execute-testnet-payment', async (req, res) => {
   }
 });
 
-// 13. ADMIN DASHBOARD & x402 ANALYTICS
+// 13. ADMIN DASHBOARD & PLATFORM ANALYTICS
 app.get('/api/admin/stats', (req, res) => {
   const users = Array.from(db.users.values());
   const clusters = Array.from(db.clusters.values());
@@ -1817,7 +2254,7 @@ app.get('/api/admin/stats', (req, res) => {
   });
 });
 
-app.get('/api/admin/x402-analytics', (req, res) => {
+app.get('/api/admin/telemetry', (req, res) => {
   const txs = Array.from(db.transactions.values());
   const totalRequests = txs.length + 12;
   const successfulPayments = txs.filter((t) => t.status === 'SETTLED').length;
@@ -1829,9 +2266,9 @@ app.get('/api/admin/x402-analytics', (req, res) => {
     successfulPayments,
     failedPayments,
     totalVolumeUsdc: `${totalVolume.toFixed(4)} USDC`,
-    mostUsedService: 'AI Crop Multispectral & Disease Analysis (0.002 USDC)',
+    mostUsedService: 'AI Crop Multispectral & Disease Analysis',
     avgTransactionTimeMs: 1380,
-    testnetLabel: 'TESTNET — NOT REAL MONEY',
+    testnetLabel: 'TESTNET',
     facilitatorName: GOPLAUSIBLE_CONFIG.facilitatorName,
     facilitatorUrl: GOPLAUSIBLE_CONFIG.facilitatorUrl,
     recentTransactions: txs.slice(-10).reverse(),
@@ -1842,6 +2279,105 @@ app.get('/api/admin/x402-analytics', (req, res) => {
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   sendError(res, err);
 });
+
+// WebSocket Setup for Real-Time Cluster Buying Chat
+function setupClusterChatWebSocket(server: http.Server) {
+  const wss = new WebSocketServer({ server, path: '/ws/cluster-chat' });
+
+  wss.on('connection', (ws: WebSocket) => {
+    let currentConn: ClientConnection | null = null;
+
+    ws.on('message', (rawData) => {
+      try {
+        const data = JSON.parse(rawData.toString());
+        if (data.type === 'join') {
+          const { clusterId, userId, userName } = data;
+          if (!clusterId) return;
+
+          currentConn = {
+            ws,
+            clusterId,
+            userId: userId || 'anonymous',
+            userName: userName || 'Farmer Member',
+          };
+
+          if (!clusterClients.has(clusterId)) {
+            clusterClients.set(clusterId, new Set());
+          }
+          clusterClients.get(clusterId)!.add(currentConn);
+
+          const history = db.clusterChatMessages.get(clusterId) || [];
+          const activeMembers = Array.from(clusterClients.get(clusterId) || []).map((c) => ({
+            id: c.userId,
+            name: c.userName,
+          }));
+
+          ws.send(
+            JSON.stringify({
+              type: 'init',
+              clusterId,
+              messages: history,
+              onlineCount: activeMembers.length + 3,
+              activeMembers,
+            })
+          );
+
+          broadcastToCluster(clusterId, {
+            type: 'presence',
+            onlineCount: activeMembers.length + 3,
+            activeMembers,
+            userJoined: userName,
+          });
+        } else if (data.type === 'message') {
+          const { clusterId, senderId, senderName, senderVillage, senderRole, text, buyingNeed } = data;
+          if (!clusterId || (!text && !buyingNeed)) return;
+
+          const newMsg: ClusterChatMessage = {
+            id: `cmsg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            clusterId,
+            senderId: senderId || 'usr_farmer',
+            senderName: senderName || 'Farmer Member',
+            senderVillage: senderVillage || 'Anandpur',
+            senderRole: senderRole || 'FARMER',
+            text: text || (buyingNeed ? `📢 Buying Need: ${buyingNeed.quantityNeeded} ${buyingNeed.unit} of ${buyingNeed.item}` : ''),
+            buyingNeed,
+            timestamp: new Date().toISOString(),
+          };
+
+          const list = db.clusterChatMessages.get(clusterId) || [];
+          list.push(newMsg);
+          db.clusterChatMessages.set(clusterId, list);
+
+          broadcastToCluster(clusterId, {
+            type: 'message',
+            message: newMsg,
+          });
+        }
+      } catch (err) {
+        console.error('WS cluster chat error:', err);
+      }
+    });
+
+    ws.on('close', () => {
+      if (currentConn) {
+        const { clusterId } = currentConn;
+        const set = clusterClients.get(clusterId);
+        if (set) {
+          set.delete(currentConn);
+          const activeMembers = Array.from(set).map((c) => ({
+            id: c.userId,
+            name: c.userName,
+          }));
+          broadcastToCluster(clusterId, {
+            type: 'presence',
+            onlineCount: activeMembers.length + 3,
+            activeMembers,
+          });
+        }
+      }
+    });
+  });
+}
 
 // VITE MIDDLEWARE SETUP FOR DEV & PRODUCTION
 async function startServer() {
@@ -1860,10 +2396,14 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const httpServer = http.createServer(app);
+  setupClusterChatWebSocket(httpServer);
+
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`🌾 Kishan Bhai Server running on http://0.0.0.0:${PORT}`);
     console.log(`⚡ Algorand Testnet Node: ${ALGORAND_TESTNET_CONFIG.algodUrl}`);
-    console.log(`🛡️ x402 GoPlausible Facilitator: ${GOPLAUSIBLE_CONFIG.facilitatorUrl}`);
+    console.log(`🛡️ Settlement Facilitator: ${GOPLAUSIBLE_CONFIG.facilitatorUrl}`);
+    console.log(`💬 Cluster Real-Time Chat WebSocket ready on /ws/cluster-chat`);
     // Connect backend to Firebase Firestore
     try {
       initFirebaseBackend();

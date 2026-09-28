@@ -1,5 +1,5 @@
 /**
- * Kisan Bhai — Progressive Web App Service Worker
+ * Kishan Bhai — Progressive Web App Service Worker
  * Version: 2.0.0
  * 
  * Provides resilient offline caching for:
@@ -18,7 +18,7 @@ const PRECACHE_STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.ico',
+  '/icon.svg',
 ];
 
 // Offline Emergency Agricultural Data Payloads for zero-connectivity situations
@@ -26,7 +26,7 @@ const OFFLINE_FALLBACK_DATA = {
   '/api/health': {
     status: 'online',
     offlineMode: true,
-    platform: 'Kisan Bhai Service Worker',
+    platform: 'Kishan Bhai Service Worker',
     tagline: 'Small Farms. One Powerful Network. (Offline Cache Active)',
     timestamp: new Date().toISOString()
   },
@@ -58,14 +58,14 @@ const OFFLINE_FALLBACK_DATA = {
 
 // 1. INSTALLATION EVENT: Pre-cache core shell and offline datasets
 self.addEventListener('install', (event) => {
-  console.log('[Kisan Bhai SW] Installing Service Worker...');
+  console.log('[Kishan Bhai SW] Installing Service Worker...');
   event.waitUntil(
     Promise.all([
       // Precache Core Assets
       caches.open(CORE_CACHE_NAME).then((cache) => {
         return cache.addAll(PRECACHE_STATIC_ASSETS.map(url => new Request(url, { cache: 'reload' })))
           .catch((err) => {
-            console.warn('[Kisan Bhai SW] Partial core asset precache warning:', err);
+            console.warn('[Kishan Bhai SW] Partial core asset precache warning:', err);
           });
       }),
       // Precache Seed Data Cache
@@ -79,7 +79,7 @@ self.addEventListener('install', (event) => {
         return Promise.all(promises);
       })
     ]).then(() => {
-      console.log('[Kisan Bhai SW] Pre-caching complete. Skipping waiting.');
+      console.log('[Kishan Bhai SW] Pre-caching complete. Skipping waiting.');
       return self.skipWaiting();
     })
   );
@@ -87,7 +87,7 @@ self.addEventListener('install', (event) => {
 
 // 2. ACTIVATION EVENT: Clean up stale caches and claim clients
 self.addEventListener('activate', (event) => {
-  console.log('[Kisan Bhai SW] Activating Service Worker...');
+  console.log('[Kishan Bhai SW] Activating Service Worker...');
   const expectedCaches = [CORE_CACHE_NAME, DATA_CACHE_NAME, FONT_CACHE_NAME];
 
   event.waitUntil(
@@ -95,13 +95,13 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (!expectedCaches.includes(cacheName)) {
-            console.log('[Kisan Bhai SW] Removing outdated cache:', cacheName);
+            console.log('[Kishan Bhai SW] Removing outdated cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     }).then(() => {
-      console.log('[Kisan Bhai SW] Clients claimed and active.');
+      console.log('[Kishan Bhai SW] Clients claimed and active.');
       return self.clients.claim();
     })
   );
@@ -114,6 +114,18 @@ self.addEventListener('fetch', (event) => {
 
   // Ignore non-GET requests or browser extension requests
   if (request.method !== 'GET') {
+    return;
+  }
+
+  // Never intercept Vite development server internals, HMR, source files, or dependencies
+  if (
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.search.includes('import') ||
+    url.search.includes('v=') ||
+    url.search.includes('t=')
+  ) {
     return;
   }
 
@@ -166,7 +178,7 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(async () => {
           // Network failed: Check Cache
-          console.log('[Kisan Bhai SW] Network offline for API:', url.pathname);
+          console.log('[Kishan Bhai SW] Network offline for API:', url.pathname);
           const cachedResponse = await caches.match(request);
           if (cachedResponse) {
             return cachedResponse;
@@ -212,10 +224,10 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(async () => {
-          console.log('[Kisan Bhai SW] Serving offline SPA index.html fallback for navigation:', url.pathname);
+          console.log('[Kishan Bhai SW] Serving offline SPA index.html fallback for navigation:', url.pathname);
           const cachedIndex = await caches.match('/index.html') || await caches.match('/');
           return cachedIndex || new Response(
-            `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Kisan Bhai Offline</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:sans-serif;padding:24px;text-align:center;background:#F9F8F5;color:#1B3B1B;"><h2>🌾 Kisan Bhai Offline Mode</h2><p>Your local farm data and tools are cached. Please reload once the application cache is initialized.</p><button onclick="location.reload()" style="background:#1B3B1B;color:#fff;border:none;padding:10px 20px;border-radius:12px;cursor:pointer;">Reload Application</button></body></html>`,
+            `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Kishan Bhai Offline</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:sans-serif;padding:24px;text-align:center;background:#F9F8F5;color:#1B3B1B;"><h2>🌾 Kishan Bhai Offline Mode</h2><p>Your local farm data and tools are cached. Please reload once the application cache is initialized.</p><button onclick="location.reload()" style="background:#1B3B1B;color:#fff;border:none;padding:10px 20px;border-radius:12px;cursor:pointer;">Reload Application</button></body></html>`,
             { headers: { 'Content-Type': 'text/html' } }
           );
         })

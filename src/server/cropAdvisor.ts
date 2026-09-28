@@ -1,4 +1,4 @@
-import { CropDetail, CropRecommendationInput, CropRecommendationResult } from '../../shared/types.js';
+import { CropDetail, CropRecommendationInput, CropRecommendationResult, CropRecommendationResultItem } from '../../shared/types.js';
 import { CROP_RECOMMENDATIONS_DATABASE } from '../data/agriData.js';
 import { GoogleGenAI } from '@google/genai';
 
@@ -169,9 +169,43 @@ Respond in valid JSON only with this schema:
     }
   }
 
+  const topRecommendations: CropRecommendationResultItem[] = ranked.map((crop) => ({
+    cropId: crop.id,
+    cropName: crop.cropName,
+    hindiName: crop.hindiName,
+    variety: crop.variety,
+    season: crop.bestSeason,
+    suitabilityScore: crop.suitabilityScore,
+    expectedYieldRange: crop.expectedYieldPerAcre || `${crop.expectedYieldQuintals} Quintals`,
+    estimatedCostPerAcreInr: crop.estimatedCostPerAcre,
+    estimatedRevenuePerAcreInr: crop.potentialRevenuePerAcre,
+    estimatedNetProfitPerAcreInr: crop.estimatedProfitPerAcre,
+    durationDays: `${crop.durationDays} Days`,
+    waterRequirement: crop.waterRequirement,
+    marketRisk: crop.marketRisk,
+    soilCompatibility: crop.suitableSoils?.[0] || 'Black Cotton / Loam',
+    sowingWindow: crop.sowingPeriod,
+    reasons: [
+      crop.whyThisCrop || `Matches soil and climatic conditions for ${crop.bestSeason} season.`,
+      `Net profit potential of ₹${crop.estimatedProfitPerAcre.toLocaleString('en-IN')}/acre with ${crop.marketRisk.toLowerCase()} market risk.`,
+      `Water efficiency: ${crop.waterRequirement}.`,
+      crop.marketInformation?.mspPricePerQuintal
+        ? `Govt MSP support of ₹${crop.marketInformation.mspPricePerQuintal}/quintal.`
+        : `Strong local APMC Mandi demand in ${input.district || 'district'}.`
+    ],
+    mandiPriceReference: crop.marketInformation
+      ? `₹${crop.marketInformation.currentMandiPricePerQuintal || crop.marketInformation.mspPricePerQuintal}/Qtl`
+      : undefined,
+  }));
+
   return {
     topCrops: ranked,
+    topRecommendations,
     aiAdvice,
+    aiExplanation: aiAdvice.kisanBhaiAdvice,
+    district: input.district || 'Rajkot',
+    season: input.season || 'Rabi',
+    farmingGoal: input.farmingGoal || 'Maximum Profit',
     inputSummary: input,
     timestamp: new Date().toISOString(),
     isDemo: false,

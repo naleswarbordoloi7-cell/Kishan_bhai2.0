@@ -5,7 +5,6 @@
 
 import algosdk from 'algosdk';
 import { ALGORAND_TESTNET_CONFIG, GOPLAUSIBLE_CONFIG } from '../../shared/constants.js';
-import { X402PaymentProof } from '../../shared/types.js';
 
 export class AlgorandTestnetService {
   private algodClient: algosdk.Algodv2;
@@ -91,12 +90,12 @@ export class AlgorandTestnetService {
   }
 
   /**
-   * Genuine x402 + GoPlausible Facilitator Settlement Verification
+   * GoPlausible Facilitator Settlement Verification
    * Verifies that the transaction ID is confirmed on Algorand Testnet,
    * transferred to the designated merchant address, and not replayed.
    */
   async verifyPaymentWithFacilitator(
-    paymentProof: X402PaymentProof,
+    paymentProof: { txId: string; senderAddress?: string; receiverAddress?: string; amountUsdc?: number },
     expectedServiceId: string,
     expectedMinPriceUsdc: number
   ): Promise<{
@@ -190,7 +189,7 @@ export class AlgorandTestnetService {
     senderMnemonic: string,
     receiverAddr: string,
     amountUsdc: number,
-    noteText: string = 'x402-kishan-bhai-payment'
+    noteText: string = 'kishan-bhai-escrow-settlement'
   ): Promise<{ txId: string; confirmedRound: number; explorerUrl: string }> {
     const senderAccount = algosdk.mnemonicToSecretKey(senderMnemonic);
     const suggestedParams = await this.algodClient.getTransactionParams().do();

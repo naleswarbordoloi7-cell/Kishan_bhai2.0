@@ -7,6 +7,7 @@ import {
   Sprout, 
   TrendingUp, 
   User, 
+  Users,
   ShoppingBag, 
   Search, 
   LayoutList,
@@ -24,9 +25,9 @@ export const MobileBottomNav: React.FC = () => {
   if (userRole === 'FARMER') {
     navItems = [
       { id: 'farmer-dashboard', label: 'Home', icon: Home },
+      { id: 'community', label: 'Chaupal', icon: Users },
       { id: 'market-prices', label: 'Market', icon: TrendingUp },
-      { id: 'my-crops', label: 'Products', icon: Sprout },
-      { id: 'orders', label: 'Orders', icon: LayoutList },
+      { id: 'my-crops', label: 'Crops', icon: Sprout },
       { id: 'profile', label: 'Profile', icon: User },
     ];
   } else if (userRole === 'BUYER') {

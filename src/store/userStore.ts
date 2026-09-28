@@ -1,6 +1,21 @@
 import { create } from 'zustand';
 import { UserProfile, UserRole, FarmerProfileData } from '../../shared/types';
 
+export const DEFAULT_FARMER_USER: UserProfile = {
+  id: 'usr_farmer_ramesh',
+  fullName: 'Ramesh Patel',
+  email: 'ramesh.patel@kishanbhai.in',
+  phone: '+91 98251 44320',
+  role: 'FARMER',
+  village: 'Anandpur, Rajkot',
+  state: 'Gujarat',
+  verified: true,
+  farmSizeAcres: 4.5,
+  crops: ['Cotton (Bt)', 'Groundnut', 'Wheat'],
+  preferredLanguage: 'hi',
+  createdAt: '2025-01-15T00:00:00.000Z',
+};
+
 interface UserStore {
   currentUser: UserProfile | null;
   userRole: UserRole;
@@ -14,19 +29,13 @@ export const useUserStore = create<UserStore>((set) => ({
   currentUser: (() => {
     try {
       const saved = localStorage.getItem('kb_user');
-      const isAuthenticated = localStorage.getItem('kb_user_authenticated') === 'true';
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed?.id && parsed.id !== 'usr_farmer_ramesh') {
-          return parsed;
-        }
-        if (isAuthenticated) {
-          return parsed;
-        }
+        if (parsed?.id) return parsed;
       }
-      return null;
+      return DEFAULT_FARMER_USER;
     } catch {
-      return null;
+      return DEFAULT_FARMER_USER;
     }
   })(),
   userRole: (() => {

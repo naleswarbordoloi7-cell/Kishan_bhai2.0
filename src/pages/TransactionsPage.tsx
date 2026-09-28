@@ -41,7 +41,7 @@ export const TransactionsPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <span className="bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-0.5 rounded-full font-mono border border-emerald-400/30">
-                x402 CRYPTOGRAPHIC SETTLEMENT LEDGER
+                ON-CHAIN SETTLEMENT LEDGER
               </span>
               <span className="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-0.5 rounded-full font-mono">
                 ALGORAND TESTNET
@@ -51,7 +51,7 @@ export const TransactionsPage: React.FC = () => {
               Transaction History
             </h1>
             <p className="text-stone-300 text-xs sm:text-sm">
-              All micropayments and escrow settlements are verified on-chain via GoPlausible Facilitator.
+              All cluster pool transactions and escrow settlements are recorded and verified on Algorand Testnet.
             </p>
           </div>
 

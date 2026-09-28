@@ -95,7 +95,7 @@ export const NfcModal: React.FC = () => {
             </div>
 
             <div className="text-[10px] font-mono text-emerald-300/80 truncate">
-              UID: {currentUser?.id || 'usr_farmer_1'} • x402 WALLET SYNCED
+              UID: {currentUser?.id || 'usr_farmer_1'} • WALLET SYNCED
             </div>
           </div>
 

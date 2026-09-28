@@ -1,4 +1,4 @@
-// Web Speech API Service for Kisan Bhai
+// Web Speech API Service for Kishan Bhai
 // Supports multi-dialect Indian agricultural voice recognition & speech synthesis
 
 export interface SpeechLanguageOption {
@@ -27,6 +27,48 @@ export const INDIAN_SPEECH_LANGUAGES: SpeechLanguageOption[] = [
 export function isSpeechRecognitionSupported(): boolean {
   if (typeof window === 'undefined') return false;
   return !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+}
+
+export function startSpeechRecognition(
+  onResult: (transcript: string, isFinal: boolean) => void,
+  onError?: (error: any) => void,
+  lang: string = 'hi-IN'
+): any {
+  if (!isSpeechRecognitionSupported()) {
+    onError?.(new Error('Speech recognition not supported'));
+    return null;
+  }
+  try {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRec();
+    recognition.lang = lang;
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          onResult(event.results[i][0].transcript, true);
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      if (interim) {
+        onResult(interim, false);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      onError?.(event);
+    };
+
+    recognition.start();
+    return recognition;
+  } catch (e) {
+    onError?.(e);
+    return null;
+  }
 }
 
 export function isSpeechSynthesisSupported(): boolean {

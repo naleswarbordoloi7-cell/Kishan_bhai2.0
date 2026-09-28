@@ -4,28 +4,6 @@
 
 export type UserRole = 'FARMER' | 'CHAMPION' | 'BUYER' | 'ADMIN';
 
-export interface BiometricSecuritySettings {
-  biometricsEnabled: boolean;
-  requireForProfileEdits: boolean;
-  requireForTransactions: boolean;
-  requireForLandRecords: boolean;
-  autoLockTimeoutMinutes: number; // 0 = immediate, 5, 15, -1 = never
-}
-
-export interface BiometricCredential {
-  id: string;
-  userId: string;
-  userEmail?: string;
-  userFullName?: string;
-  userRole?: UserRole;
-  deviceName: string;
-  authenticatorType: 'fingerprint' | 'face_id' | 'touch_id' | 'windows_hello' | 'android_biometric' | 'passkey';
-  credentialPublicKey?: string;
-  transports?: string[];
-  createdAt: string;
-  lastUsedAt?: string;
-}
-
 export interface UserProfile {
   id: string;
   email: string;
@@ -44,8 +22,6 @@ export interface UserProfile {
   crops?: string[];
   preferredLanguage?: 'en' | 'hi';
   walletAddress?: string;
-  biometricSettings?: BiometricSecuritySettings;
-  enrolledBiometricsCount?: number;
   createdAt: string;
 }
 
@@ -73,26 +49,127 @@ export interface VirtualCluster {
   createdAt: string;
 }
 
+export interface ClusterBuyingNeed {
+  item: string;
+  category: string;
+  quantityNeeded: number;
+  unit: string;
+  targetPriceInr?: number;
+  pledgedCount?: number;
+  status: 'OPEN' | 'FULFILLED';
+}
+
+export interface ClusterChatMessage {
+  id: string;
+  clusterId: string;
+  senderId: string;
+  senderName: string;
+  senderVillage?: string;
+  senderRole?: 'FARMER' | 'CHAMPION' | 'BUYER' | 'EXPERT' | string;
+  text: string;
+  buyingNeed?: ClusterBuyingNeed;
+  timestamp: string;
+}
+
+export interface GroupBuyMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole?: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface GroupBuyPledge {
+  id?: string;
+  farmerId: string;
+  farmerName: string;
+  village?: string;
+  quantity: number;
+  pledgedAt: string;
+  notes?: string;
+}
+
 export interface BulkOrderRequirement {
   id: string;
   clusterId: string;
   clusterName: string;
-  category: 'Fertilizer' | 'Seeds' | 'Pesticide' | 'Bio-Nutrients' | 'Mulch Sheets';
+  groupName?: string;
+  category: 'Fertilizer' | 'Seeds' | 'Pesticide' | 'Bio-Nutrients' | 'Mulch Sheets' | 'Solar & Irrigation' | 'Machinery & Tools' | 'Cattle Feed' | 'General Hardware' | 'Custom Household & Groceries' | string;
   itemName: string;
+  itemDescription?: string;
+  imageUrl?: string;
   targetQuantity: number;
   currentQuantity: number;
-  unit: 'Bags (50kg)' | 'Quintals' | 'Kilograms' | 'Litres' | 'Rolls';
+  unit: 'Bags (50kg)' | 'Quintals' | 'Kilograms' | 'Litres' | 'Rolls' | 'Units' | 'Sets' | 'Packets' | string;
   standardRetailPrice: number; // in INR
   negotiatedBulkPrice: number; // in INR
+  tierDiscounts?: { minQty: number; discountPct: number; priceInr: number; label: string }[];
   savingsPercentage: number;
   deadlineDate: string;
   status: 'AGGREGATING' | 'ORDER_PLACED' | 'SHIPPED' | 'DISTRIBUTED';
-  farmerPledges: {
-    farmerId: string;
-    farmerName: string;
-    quantity: number;
-    pledgedAt: string;
-  }[];
+  location?: string;
+  creatorName?: string;
+  creatorId?: string;
+  connectedMembersCount?: number;
+  farmerPledges: GroupBuyPledge[];
+  chatMessages?: GroupBuyMessage[];
+}
+
+export interface SharedCartItemContributor {
+  userId: string;
+  userName: string;
+  userVillage?: string;
+  quantity: number;
+  notes?: string;
+  addedAt: string;
+}
+
+export interface SharedCartItem {
+  id: string;
+  title: string;
+  category: string;
+  unit: string;
+  retailPrice: number;
+  wholesalePrice: number;
+  imageUrl?: string;
+  targetTierQty: number;
+  totalQuantity: number;
+  contributors: SharedCartItemContributor[];
+  supplierName?: string;
+}
+
+export interface SharedClusterCart {
+  id: string;
+  clusterId: string;
+  clusterName: string;
+  village: string;
+  title: string;
+  status: 'OPEN' | 'LOCKED' | 'ORDER_PLACED' | 'DELIVERED';
+  deliveryAddress: string;
+  coordinatorName: string;
+  coordinatorPhone: string;
+  items: SharedCartItem[];
+  totalRetailAmount: number;
+  totalWholesaleAmount: number;
+  totalSavings: number;
+  lockedAt?: string;
+  orderPlacedAt?: string;
+  checkoutDetails?: {
+    paymentMethod: 'SPLIT_UPI' | 'COOPERATIVE_CREDIT' | 'CASH_ON_DELIVERY';
+    deliveryDate: string;
+    pickupLocation: string;
+    receiptNumber: string;
+    contributorSplits: {
+      userId: string;
+      userName: string;
+      itemCount: number;
+      amountDue: number;
+      paidStatus: 'PAID' | 'PENDING';
+    }[];
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface MachineryItem {
@@ -153,36 +230,6 @@ export interface BuyerPurchaseRequest {
   requestedAt: string;
   clusterName: string;
   farmerName: string;
-}
-
-export interface X402PaymentRequirement {
-  status: 402;
-  message: string;
-  x402Version: number;
-  serviceId: 'crop-analysis' | 'farm-intelligence' | 'weather-intelligence';
-  serviceName: string;
-  priceUsdc: number;
-  priceMicroUsdc: number;
-  assetId: number; // 0 for Algo or 10458941 for Testnet USDC
-  network: 'algorand:testnet' | 'algorand-testnet';
-  receiverAddress: string;
-  facilitatorUrl: string;
-  facilitatorName: 'GoPlausible';
-  currency: 'USDC';
-  description: string;
-  expiresAt: number;
-}
-
-export interface X402PaymentProof {
-  txId: string;
-  senderAddress: string;
-  receiverAddress: string;
-  amountUsdc: number;
-  assetId: number;
-  network: string;
-  timestamp: number;
-  signature?: string;
-  facilitatorVerified?: boolean;
 }
 
 export interface TransactionRecord {
@@ -335,8 +382,7 @@ export interface AIChatMessage {
   };
   toolCall?: {
     toolName: 'crop_analysis' | 'farm_intelligence' | 'weather_intelligence' | 'general_guidance' | 'app_modifier';
-    status: 'needs_payment' | 'paying' | 'paid' | 'executed';
-    paymentRequirement?: X402PaymentRequirement;
+    status: 'executed' | 'in_progress';
     resultData?: any;
     txId?: string;
   };
@@ -375,6 +421,12 @@ export interface CropLifecycleItem {
   pestWatchlist: string[];
   recentAction: string;
   imageUrl: string;
+  harvestReminder?: {
+    enabled: boolean;
+    reminderDaysBefore: number[]; // e.g. [7, 3, 1]
+    channel: 'push' | 'sms' | 'voice' | 'all';
+    scheduledDate: string;
+  };
 }
 
 // 2. Disease Scanner Module
@@ -988,7 +1040,8 @@ export interface CropRecommendationResult {
   topCrops: CropDetail[];
   topRecommendations?: CropRecommendationResultItem[];
   aiAdvice: {
-    kisanBhaiAdvice: string;
+    kishanBhaiAdvice?: string;
+    kisanBhaiAdvice?: string;
     whyReasons: string[];
     topPickName: string;
     seasonalNote: string;
@@ -1023,7 +1076,7 @@ export interface GovernmentScheme {
   name: string;
   hindiName: string;
   ministry: string;
-  category: 'Direct Income Support' | 'Crop Insurance' | 'Credit & Loan' | 'Irrigation Subsidy' | 'Organic & Soil' | 'Farm Mechanization';
+  category: 'Direct Income Support' | 'Crop Insurance' | 'Credit & Loan' | 'Irrigation Subsidy' | 'Organic & Soil' | 'Farm Mechanization' | string;
   benefitSummary: string;
   financialAssistance: string;
   eligibilityCriteria: string[];
@@ -1031,7 +1084,50 @@ export interface GovernmentScheme {
   applicationProcess: string[];
   officialPortalUrl: string;
   isVerifiedOfficial: boolean;
-  stateAvailability: string; // 'All India' or specific state
+  stateAvailability: string; // 'All India' or specific state (e.g., 'Gujarat', 'Assam', 'Maharashtra', 'Uttar Pradesh')
+  isStateExclusive?: boolean; // true if funded directly by State Government
+  applicableStates?: string[]; // e.g. ['Gujarat', 'All India']
+  stateRecommendationBadge?: string; // e.g. '⭐ Top Recommended for Gujarat Farmers'
+  stateSpecificBenefit?: string; // State-specific top-up or special grant rule
+  stateDepartment?: string; // e.g. 'Gujarat Agro Industries / iKhedut' or 'Assam Directorate of Agriculture'
+  statePortalUrl?: string; // Official state application portal
+  applicationStartDate?: string;
+  applicationDeadline?: string;
+  applicationStatus?: 'Open' | 'Closing Soon' | 'Year-round Open' | 'Upcoming Window' | 'Closed';
+  daysRemaining?: number;
+  nextInstallmentDate?: string;
+  disbursementCycle?: string;
+  liveBeneficiaries?: string;
+  portalStatus?: 'Active' | 'Under Maintenance' | 'High Traffic';
+  lastUpdated?: string;
+}
+
+export interface StateSchemeIntelligence {
+  state: string;
+  stateHindi: string;
+  officialPortalName: string;
+  officialPortalUrl: string;
+  helplineNumber: string;
+  primaryNodalDepartment: string;
+  stateTopBenefitHighlight: string;
+  recommendedFocusCrops: string[];
+  exclusiveSchemesCount: number;
+  totalAvailableSchemesCount: number;
+  subsidyAlert: string;
+}
+
+export interface SchemeApplication {
+  id: string;
+  schemeId: string;
+  schemeName: string;
+  farmerName: string;
+  applicationDate: string; // Exact Date of Application
+  acknowledgementNumber: string;
+  appliedAmountOrBenefit?: string;
+  status: 'Submitted' | 'Document Verification' | 'Tehsil Approved' | 'Disbursed' | 'Action Required';
+  currentStage: number;
+  remarks: string;
+  lastUpdated: string;
 }
 
 // 9. Farm Diary

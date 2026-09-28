@@ -19,7 +19,7 @@ export interface AppNotification {
   message: string;
   messageHi: string;
   timestamp: string;
-  category: 'weather' | 'bulk' | 'bid' | 'machinery' | 'x402';
+  category: 'weather' | 'bulk' | 'bid' | 'machinery' | 'escrow';
   targetView: string;
   read: boolean;
 }
@@ -60,12 +60,12 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'n4',
-    title: 'x402 Micropayment Settled on Algorand',
-    titleHi: 'अल्गोरैंड पर x402 माइक्रोपेमेंट सेटल',
-    message: '0.005 USDC settled for Gemini AI Crop Diagnosis. Tx: V7XW2...C1EGF.',
-    messageHi: 'फसल निदान AI सेवा के लिए 0.005 USDC सफलतापूर्वक सेटल हुआ।',
+    title: 'Cluster Escrow Settled on Algorand',
+    titleHi: 'अल्गोरैंड पर क्लस्टर एस्क्रो सेटल',
+    message: 'Collective harvest settlement verified on Algorand Testnet. Tx: V7XW2...C1EGF.',
+    messageHi: 'सामूहिक फसल सेटलमेंट अल्गोरैंड टेस्टनेट पर सत्यापित हुआ।',
     timestamp: '5 hours ago',
-    category: 'x402',
+    category: 'escrow',
     targetView: 'transactions',
     read: true,
   },
@@ -100,7 +100,7 @@ export const NotificationCenter: React.FC = () => {
         return <DollarSign className="w-3.5 h-3.5 text-amber-600" />;
       case 'machinery':
         return <Tractor className="w-3.5 h-3.5 text-indigo-600" />;
-      case 'x402':
+      case 'escrow':
         return <Sparkles className="w-3.5 h-3.5 text-purple-600" />;
     }
   };

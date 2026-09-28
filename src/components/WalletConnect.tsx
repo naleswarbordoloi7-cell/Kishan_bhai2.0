@@ -55,7 +55,7 @@ export const WalletConnectModal: React.FC = () => {
             </div>
             <div>
               <h3 className="font-bold font-display text-lg">Algorand Testnet Wallet</h3>
-              <p className="text-stone-400 text-xs">x402 Micropayment Identity & Balance</p>
+              <p className="text-stone-400 text-xs">Testnet Identity & Account Balance</p>
             </div>
           </div>
           <button

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Sparkles,
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { CropRecommendationWizard } from '../components/cropRec/CropRecommendationWizard';
 import { CropRecommendationCard } from '../components/cropRec/CropRecommendationCard';
+import { CropRecommendationSkeleton } from '../components/cropRec/CropRecommendationSkeleton';
 import { CropComparisonModal } from '../components/cropRec/CropComparisonModal';
 import { CropDetailModal } from '../components/cropRec/CropDetailModal';
 import { SoilReportModal } from '../components/soil/SoilReportModal';
@@ -44,6 +45,14 @@ export const CropRecommendationPage: React.FC = () => {
 
   const handleCalculateRecommendations = async (input: CropRecommendationInput) => {
     setIsLoading(true);
+    // Smooth scroll down to feedback section so farmer immediately sees processing progress
+    setTimeout(() => {
+      const targetEl = document.getElementById('crop-advisor-loading-skeleton') || document.getElementById('crop-advisor-results');
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
+
     try {
       await runCropRecommendation(input);
       addToast(
@@ -96,10 +105,52 @@ export const CropRecommendationPage: React.FC = () => {
     setCurrentView('my-crops');
   };
 
-  const selectedCropForDetail = cropsCatalog.find((c) => c.id === selectedCropDetailId) || null;
+  // Normalize recommendations to always have items if either topRecommendations or topCrops is present
+  const recommendations: CropRecommendationResultItem[] = useMemo(() => {
+    if (lastCropRecommendation?.topRecommendations && lastCropRecommendation.topRecommendations.length > 0) {
+      return lastCropRecommendation.topRecommendations;
+    }
+    if (lastCropRecommendation?.topCrops && lastCropRecommendation.topCrops.length > 0) {
+      return lastCropRecommendation.topCrops.map((c: any) => ({
+        cropId: c.id,
+        cropName: c.cropName,
+        hindiName: c.hindiName,
+        variety: c.variety,
+        season: c.bestSeason || 'Rabi',
+        suitabilityScore: c.suitabilityScore || 85,
+        expectedYieldRange: c.expectedYieldPerAcre || `${c.expectedYieldQuintals || 12} Quintals`,
+        estimatedCostPerAcreInr: c.estimatedCostPerAcre || 18000,
+        estimatedRevenuePerAcreInr: c.potentialRevenuePerAcre || 55000,
+        estimatedNetProfitPerAcreInr: c.estimatedProfitPerAcre || 37000,
+        durationDays: `${c.durationDays || 120} Days`,
+        waterRequirement: c.waterRequirement || 'Medium',
+        marketRisk: c.marketRisk || 'Low',
+        soilCompatibility: c.suitableSoils?.[0] || 'Black Cotton / Loam',
+        sowingWindow: c.sowingPeriod || 'Oct - Nov',
+        reasons: [
+          c.whyThisCrop || 'Optimal match for soil and season.',
+          `Estimated net profit ₹${(c.estimatedProfitPerAcre || 35000).toLocaleString('en-IN')}/acre.`,
+          `Water demand: ${c.waterRequirement || 'Medium'}.`,
+          c.marketInformation?.mspPricePerQuintal ? `Assured MSP ₹${c.marketInformation.mspPricePerQuintal}/quintal.` : 'High Mandi liquidity.',
+        ],
+        mandiPriceReference: c.marketInformation ? `₹${c.marketInformation.currentMandiPricePerQuintal || c.marketInformation.mspPricePerQuintal}/Qtl` : undefined,
+      }));
+    }
+    return [];
+  }, [lastCropRecommendation]);
 
-  const compareCropsList = (lastCropRecommendation?.topRecommendations || [])
-    .filter((c) => selectedCropIdsForCompare.includes(c.cropId));
+  const selectedCropForDetail = useMemo(() => {
+    if (!selectedCropDetailId) return null;
+    return (
+      cropsCatalog.find((c) => c.id === selectedCropDetailId) ||
+      (lastCropRecommendation?.topCrops || []).find((c) => c.id === selectedCropDetailId) ||
+      null
+    );
+  }, [selectedCropDetailId, cropsCatalog, lastCropRecommendation]);
+
+  const compareCropsList = useMemo(() => {
+    return recommendations.filter((c) => selectedCropIdsForCompare.includes(c.cropId));
+  }, [recommendations, selectedCropIdsForCompare]);
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
@@ -141,9 +192,14 @@ export const CropRecommendationPage: React.FC = () => {
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
       />
 
+      {/* Skeleton Screen & AI Loading Progress Feedback */}
+      {isLoading && (
+        <CropRecommendationSkeleton language={language} />
+      )}
+
       {/* Results Section */}
-      {lastCropRecommendation && (
-        <div className="space-y-6">
+      {!isLoading && recommendations.length > 0 && (
+        <div id="crop-advisor-results" className="space-y-6">
           {/* AI Assessment Callout */}
           <div className="bg-gradient-to-r from-emerald-900 to-[#1B3B11] text-white rounded-2xl p-6 sm:p-6 shadow-md space-y-3">
             <div className="flex items-center justify-between">
@@ -152,20 +208,20 @@ export const CropRecommendationPage: React.FC = () => {
                 <span>AI Agronomist Synthesis</span>
               </div>
               <span className="text-xs text-emerald-200/80 font-mono">
-                {lastCropRecommendation.season} Season • {lastCropRecommendation.district}
+                {lastCropRecommendation?.season || lastCropRecommendation?.inputSummary?.season || 'Rabi'} Season • {lastCropRecommendation?.district || lastCropRecommendation?.inputSummary?.district || 'Rajkot'}
               </span>
             </div>
 
             <p className="text-xs sm:text-sm text-emerald-50 leading-relaxed">
-              {lastCropRecommendation.aiExplanation || lastCropRecommendation.aiAdvice?.kisanBhaiAdvice || 'Optimal agronomic alignment based on current soil parameters and regional seasonal dynamics.'}
+              {lastCropRecommendation?.aiExplanation || lastCropRecommendation?.aiAdvice?.kishanBhaiAdvice || lastCropRecommendation?.aiAdvice?.kisanBhaiAdvice || 'Optimal agronomic alignment based on current soil parameters and regional seasonal dynamics.'}
             </p>
 
             <div className="pt-2 border-t border-emerald-800/80 flex flex-wrap items-center justify-between gap-3 text-xs text-emerald-200">
               <div>
-                <span className="font-bold text-white">Target Farming Goal:</span> {lastCropRecommendation.farmingGoal || lastCropRecommendation.inputSummary?.farmingGoal || 'Maximum Profit'}
+                <span className="font-bold text-white">Target Farming Goal:</span> {lastCropRecommendation?.farmingGoal || lastCropRecommendation?.inputSummary?.farmingGoal || 'Maximum Profit'}
               </div>
               <div>
-                <span className="font-bold text-white">Analyzed Soil:</span> Vertisol (pH 7.4, OC 0.62%)
+                <span className="font-bold text-white">Analyzed Soil:</span> {lastCropRecommendation?.inputSummary?.soilType || 'Medium Black Cotton'} (pH {lastCropRecommendation?.inputSummary?.soilPh || '7.4'})
               </div>
             </div>
           </div>
@@ -174,7 +230,7 @@ export const CropRecommendationPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-black text-stone-900">
-                Top Recommended Crops ({(lastCropRecommendation.topRecommendations || []).length})
+                Top Recommended Crops ({recommendations.length})
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
                 Ranked by suitability score, anticipated yield, and net profit margins per acre.
@@ -194,7 +250,7 @@ export const CropRecommendationPage: React.FC = () => {
 
           {/* Ranked Crop Cards Grid */}
           <div className="space-y-4">
-            {(lastCropRecommendation.topRecommendations || []).map((crop, idx) => (
+            {recommendations.map((crop, idx) => (
               <CropRecommendationCard
                 key={crop.cropId}
                 crop={crop}

@@ -157,6 +157,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // 8. Shared Cluster Carts
+    match /sharedCarts/{cartId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
     // Admin whitelist collection
     match /admins/{adminId} {
       allow read, write: if isAdmin();

@@ -63,7 +63,7 @@ export const Sidebar: React.FC = () => {
         { id: 'bulk-buying', labelEn: 'Bulk Input Demands', labelHi: 'थोक खाद-बीज खरीद', icon: ShoppingBag },
         { id: 'harvest', labelEn: 'Harvest Pooling Lots', labelHi: 'फसल पूल लॉट', icon: Package },
         { id: 'machinery', labelEn: 'Machinery Booking', labelHi: 'कृषि यंत्र बुकिंग', icon: Tractor },
-        { id: 'community', labelEn: 'Kisan Community', labelHi: 'किसान चौपाल (समुदाय)', icon: Users },
+        { id: 'community', labelEn: 'Kisan Chaupal App', labelHi: 'किसान चौपाल (ऐप)', icon: Users, badge: 'APP' },
         { id: 'talk-to-expert', labelEn: 'Talk to Expert', labelHi: 'विशेषज्ञ परामर्श', icon: UserCheck },
         { id: 'alerts', labelEn: 'Field Alerts', labelHi: 'खेत चेतावनी व अलर्ट', icon: Bell, badge: unreadAlertCount },
         { id: 'settings', labelEn: 'Profile & Settings', labelHi: 'सेटिंग्स व प्रोफ़ाइल', icon: Settings },
@@ -81,7 +81,7 @@ export const Sidebar: React.FC = () => {
           { id: 'harvest', labelEn: 'Cluster Harvest Lots', labelHi: 'कुल फसल पूल', icon: Package },
           { id: 'machinery', labelEn: 'Village Machinery Roster', labelHi: 'यंत्र उपलब्धता', icon: Tractor },
           { id: 'marketplace', labelEn: 'Buyer Coordination', labelHi: 'क्रेता समन्वय', icon: Store },
-          { id: 'transactions', labelEn: 'x402 Settlement Logs', labelHi: 'सेटलमेंट लॉग', icon: Receipt },
+          { id: 'transactions', labelEn: 'Settlement Logs', labelHi: 'सेटलमेंट लॉग', icon: Receipt },
         ];
       case 'BUYER':
         return [
@@ -93,7 +93,6 @@ export const Sidebar: React.FC = () => {
       case 'ADMIN':
         return [
           { id: 'admin-dashboard', labelEn: 'System Control Center', labelHi: 'प्रशासक डैशबोर्ड', icon: LayoutDashboard },
-          { id: 'admin-x402', labelEn: 'x402 Protocol Analytics', labelHi: 'x402 विश्लेषण', icon: Receipt },
           { id: 'clusters', labelEn: 'All Registered Clusters', labelHi: 'सभी क्लस्टर', icon: Users },
           { id: 'transactions', labelEn: 'Algorand Testnet Ledger', labelHi: 'ब्लॉकचेन लेजर', icon: ShieldAlert },
         ];
@@ -116,7 +115,7 @@ export const Sidebar: React.FC = () => {
               {userRole === 'FARMER' && (currentUser?.fullName || 'Ramesh Patel (Farmer)')}
               {userRole === 'CHAMPION' && 'Devraj Bhai (Champion)'}
               {userRole === 'BUYER' && 'ITC Agro Procurement'}
-              {userRole === 'ADMIN' && 'Kisan Bhai System Admin'}
+              {userRole === 'ADMIN' && 'Kishan Bhai System Admin'}
             </span>
           </div>
         </div>
@@ -148,8 +147,14 @@ export const Sidebar: React.FC = () => {
                       <span className="truncate">{language === 'hi' ? item.labelHi : item.labelEn}</span>
                     </div>
 
-                    {item.badge && item.badge > 0 ? (
-                      <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                    {item.badge ? (
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
+                          item.badge === 'APP'
+                            ? 'bg-amber-400 text-stone-950 font-black'
+                            : 'bg-rose-500 text-white'
+                        }`}
+                      >
                         {item.badge}
                       </span>
                     ) : null}
@@ -204,8 +209,8 @@ export const Sidebar: React.FC = () => {
           <span className="text-emerald-700 font-bold">TESTNET LIVE</span>
         </div>
         <div className="flex items-center justify-between text-stone-400">
-          <span>PAYMENT:</span>
-          <span className="text-stone-700 font-bold">x402 Micropay</span>
+          <span>ESCROW:</span>
+          <span className="text-stone-700 font-bold">Smart Contract</span>
         </div>
       </div>
     </aside>

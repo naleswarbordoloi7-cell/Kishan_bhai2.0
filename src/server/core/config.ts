@@ -36,7 +36,7 @@ export const config: AppConfig = {
   port: parseInt(process.env.PORT || '3000', 10),
   // Strict DEMO_MODE flag: false by default in production, true only if explicitly requested
   demoMode: process.env.DEMO_MODE === 'true' || (!isProd && process.env.DEMO_MODE !== 'false'),
-  jwtSecret: process.env.JWT_SECRET || 'kisan_bhai_secure_jwt_production_secret_key_2026_x402_seed_to_sale',
+  jwtSecret: process.env.JWT_SECRET || 'kisan_bhai_secure_jwt_production_secret_key_2026_seed_to_sale',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
   appUrl: process.env.APP_URL || 'https://kishanbhai.in',
