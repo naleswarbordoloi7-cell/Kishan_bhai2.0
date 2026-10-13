@@ -1064,25 +1064,44 @@ export async function recordUserLogin(
  * Fetch recent user logins from Supabase
  */
 export async function getUserLogins(limit = 20): Promise<{ logins: UserLoginRow[]; source: 'supabase' | 'local' }> {
-  const localItems = getCachedUserLogins();
-  const supabase = getSupabase();
+  let localItems = getCachedUserLogins();
 
+  // Also query /api/auth/recent-logins (works on both local server and Netlify client engine)
+  try {
+    const apiRes = await fetch('/api/auth/recent-logins');
+    if (apiRes.ok) {
+      const apiData = await apiRes.json();
+      if (apiData && Array.isArray(apiData.logins) && apiData.logins.length > 0) {
+        const map = new Map<string, UserLoginRow>();
+        apiData.logins.forEach((l: UserLoginRow) => map.set(l.id, l));
+        localItems.forEach((l) => {
+          if (!map.has(l.id)) map.set(l.id, l);
+        });
+        localItems = Array.from(map.values())
+          .sort((a, b) => new Date(b.login_time).getTime() - new Date(a.login_time).getTime())
+          .slice(0, limit);
+        saveCachedUserLogins(localItems);
+      }
+    }
+  } catch {}
+
+  const supabase = getSupabase();
   if (!supabase) {
     return { logins: localItems, source: 'local' };
   }
 
   try {
-    const { data, error } = await (supabase.from('user_logins') as any)
+    const supabasePromise = (supabase.from('user_logins') as any)
       .select('*')
       .order('login_time', { ascending: false })
       .limit(limit);
+    const timeoutPromise = new Promise<{ data: null; error: any }>((r) =>
+      setTimeout(() => r({ data: null, error: new Error('Supabase query timeout') }), 800)
+    );
 
-    if (error) {
-      console.warn('[Supabase] Fetch user_logins error:', error.message);
-      return { logins: localItems, source: 'local' };
-    }
+    const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
 
-    if (data && Array.isArray(data)) {
+    if (!error && data && Array.isArray(data) && data.length > 0) {
       const map = new Map<string, UserLoginRow>();
       (data as UserLoginRow[]).forEach((item) => map.set(item.id, item));
       localItems.forEach((item) => {
@@ -1097,7 +1116,7 @@ export async function getUserLogins(limit = 20): Promise<{ logins: UserLoginRow[
       return { logins: combined, source: 'supabase' };
     }
   } catch (err: any) {
-    console.warn('[Supabase] Fetch user logins exception:', err?.message);
+    // Graceful fallback to localItems
   }
 
   return { logins: localItems, source: 'local' };

@@ -142,6 +142,49 @@ app.get('/api/health', (req, res) => {
 });
 
 // 2. AUTHENTICATION & PROFILE
+const inMemoryRecentLogins: Array<{
+  id: string;
+  user_id: string;
+  user_name: string;
+  email?: string;
+  phone?: string;
+  role: string;
+  village?: string;
+  state?: string;
+  login_method: string;
+  login_time: string;
+  device_info?: string;
+}> = [];
+
+function recordLoginEvent(info: {
+  user_id: string;
+  user_name: string;
+  email?: string;
+  phone?: string;
+  role: string;
+  village?: string;
+  state?: string;
+  login_method: string;
+  device_info?: string;
+}) {
+  const fullRecord = {
+    id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    ...info,
+    login_time: new Date().toISOString(),
+    device_info: info.device_info || 'Web Application',
+  };
+  inMemoryRecentLogins.unshift(fullRecord);
+  if (inMemoryRecentLogins.length > 50) {
+    inMemoryRecentLogins.pop();
+  }
+  try {
+    (serverSupabase.from('user_logins') as any)
+      .insert([fullRecord])
+      .then(() => {})
+      .catch((err: any) => console.warn('[Supabase Login Insert Note]:', err?.message));
+  } catch {}
+}
+
 app.post('/api/auth/register', (req, res) => {
   const {
     email,
@@ -192,22 +235,18 @@ app.post('/api/auth/register', (req, res) => {
   db.users.set(newUser.id, newUser as any);
   syncUserToFirestore(newUser as any).catch((err) => console.warn('[Firebase] Background sync note:', err.message));
   
-  // Track new registration in Supabase
-  try {
-    (serverSupabase.from('user_logins') as any).insert([{
-      id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      user_id: newUser.id,
-      user_name: newUser.fullName,
-      email: newUser.email,
-      phone: newUser.phone,
-      role: newUser.role,
-      village: newUser.village,
-      state: newUser.state,
-      login_method: 'register',
-      login_time: new Date().toISOString(),
-      device_info: 'Web Application (New Registration)',
-    }]).then(() => {}).catch(() => {});
-  } catch {}
+  // Track new registration in memory and Supabase
+  recordLoginEvent({
+    user_id: newUser.id,
+    user_name: newUser.fullName,
+    email: newUser.email,
+    phone: newUser.phone,
+    role: newUser.role,
+    village: newUser.village,
+    state: newUser.state,
+    login_method: 'register',
+    device_info: 'Web Application (New Registration)',
+  });
 
   return res.json({ success: true, user: newUser });
 });
@@ -237,22 +276,18 @@ app.post('/api/auth/login', (req, res) => {
 
   if (user) {
     syncUserToFirestore(user).catch((err) => console.warn('[Firebase] Background sync note:', err.message));
-    // Log user sign-in to Supabase
-    try {
-      (serverSupabase.from('user_logins') as any).insert([{
-        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        user_id: user.id,
-        user_name: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        village: user.village,
-        state: user.state,
-        login_method: searchKey.includes('@') ? 'email' : 'phone',
-        login_time: new Date().toISOString(),
-        device_info: 'Web Application',
-      }]).then(() => {}).catch(() => {});
-    } catch {}
+    // Log user sign-in to memory and Supabase
+    recordLoginEvent({
+      user_id: user.id,
+      user_name: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      village: user.village,
+      state: user.state,
+      login_method: searchKey.includes('@') ? 'email' : 'phone',
+      device_info: 'Web Application',
+    });
 
     return res.json({ success: true, user, message: 'Authentication successful.' });
   }
@@ -277,40 +312,41 @@ app.post('/api/auth/login', (req, res) => {
   db.users.set(newUser.id, newUser);
   syncUserToFirestore(newUser).catch((err) => console.warn('[Firebase] Background sync note:', err.message));
 
-  // Log new user sign-in to Supabase
-  try {
-    (serverSupabase.from('user_logins') as any).insert([{
-      id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      user_id: newUser.id,
-      user_name: newUser.fullName,
-      email: newUser.email,
-      phone: newUser.phone,
-      role: newUser.role,
-      village: newUser.village,
-      state: newUser.state,
-      login_method: isEmail ? 'email' : 'phone',
-      login_time: new Date().toISOString(),
-      device_info: 'Web Application',
-    }]).then(() => {}).catch(() => {});
-  } catch {}
+  // Log new user sign-in to memory and Supabase
+  recordLoginEvent({
+    user_id: newUser.id,
+    user_name: newUser.fullName,
+    email: newUser.email,
+    phone: newUser.phone,
+    role: newUser.role,
+    village: newUser.village,
+    state: newUser.state,
+    login_method: isEmail ? 'email' : 'phone',
+    device_info: 'Web Application',
+  });
 
   return res.json({ success: true, user: newUser, message: 'Account verified and signed in.' });
 });
 
 app.get('/api/auth/recent-logins', async (req, res) => {
   try {
-    const { data, error } = await (serverSupabase.from('user_logins') as any)
+    const supabasePromise = (serverSupabase.from('user_logins') as any)
       .select('*')
       .order('login_time', { ascending: false })
       .limit(20);
+    const timeoutPromise = new Promise<{ data: null; error: any }>((r) =>
+      setTimeout(() => r({ data: null, error: new Error('Supabase query timeout') }), 600)
+    );
 
-    if (!error && data) {
+    const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+
+    if (!error && Array.isArray(data) && data.length > 0) {
       return res.json({ success: true, logins: data, source: 'supabase' });
     }
   } catch (e: any) {
-    console.warn('[Server Supabase] Logins warning:', e?.message);
+    // Failover to memory immediately
   }
-  res.json({ success: true, logins: [], source: 'empty' });
+  res.json({ success: true, logins: inMemoryRecentLogins.slice(0, 20), source: 'memory' });
 });
 
 app.get('/api/auth/users', (req, res) => {

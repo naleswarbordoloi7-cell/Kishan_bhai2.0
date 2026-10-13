@@ -14,12 +14,15 @@ export const useMarketStore = create<MarketStore>((set) => ({
   fetchMandiPrices: async () => {
     try {
       const res = await fetch('/api/mandi/prices');
-      const data = await res.json();
-      if (data && Array.isArray(data.prices) && data.prices.length > 0) {
-        set({ mandiPrices: data.prices });
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data && Array.isArray(data.prices) && data.prices.length > 0) {
+          set({ mandiPrices: data.prices });
+        }
       }
-    } catch (error) {
-      console.error('Failed to fetch mandi prices:', error);
+    } catch {
+      // Retain fallback initial prices
     }
   },
 }));

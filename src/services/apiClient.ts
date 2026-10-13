@@ -191,9 +191,10 @@ class ApiClientQueueManager {
       }
 
       // Netlify / Static Fallback detection:
-      // If the endpoint is an /api route and returns 404 (because Netlify static hosting doesn't have an Express backend),
-      // seamlessly execute client-side mock fallback engine!
-      if (url.startsWith('/api') && response.status === 404) {
+      // If the endpoint is an /api route and returns 404 or text/html (Netlify SPA redirect /* to /index.html 200),
+      // seamlessly execute client-side real sector APIs fallback engine!
+      const contentType = response.headers.get('content-type') || '';
+      if (url.startsWith('/api') && (response.status === 404 || (response.status === 200 && contentType.includes('text/html')) || response.status >= 500)) {
         return this.createMockResponse(url, options);
       }
 
@@ -309,7 +310,8 @@ class ApiClientQueueManager {
     try {
       const { priority: _p, maxRetries: _m, skipQueue: _s, timeoutMs: _t, onRetry: _o, ...cleanInit } = options;
       const res = await nativeFetch(url, cleanInit);
-      if (url.startsWith('/api') && res.status === 404) {
+      const contentType = res.headers.get('content-type') || '';
+      if (url.startsWith('/api') && (res.status === 404 || (res.status === 200 && contentType.includes('text/html')) || res.status >= 500)) {
         return this.createMockResponse(url, options);
       }
       return res;

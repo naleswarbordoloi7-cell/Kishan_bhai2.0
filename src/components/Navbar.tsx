@@ -63,6 +63,7 @@ export const Navbar: React.FC = () => {
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoginsMenuOpen, setIsLoginsMenuOpen] = useState(false);
+  const [isMobileLoginsOpen, setIsMobileLoginsOpen] = useState(false);
   const [recentLogins, setRecentLogins] = useState<UserLoginRow[]>([]);
 
   useEffect(() => {
@@ -568,6 +569,59 @@ export const Navbar: React.FC = () => {
               >
                 Sign In
               </button>
+            )}
+          </div>
+
+          {/* Supabase Live Logins Mobile Widget */}
+          <div className="bg-emerald-50/70 dark:bg-emerald-950/40 rounded-xl border border-emerald-200/70 dark:border-emerald-800/50 p-2.5">
+            <button
+              onClick={() => setIsMobileLoginsOpen(!isMobileLoginsOpen)}
+              className="w-full flex items-center justify-between text-xs font-bold text-emerald-900 dark:text-emerald-200"
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>{language === 'hi' ? 'हालिया लॉगिन (Supabase)' : 'Recent Live Logins'}</span>
+                {recentLogins.length > 0 && (
+                  <span className="text-[10px] bg-emerald-700 text-white px-1.5 py-0.2 rounded-full font-bold">
+                    {recentLogins.length}
+                  </span>
+                )}
+              </div>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-emerald-700 transition-transform ${isMobileLoginsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {isMobileLoginsOpen && (
+              <div className="mt-2.5 space-y-1.5 max-h-48 overflow-y-auto pt-2 border-t border-emerald-200/50 dark:border-emerald-800/40">
+                {recentLogins.length > 0 ? (
+                  recentLogins.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-1.5 bg-white dark:bg-stone-800 rounded-lg border border-stone-100 dark:border-stone-700 flex items-center justify-between text-[11px]"
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 font-bold flex items-center justify-center text-[9px] shrink-0">
+                          {item.user_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="truncate">
+                          <span className="font-semibold text-stone-900 dark:text-stone-100">{item.user_name}</span>
+                          <span className="ml-1 text-[9px] bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 px-1 rounded">
+                            {item.role}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[9px] text-stone-400 shrink-0 ml-1">
+                        {new Date(item.login_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-2 text-[11px] text-stone-400">
+                    {language === 'hi' ? 'कोई हालिया लॉगिन नहीं' : 'No recent login records yet'}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
