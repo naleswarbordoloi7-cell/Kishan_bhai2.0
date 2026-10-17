@@ -1,149 +1,257 @@
-🌾 Kishan Bhai 2.0 — README Information Form
-Section 1: Team Details 👥
+🌾 Kishan Bhai 2.0
 
-1. Team Name: Arjuna ✅
+AI-Powered Smart Agriculture Platform
 
-2. Team Members: Naleswar, Lakshya, Pragati, Sudipta ✅
+Team: Arjuna
+Team Leader: Naleswar
+Team Members: Naleswar, Lakshya, Pragati, Sudipta
 
-3. Team Leader: Who is your team leader?
+📌 About the Project
+
+Kishan Bhai 2.0 is a smart agriculture platform designed to help farmers access useful farming information, coordinate with other farmers, and connect with agricultural services and markets. The project aims to make farming services more accessible through digital tools and AI-assisted information.
+
+❗ Problem Statement
+
+Farmers can face difficulties accessing timely agricultural information, affordable machinery, quality farming inputs, and suitable buyers for their produce. Individual farmers may also have limited bargaining power when buying inputs or selling crops.
+
+Kishan Bhai 2.0 aims to bring agricultural guidance, farmer collaboration, and market access together in one digital platform.
+
+Official SIH Problem Statement ID: Add the official ID here if required.
+
+🎯 Proposed Solution and Key Features
+
+The platform's intended features include:
+
+AI Agricultural Assistant: Help users find answers to farming-related questions.
+
+Virtual Farm Clusters: Help farmers coordinate and collaborate.
+
+Bulk Buying: Support coordinated purchasing of agricultural inputs.
+
+Machinery Booking: Help farmers find or request agricultural machinery.
+
+Harvest Pooling: Support collective aggregation of produce.
+
+Buyer Marketplace: Help farmers connect with potential buyers.
+
+Weather and Crop-Price Information: Provide relevant information when supported by configured data sources.
+
+Note: Confirm which features are implemented in the current version before presenting them as working features.
+
+👥 Team Details
+
+Role
+
+Name
+
+Team Name
+
+Arjuna
+
+Team Leader
+
 Naleswar
-Section 2: College Information 🎓
 
-4. College Name: What is your college's full name?
+Team Member
 
-5. College Location: City and state?
+Lakshya
 
-6. Incubator Information: Are you associated with any incubator?
+Team Member
 
-A. Yes
-B. No
-C. Not applicable
-Section 3: Project Details 🌱
+Pragati
 
-7. Official Project Title: Choose one or provide your own.
+Team Member
 
-A. Kishan Bhai 2.0
-B. Kishan Bhai 2.0 – AI-Powered Smart Agriculture Platform
-C. Your own title
+Sudipta
 
-8. Problem Statement ID: What is your official SIH problem statement ID?
+🎓 College / Incubator Information
 
-9. Problem Statement: What agricultural problem does your project solve?
+College: Add and verify the official college name.
 
-For example: Farmers face difficulties accessing reliable crop information, affordable agricultural machinery, bulk purchasing, and suitable buyers for their produce.
+College Location: Add city and state.
 
-10. Healthcare Use Case: The checklist in your screenshot specifically requires a healthcare use case. Does your project have a healthcare-related feature?
+Incubator: Add the incubator name if applicable; otherwise write “Not applicable.”
 
-A. Yes — explain the feature.
-B. No.
-C. The requirement may belong to a different project or submission.
+🏥 Healthcare Use Case / Applicability
 
-Important: We should clarify this because Kishan Bhai is an agriculture project.
+Kishan Bhai 2.0 is primarily an agriculture-focused project. No healthcare feature has been confirmed as implemented. If the submission checklist requires a healthcare use case, confirm with the organizers whether this requirement applies to this project. Do not claim healthcare functionality unless it is genuinely part of the solution.
 
-Section 4: Technical Stack 💻
+A possible future extension could provide educational information about farmer safety, such as safe pesticide handling and occupational risks. This is a proposed extension, not a claim of an implemented feature.
 
-11. Frontend: Which technologies are you using?
+🛠️ Technical Stack
 
-A. React.js
-B. Flutter
-C. HTML, CSS, JavaScript
-D. Other
+Fill in this table with the technologies actually used in the repository.
 
-12. Backend: Which technologies are you using?
+Layer
 
-A. Node.js and Express.js
-B. Python and Flask/FastAPI
-C. Other
+Technology
 
-13. Database: Which database does your project use?
+Frontend
 
-A. PostgreSQL
-B. MongoDB
-C. MySQL
-D. Supabase
-E. Other
+Confirm from project dependencies
 
-14. AI/ML Frameworks: Which AI tools or frameworks are integrated?
+Backend
 
-A. Google Gemini
-B. OpenAI GPT
-C. Python ML libraries
-D. Other
-E. None currently
+Confirm from project dependencies
 
-15. APIs and Integrations: Which external APIs or services are used? For example, weather APIs, crop-price APIs, maps, or authentication services.
+Database
 
-Section 5: AI/ML Model Details 🤖
+Confirm from project configuration
 
-16. AI Features: What does the AI actually do in Kishan Bhai 2.0?
+Authentication
 
-For example:
+Confirm from project configuration
 
-Answer farmers' agricultural questions.
-Provide crop recommendations.
-Analyze weather and crop prices.
-Help farmers understand farming practices.
+APIs / Integrations
 
-17. AI Model: Which model are you using? If you don't know the exact model name, write "Not sure."
+List only integrations actually configured
 
-18. AI Implementation Status:
+Deployment / Hosting
 
-A. Fully implemented
-B. Partially implemented
-C. Planned but not implemented
-Section 6: Demo Video 🎥
+Add hosting provider if deployed
 
-19. Demo Video: Do you have a 15–20 minute demo video uploaded to YouTube?
+🤖 AI/ML Models and Frameworks
 
-A. Yes — provide the link.
-B. Not yet.
-Section 7: Open-Source License 📄
+The project may use AI services to support agricultural question answering. Document only the models and SDKs that are actually integrated.
 
-20. License: Which license do you want to use?
+Model / Framework
 
-A. MIT License
-B. Apache 2.0
-C. GNU GPL
-D. Not sure — recommend one.
-Section 8: Architecture and Presentation 📊
+Intended Use
 
-21. Architecture Diagram: Do you have an architecture diagram in PDF/PPT format?
+Status
 
-A. Yes
-B. No
+Google Gemini API
 
-22. Presentation: Do you have your project presentation in PDF/PPT format?
+Agricultural Q&A and conversational assistance
 
-A. Yes
-B. No
+Confirm implementation
 
-23. Public Accessibility: Are your repository, documentation, demo video, and presentation publicly accessible?
+OpenAI GPT API
 
-A. Yes
-B. No
-C. Some are public, some are not.
-📝 How to Answer
+Conversational assistance
 
-Copy this short template and fill in your answers.
+Confirm implementation
 
-1. Team Leader:
-4. College Name:
-5. College Location:
-6. Incubator:
-7. Project Title:
-8. Problem Statement ID:
-9. Problem Statement:
-10. Healthcare Use Case:
-11. Frontend:
-12. Backend:
-13. Database:
-14. AI Tools:
-15. APIs:
-16. AI Features:
-17. AI Model:
-18. AI Status:
-19. Demo Video:
-20. License:
-21. Architecture Diagram:
-22. Presentation:
-23. Public Accessibility:
+Google GenAI SDK
+
+Connect to supported Gemini models
+
+Confirm dependency
+
+OpenAI SDK
+
+Connect to supported GPT models
+
+Confirm dependency
+
+scikit-learn
+
+Traditional machine-learning workflows, if needed
+
+Optional; do not list as implemented unless used
+
+TensorFlow / PyTorch
+
+Deep-learning workflows, if needed
+
+Optional; do not list as implemented unless used
+
+Responsible AI Notes
+
+AI-generated agricultural advice may be inaccurate; users should verify important decisions with trusted agricultural experts or official sources.
+
+Show weather and market prices as live only when retrieved from a working, reliable data source.
+
+Keep API keys and credentials private. Store secrets in environment variables and never commit them to GitHub.
+
+🏗️ System Architecture
+
+Update this outline to match the actual implementation:
+
+Farmer / Buyer / Village Champion / Admin
+                    |
+                    v
+             Web or Mobile UI
+                    |
+                    v
+               Backend API
+              /     |      \
+             v      v       v
+     Authentication Database AI Provider
+                              |
+                       Gemini / OpenAI
+
+Architecture Diagram (PDF/PPT): Add a publicly accessible link here.
+
+🚀 Getting Started
+
+Prerequisites
+
+Add the versions and tools required by the actual project, such as Node.js, Python, Flutter, or a database service.
+
+Clone the Repository
+
+git clone https://github.com/naleswarbordoloi7-cell/Kishan_bhai2.0.git
+cd Kishan_bhai2.0
+
+Install and Run
+
+Follow the installation instructions for the actual frontend and backend folders. Add the exact dependency-installation, environment setup, database migration, and run commands after checking the repository structure.
+
+Security: Provide environment-variable names in documentation, but never publish API keys, passwords, tokens, or other secret values.
+
+🎬 Project Demo Video
+
+YouTube Demo: https://youtu.be/_oahw_XMGQ8
+
+The video should demonstrate the actual application, its working features, and the project workflow. If the submission requires a 15–20 minute unlisted video, verify the video duration and visibility settings before submitting.
+
+📊 Presentation
+
+Project Presentation (PDF/PPT): Add a publicly accessible link here.
+
+📄 Open-Source License
+
+License: To be confirmed.
+
+Choose a license with the team and add the corresponding LICENSE file to the repository. Do not claim a license until the file has been added and approved.
+
+🔗 Project Links
+
+GitHub Repository: https://github.com/naleswarbordoloi7-cell/Kishan_bhai2.0
+
+YouTube Demo: https://youtu.be/_oahw_XMGQ8
+
+Architecture Diagram: Add link
+
+Presentation: Add link
+
+✅ Submission Checklist
+
+Team name and team members included
+
+Team leader included
+
+Project overview and problem statement included
+
+College and incubator details confirmed
+
+Official problem statement ID added, if required
+
+Healthcare applicability clarified with organizers
+
+Technical stack verified against the code
+
+AI/ML models and dependencies verified against the code
+
+Demo video duration and visibility verified
+
+Architecture PDF/PPT linked and publicly accessible
+
+Presentation PDF/PPT linked and publicly accessible
+
+License selected and LICENSE file added
+
+All submission links tested for public access
+
+Built by Team Arjuna 🌾
