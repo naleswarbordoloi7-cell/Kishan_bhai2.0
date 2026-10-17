@@ -6,11 +6,7 @@ Section 1: Team Details 👥
 2. Team Members: Naleswar, Lakshya, Pragati, Sudipta ✅
 
 3. Team Leader: Who is your team leader?
-
-A. Naleswar
-B. Lakshya
-C. Pragati
-D. Sudipta
+Naleswar
 Section 2: College Information 🎓
 
 4. College Name: What is your college's full name?
