@@ -1,111 +1,153 @@
-# KISHAN BHAI (किसान भाई)
-> **"Small Farms. One Powerful Network."**  
-> *An AI-Powered Digital Agriculture Platform & Virtual Farm Cluster Network with Genuine x402 Algorand Testnet Micropayments.*
+🌾 Kishan Bhai 2.0 — README Information Form
+Section 1: Team Details 👥
 
----
+1. Team Name: Arjuna ✅
 
-## 🏆 Hackathon Track: "Agentic Solutions: Powered by x402"
+2. Team Members: Naleswar, Lakshya, Pragati, Sudipta ✅
 
-Kishan Bhai is built specifically for the **Agentic Solutions: Powered by x402** competition track. It demonstrates how autonomous AI agents, Virtual Farm Clusters, and Web3 micropayment rails solve the deep structural challenges of smallholder farming in India.
+3. Team Leader: Who is your team leader?
 
-### ⚡ Genuine Protocol & Blockchain Integrations
-- **x402 Protocol Specification**: Implements genuine HTTP `402 Payment Required` handshakes for high-value agronomy services.
-- **Algorand Testnet**: Executes authentic on-chain transactions signed against the Algorand Testnet node.
-- **GoPlausible Facilitator Integration**: Validates transaction non-replay and cryptographic finality via the GoPlausible verification pipeline.
-- **No Mock Transactions**: Zero simulated transaction hashes or fake timers; every settlement links to Algorand Testnet block explorers (Lora / Pera).
+A. Naleswar
+B. Lakshya
+C. Pragati
+D. Sudipta
+Section 2: College Information 🎓
 
----
+4. College Name: What is your college's full name?
 
-## 🌟 Core Philosophy: Virtual Farm Clusters
+5. College Location: City and state?
 
-> *"We don't combine farmers' land. We combine their digital strength."*
+6. Incubator Information: Are you associated with any incubator?
 
-Smallholder farmers (averaging 2–5 acres) face severe economic disadvantages:
-1. **Retail Markup**: High retail prices on seeds & fertilizers due to small volume.
-2. **Middlemen Squeeze**: Selling small yields individually at local mandis results in 15–30% value loss.
-3. **Expensive Agronomy**: Commercial laboratory pathogen diagnostics cost ₹500–₹1,500 per sample.
+A. Yes
+B. No
+C. Not applicable
+Section 3: Project Details 🌱
 
-### How Kishan Bhai Solves This
-- **Virtual Farm Clusters**: Farmers maintain 100% legal ownership of their land while digitally aggregating input demands and harvest output.
-- **Bulk Buying Demands**: Champions consolidate fertilizer and certified seed orders, unlocking 20–30% wholesale discounts directly from manufacturers.
-- **Harvest Pooling**: Yields are aggregated into standardized 10–50 ton lots for institutional buyers and food processors.
-- **x402 AI Micropayments**: Farmers pay ₹0.15 to ₹0.40 (0.002 USDC) strictly per deep multispectral crop disease diagnosis, powered by Gemini 3.7 Flash.
+7. Official Project Title: Choose one or provide your own.
 
----
+A. Kishan Bhai 2.0
+B. Kishan Bhai 2.0 – AI-Powered Smart Agriculture Platform
+C. Your own title
 
-## 👥 Four Stakeholder Roles & Interfaces
+8. Problem Statement ID: What is your official SIH problem statement ID?
 
-1. **Smallholder Farmer (Ramesh Patel - 4.5 Acres)**
-   - Farm acreage & crop profile management
-   - Join Virtual Farm Clusters
-   - Pledge for bulk input discounts (fertilizers, seeds)
-   - Trigger AI Crop Multispectral Pathogen Diagnostics via x402
-   - Web NFC Smart Card identification for village mandi check-in
+9. Problem Statement: What agricultural problem does your project solve?
 
-2. **Village Champion (Anita Devi - Village Coordinator)**
-   - Manage regional Virtual Farm Clusters
-   - Verify smallholder land holdings and KYC
-   - Aggregate group purchase orders and coordinate manufacturer delivery
-   - Dispatch shared village machinery (tractors, drone sprayers)
+For example: Farmers face difficulties accessing reliable crop information, affordable agricultural machinery, bulk purchasing, and suitable buyers for their produce.
 
-3. **Institutional Buyer (Vikram Mehta - AgroPure Organics)**
-   - Browse standardized 10–50 ton aggregated harvest lots
-   - Submit binding purchase proposals with designated delivery depots
-   - Trace lot origin directly to verified cluster farmers
+10. Healthcare Use Case: The checklist in your screenshot specifically requires a healthcare use case. Does your project have a healthcare-related feature?
 
-4. **Platform Administrator & Ops (Dr. Sanjay Verma)**
-   - Live x402 Protocol telemetry & GoPlausible Facilitator logs
-   - Algorand Testnet node synchronization monitor
-   - API Budget Ceiling Monitor (Strict ₹1,500 monthly limit with caching savings)
+A. Yes — explain the feature.
+B. No.
+C. The requirement may belong to a different project or submission.
 
----
+Important: We should clarify this because Kishan Bhai is an agriculture project.
 
-## 🔄 End-to-End x402 Payment Flow Walkthrough
+Section 4: Technical Stack 💻
 
-```
-[ Frontend Client ]                                      [ Backend Gateway ]                        [ Algorand Node / GoPlausible ]
-       │                                                         │                                                │
-       │─── 1. POST /api/paid/crop-analysis (No Payment) ───────>│                                                │
-       │                                                         │                                                │
-       │<── 2. HTTP 402 Payment Required ────────────────────────│                                                │
-       │    { price: 0.002 USDC, receiver: "KBHAI4O4...",        │                                                │
-       │      service: "Crop Pathogen Analysis", ... }           │                                                │
-       │                                                         │                                                │
-       │─── 3. Sign & Submit Testnet Payment ────────────────────────────────────────────────────────────────────>│
-       │       (or trigger backend testnet execution)            │                                                │
-       │                                                         │                                                │
-       │<── 4. Algorand Confirmed (TxID: 7K9X2M...) ─────────────────────────────────────────────────────────────│
-       │                                                         │                                                │
-       │─── 5. POST /api/paid/crop-analysis ────────────────────>│                                                │
-       │       Header: `X-PAYMENT: 7K9X2M...`                    │                                                │
-       │                                                         │─── 6. Verify Tx on Algorand / GoPlausible ────>│
-       │                                                         │<── 7. Cryptographic Proof Validated ───────────│
-       │                                                         │                                                │
-       │<── 8. HTTP 200 OK with Gemini Agronomist Diagnosis ─────│                                                │
-```
+11. Frontend: Which technologies are you using?
 
----
+A. React.js
+B. Flutter
+C. HTML, CSS, JavaScript
+D. Other
 
-## 💰 Autonomous API Budget Guard (₹1,500 Monthly Limit)
+12. Backend: Which technologies are you using?
 
-To ensure zero budget overruns:
-- Strict ₹1,500/month maximum API expenditure ceiling.
-- Token-efficient prompt engineering using Gemini 3.7 Flash.
-- In-memory cache layer for weather queries and repeated agricultural lookups.
-- Real-time dashboard showing INR expenditure breakdown and percentage utilized.
+A. Node.js and Express.js
+B. Python and Flask/FastAPI
+C. Other
 
----
+13. Database: Which database does your project use?
 
-## 🧪 Testing the Live Demo
+A. PostgreSQL
+B. MongoDB
+C. MySQL
+D. Supabase
+E. Other
 
-1. **Switch Roles**: Use the top-right persona dropdown to switch between Farmer, Champion, Buyer, and Admin.
-2. **Test x402 AI Diagnosis**:
-   - Open **Kishan AI & Crop Diagnosis** from the sidebar or dashboard.
-   - Click the green button **"🔬 1-Click Sample Leaf Disease Diagnosis (0.002 USDC)"** or upload a crop photo.
-   - Observe the **HTTP 402 Challenge** and Algorand Testnet settlement modal.
-   - Review the generated **Multispectral Pathogen Report** and verified Algorand Testnet Tx ID.
-3. **Verify Ledger**:
-   - Navigate to **x402 Transactions** or **x402 Protocol Analytics** to inspect on-chain records and Explorer links.
-4. **Explore Clusters & Bulk Buying**:
-   - Open **My Virtual Cluster** to see the interactive coordination diagram.
-   - Pledge fertilizer bags in **Bulk Buying Demands** to watch the cluster progress bar update in real-time.
+14. AI/ML Frameworks: Which AI tools or frameworks are integrated?
+
+A. Google Gemini
+B. OpenAI GPT
+C. Python ML libraries
+D. Other
+E. None currently
+
+15. APIs and Integrations: Which external APIs or services are used? For example, weather APIs, crop-price APIs, maps, or authentication services.
+
+Section 5: AI/ML Model Details 🤖
+
+16. AI Features: What does the AI actually do in Kishan Bhai 2.0?
+
+For example:
+
+Answer farmers' agricultural questions.
+Provide crop recommendations.
+Analyze weather and crop prices.
+Help farmers understand farming practices.
+
+17. AI Model: Which model are you using? If you don't know the exact model name, write "Not sure."
+
+18. AI Implementation Status:
+
+A. Fully implemented
+B. Partially implemented
+C. Planned but not implemented
+Section 6: Demo Video 🎥
+
+19. Demo Video: Do you have a 15–20 minute demo video uploaded to YouTube?
+
+A. Yes — provide the link.
+B. Not yet.
+Section 7: Open-Source License 📄
+
+20. License: Which license do you want to use?
+
+A. MIT License
+B. Apache 2.0
+C. GNU GPL
+D. Not sure — recommend one.
+Section 8: Architecture and Presentation 📊
+
+21. Architecture Diagram: Do you have an architecture diagram in PDF/PPT format?
+
+A. Yes
+B. No
+
+22. Presentation: Do you have your project presentation in PDF/PPT format?
+
+A. Yes
+B. No
+
+23. Public Accessibility: Are your repository, documentation, demo video, and presentation publicly accessible?
+
+A. Yes
+B. No
+C. Some are public, some are not.
+📝 How to Answer
+
+Copy this short template and fill in your answers.
+
+1. Team Leader:
+4. College Name:
+5. College Location:
+6. Incubator:
+7. Project Title:
+8. Problem Statement ID:
+9. Problem Statement:
+10. Healthcare Use Case:
+11. Frontend:
+12. Backend:
+13. Database:
+14. AI Tools:
+15. APIs:
+16. AI Features:
+17. AI Model:
+18. AI Status:
+19. Demo Video:
+20. License:
+21. Architecture Diagram:
+22. Presentation:
+23. Public Accessibility:
