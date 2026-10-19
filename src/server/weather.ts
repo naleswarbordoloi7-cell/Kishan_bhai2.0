@@ -414,8 +414,6 @@ export async function getWeatherData(location: string = 'Anandpur, Gujarat'): Pr
       cachedAt: Date.now(),
     });
 
-    db.budgetStats.currentUsageInr += 0.01;
-    db.budgetStats.breakdown.weatherApiInr += 0.01;
     db.budgetStats.totalApiRequests += 1;
 
     return {

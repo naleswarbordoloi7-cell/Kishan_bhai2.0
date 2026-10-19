@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useUserStore } from '../store/userStore';
-import { Sprout, UserCheck, Building, BarChart3, ArrowRight, ShieldCheck, UserPlus, LogIn, Sparkles } from 'lucide-react';
+import { Sprout, UserCheck, Building, BarChart3, ArrowRight, ShieldCheck, UserPlus, LogIn, Sparkles, Award } from 'lucide-react';
 import { UserRole, UserProfile } from '../../shared/types';
+import { VillageChampionRegisterForm } from '../components/champion/VillageChampionRegisterForm';
 
 export const AuthPage: React.FC = () => {
   const { setCurrentUser, setUserRole } = useUserStore();
   const { setCurrentView, addToast } = useApp();
-  const [tab, setTab] = useState<'register' | 'login' | 'roles'>('register');
+  const [tab, setTab] = useState<'register' | 'champion-register' | 'login' | 'roles'>('register');
 
   // Form states
   const [email, setEmail] = useState('');
@@ -101,7 +102,7 @@ export const AuthPage: React.FC = () => {
       role: chosenRole,
       village: 'Anandpur',
       state: 'Gujarat',
-      verified: true,
+      verified: chosenRole === 'CHAMPION' ? false : true, // Village Champion starts LOCKED until verified!
       farmSizeAcres: chosenRole === 'FARMER' ? 4.0 : undefined,
       crops: chosenRole === 'FARMER' ? ['Cotton', 'Wheat'] : undefined,
       createdAt: new Date().toISOString(),
@@ -116,7 +117,11 @@ export const AuthPage: React.FC = () => {
 
     setCurrentUser(user);
     setUserRole(chosenRole);
-    addToast('Profile Initialized', `Created fresh ${chosenRole} profile for ${defaultName}.`, 'success');
+    if (chosenRole === 'CHAMPION') {
+      addToast('Profile Initialized', `Created Village Champion profile. Dashboard is locked pending identity and Sarpanch verification.`, 'info');
+    } else {
+      addToast('Profile Initialized', `Created fresh ${chosenRole} profile for ${defaultName}.`, 'success');
+    }
     navigateToRoleDashboard(chosenRole);
   };
 
@@ -149,16 +154,16 @@ export const AuthPage: React.FC = () => {
           Account Access & Stakeholder Portals
         </h1>
         <p className="text-xs sm:text-sm text-stone-600">
-          Register your farm profile, sign in to your dashboard, or initialize a custom stakeholder role.
+          Register your farm profile, apply as a verified Village Champion, sign in, or initialize a stakeholder role.
         </p>
       </div>
 
       {/* Tabs */}
       <div className="flex justify-center">
-        <div className="bg-white/60 backdrop-blur-md p-1.5 rounded-2xl border border-white/80 flex gap-1 shadow-2xs">
+        <div className="bg-white/60 backdrop-blur-md p-1.5 rounded-2xl border border-white/80 flex flex-wrap gap-1 shadow-2xs justify-center">
           <button
             onClick={() => setTab('register')}
-            className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               tab === 'register' ? 'bg-green-700 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -169,8 +174,20 @@ export const AuthPage: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setTab('champion-register')}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              tab === 'champion-register' ? 'bg-amber-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5" />
+              Register as a Village Champion
+            </span>
+          </button>
+
+          <button
             onClick={() => setTab('login')}
-            className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               tab === 'login' ? 'bg-green-700 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -182,7 +199,7 @@ export const AuthPage: React.FC = () => {
 
           <button
             onClick={() => setTab('roles')}
-            className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               tab === 'roles' ? 'bg-green-700 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -193,6 +210,16 @@ export const AuthPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Village Champion Registration Tab (Requirement 1) */}
+      {tab === 'champion-register' && (
+        <div className="max-w-2xl mx-auto">
+          <VillageChampionRegisterForm
+            onSuccess={() => setCurrentView('champion-dashboard')}
+            onCancel={() => setTab('register')}
+          />
+        </div>
+      )}
 
       {/* Register Tab */}
       {tab === 'register' && (
@@ -381,7 +408,7 @@ export const AuthPage: React.FC = () => {
               title: 'Platform Administrator',
               defaultName: 'Platform Administrator',
               icon: BarChart3,
-              desc: 'System operations monitor for Algorand Testnet telemetry, cluster synchronization, and API budgets.',
+              desc: 'System operations monitor for Algorand Testnet telemetry, cluster synchronization, and platform health.',
             },
           ].map((item) => {
             const Icon = item.icon;

@@ -1232,3 +1232,124 @@ export interface FarmerProfileData {
   mainCrop: string;
   preferredLanguage: string;
 }
+
+// ==========================================
+// 13. Village Champion Verification System
+// ==========================================
+
+export type ChampionVerificationStatus =
+  | 'REGISTERED'
+  | 'IDENTITY_PENDING'
+  | 'DOCUMENTS_PENDING'
+  | 'FACE_VERIFICATION_PENDING'
+  | 'DESIGNATION_VERIFICATION_PENDING'
+  | 'MANUAL_REVIEW_REQUIRED'
+  | 'UNDER_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'SUSPENDED';
+
+export type ChampionDesignation =
+  | 'SARPANCH'
+  | 'UP_SARPANCH'
+  | 'GRAM_PANCHAYAT_SECRETARY'
+  | 'WARD_MEMBER'
+  | 'AUTHORIZED_PANCHAYAT_REP';
+
+export interface VillageChampionRegistrationData {
+  userId: string;
+  legalFullName: string;
+  mobile: string;
+  email: string;
+  state: string;
+  district: string;
+  block: string;
+  villageName: string;
+  gramPanchayatName: string;
+  designation: ChampionDesignation;
+  gramPanchayatIdNumber?: string;
+  panchayatOfficeAddress?: string;
+  agreedToTerms: boolean;
+  termsAgreedAt: string;
+}
+
+export interface ChampionIdentityCheck {
+  provider: 'AUTHORIZED_AADHAAR_GATEWAY' | 'DIGILOCKER_SANDBOX' | 'OFFICIAL_GOV_ID';
+  idType: 'AADHAAR_MASKED' | 'VOTER_ID' | 'PAN' | 'GOV_EMPLOYEE_ID';
+  maskedId: string; // Strictly masked e.g. "XXXX-XXXX-8921"
+  providerTxnRef: string;
+  consentObtained: boolean;
+  consentTimestamp: string;
+  verifiedAt: string;
+  status: 'VERIFIED' | 'FAILED' | 'PENDING';
+  remarks?: string;
+}
+
+export interface ChampionDocument {
+  id: string;
+  docType: 'ELECTION_CERTIFICATE' | 'GOV_AUTHORIZATION_LETTER' | 'PANCHAYAT_RESOLUTION' | 'OFFICIAL_ID_CARD';
+  fileName: string;
+  fileSize: number;
+  uploadedAt: string;
+  secureViewToken: string;
+  status: 'PENDING' | 'VALID' | 'REJECTED' | 'RESUBMISSION_REQUESTED';
+  remarks?: string;
+}
+
+export interface ChampionFaceVerification {
+  provider: 'LIVENESS_FACE_MATCH_AI';
+  livenessPassed: boolean;
+  livenessConfidence: number; // e.g. 0.98 (98%)
+  faceMatchScore: number; // e.g. 0.95 (95%)
+  spoofDetected: boolean;
+  selfieCaptureTimestamp: string;
+  verifiedAt: string;
+  status: 'VERIFIED' | 'FAILED' | 'MANUAL_REVIEW_REQUIRED';
+  remarks?: string;
+}
+
+export interface ChampionDesignationCheck {
+  officialSourceChecked: 'E_GRAM_SWARAJ' | 'PANCHAYAT_RAJ_DIRECTORY' | 'DISTRICT_COLLECTORATE_RECORD';
+  crossReferenceMatched: boolean;
+  gramPanchayatConfirmed: string;
+  tenurePeriod: string; // e.g. "2021 - 2026"
+  status: 'VERIFIED' | 'MANUAL_VERIFICATION_REQUIRED' | 'DISCREPANCY_FLAGGED';
+  verifiedAt?: string;
+  remarks?: string;
+}
+
+export interface ChampionAuditLogEntry {
+  id: string;
+  timestamp: string;
+  actorId: string;
+  actorName: string;
+  actorRole: string;
+  action: string;
+  previousStatus: ChampionVerificationStatus;
+  newStatus: ChampionVerificationStatus;
+  reason?: string;
+  notes?: string;
+}
+
+export interface ChampionVerificationRequest {
+  id: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  status: ChampionVerificationStatus;
+  currentStep: number; // 1 to 7
+  registrationData: VillageChampionRegistrationData;
+  identityCheck?: ChampionIdentityCheck;
+  documents: ChampionDocument[];
+  faceVerification?: ChampionFaceVerification;
+  designationCheck?: ChampionDesignationCheck;
+  adminDecision?: {
+    decidedBy: string;
+    decidedAt: string;
+    decision: 'APPROVED' | 'REJECTED' | 'RESUBMISSION_REQUESTED' | 'SUSPENDED' | 'MANUAL_REVIEW';
+    reason?: string;
+    adminNotes?: string;
+  };
+  auditLogs: ChampionAuditLogEntry[];
+}
+

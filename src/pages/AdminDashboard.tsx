@@ -15,11 +15,13 @@ import {
 } from 'lucide-react';
 import { ApiBudgetCard } from '../components/ApiBudgetCard';
 import { ALGORAND_TESTNET_CONFIG } from '../../shared/constants';
+import { AdminChampionVerifications } from '../components/admin/AdminChampionVerifications';
 
 export const AdminDashboard: React.FC = () => {
   const { setCurrentView } = useApp();
   const [stats, setStats] = useState<any>(null);
   const [telemetry, setTelemetry] = useState<any>(null);
+  const [activeAdminTab, setActiveAdminTab] = useState<'overview' | 'champion-verifications'>('champion-verifications');
 
   const loadData = () => {
     fetch('/api/admin/stats')
@@ -53,7 +55,7 @@ export const AdminDashboard: React.FC = () => {
               Platform Administration & Operations Hub
             </h1>
             <p className="text-stone-300 text-xs sm:text-sm">
-              Real-time monitoring of agricultural cluster mesh, AI inference pipelines, and API budgets.
+              Real-time monitoring of agricultural cluster mesh, AI inference pipelines, and platform health.
             </p>
           </div>
 
@@ -76,124 +78,160 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Overview Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
-          <div className="text-xs text-stone-500 font-medium">Total Registered Users</div>
-          <div className="text-3xl font-bold font-display text-stone-900">{stats?.totalUsers || 6}</div>
-          <p className="text-[11px] text-stone-500">
-            {stats?.farmers || 4} Farmers • {stats?.champions || 1} Champions • {stats?.buyers || 1} Buyers
-          </p>
-        </div>
+      {/* Admin Module Switcher */}
+      <div className="flex items-center gap-2.5 border-b border-stone-200 pb-3">
+        <button
+          onClick={() => setActiveAdminTab('champion-verifications')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${
+            activeAdminTab === 'champion-verifications'
+              ? 'bg-green-700 text-white shadow-sm'
+              : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span>Village Champion KYC & Authorization Desk</span>
+          <span className="bg-amber-300 text-amber-950 text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+            Active Review
+          </span>
+        </button>
 
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
-          <div className="text-xs text-stone-500 font-medium">Virtual Clusters Active</div>
-          <div className="text-3xl font-bold font-display text-emerald-700">{stats?.totalClusters || 2}</div>
-          <p className="text-[11px] text-emerald-800 font-medium">84.5 Clustered Acres</p>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
-          <div className="text-xs text-stone-500 font-medium">Cluster Procurements & Bids</div>
-          <div className="text-3xl font-bold font-display text-emerald-700">
-            ₹3.84 <span className="text-sm font-normal text-stone-500">Lakh</span>
-          </div>
-          <p className="text-[11px] text-emerald-800 font-medium">Algorand Verified Escrows</p>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
-          <div className="text-xs text-stone-500 font-medium">System Health</div>
-          <div className="text-base font-bold text-emerald-700 flex items-center gap-1.5 pt-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Optimal (All Services Synced)
-          </div>
-          <p className="text-[10px] text-stone-400 font-mono">Latency: 18ms</p>
-        </div>
+        <button
+          onClick={() => setActiveAdminTab('overview')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${
+            activeAdminTab === 'overview'
+              ? 'bg-green-700 text-white shadow-sm'
+              : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>Platform Ops & Infrastructure</span>
+        </button>
       </div>
 
-      {/* Main 2-Column Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left: API Budget Card */}
-        <div className="space-y-6">
-          <ApiBudgetCard />
-
-          {/* Node & Infrastructure Configuration Box */}
-          <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-xs space-y-4 text-xs font-mono">
-            <div className="flex items-center justify-between font-sans">
-              <h3 className="font-bold text-sm text-stone-900 flex items-center gap-1.5">
-                <Server className="w-4 h-4 text-emerald-700" />
-                <span>Infrastructure Endpoints</span>
-              </h3>
-              <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                TESTNET
-              </span>
+      {activeAdminTab === 'champion-verifications' ? (
+        <AdminChampionVerifications />
+      ) : (
+        <>
+          {/* KPI Overview Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+              <div className="text-xs text-stone-500 font-medium">Total Registered Users</div>
+              <div className="text-3xl font-bold font-display text-stone-900">{stats?.totalUsers || 6}</div>
+              <p className="text-[11px] text-stone-500">
+                {stats?.farmers || 4} Farmers • {stats?.champions || 1} Champions • {stats?.buyers || 1} Buyers
+              </p>
             </div>
 
-            <div className="space-y-2.5">
-              <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
-                <span className="text-stone-500 text-[11px]">Algorand Testnet Node (Algod):</span>
-                <p className="text-stone-900 font-semibold truncate">{ALGORAND_TESTNET_CONFIG.algodUrl}</p>
-              </div>
+            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+              <div className="text-xs text-stone-500 font-medium">Virtual Clusters Active</div>
+              <div className="text-3xl font-bold font-display text-emerald-700">{stats?.totalClusters || 2}</div>
+              <p className="text-[11px] text-emerald-800 font-medium">84.5 Clustered Acres</p>
+            </div>
 
-              <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
-                <span className="text-stone-500 text-[11px]">Cluster Settlement Escrow Address:</span>
-                <p className="text-stone-900 font-semibold break-all">{ALGORAND_TESTNET_CONFIG.defaultReceiverAddress}</p>
+            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+              <div className="text-xs text-stone-500 font-medium">Cluster Procurements & Bids</div>
+              <div className="text-3xl font-bold font-display text-emerald-700">
+                ₹3.84 <span className="text-sm font-normal text-stone-500">Lakh</span>
               </div>
+              <p className="text-[11px] text-emerald-800 font-medium">Algorand Verified Escrows</p>
+            </div>
 
-              <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
-                <span className="text-stone-500 text-[11px]">AI Model Provider:</span>
-                <p className="text-stone-900 font-semibold">Gemini 2.5 Flash / Multispectral Vision Diagnostic</p>
+            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-1">
+              <div className="text-xs text-stone-500 font-medium">System Health</div>
+              <div className="text-base font-bold text-emerald-700 flex items-center gap-1.5 pt-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Optimal (All Services Synced)
+              </div>
+              <p className="text-[10px] text-stone-400 font-mono">Latency: 18ms</p>
+            </div>
+          </div>
+
+          {/* Main 2-Column Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left: AI Agronomist Health Card */}
+            <div className="space-y-6">
+              <ApiBudgetCard />
+
+              {/* Node & Infrastructure Configuration Box */}
+              <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-xs space-y-4 text-xs font-mono">
+                <div className="flex items-center justify-between font-sans">
+                  <h3 className="font-bold text-sm text-stone-900 flex items-center gap-1.5">
+                    <Server className="w-4 h-4 text-emerald-700" />
+                    <span>Infrastructure Endpoints</span>
+                  </h3>
+                  <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">
+                    TESTNET
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
+                    <span className="text-stone-500 text-[11px]">Algorand Testnet Node (Algod):</span>
+                    <p className="text-stone-900 font-semibold truncate">{ALGORAND_TESTNET_CONFIG.algodUrl}</p>
+                  </div>
+
+                  <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
+                    <span className="text-stone-500 text-[11px]">Cluster Settlement Escrow Address:</span>
+                    <p className="text-stone-900 font-semibold break-all">{ALGORAND_TESTNET_CONFIG.defaultReceiverAddress}</p>
+                  </div>
+
+                  <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
+                    <span className="text-stone-500 text-[11px]">AI Model Provider:</span>
+                    <p className="text-stone-900 font-semibold">Gemini 2.5 Flash / Free Multispectral Vision Diagnostic</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Platform Telemetry & Performance */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-xs space-y-5">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-bold text-base text-stone-900">Platform Performance</h3>
+                    <p className="text-xs text-stone-500">Autonomous intelligence pipeline & cluster synchronization</p>
+                  </div>
+                  <button
+                    onClick={() => setCurrentView('transactions')}
+                    className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Full Ledger</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between items-center p-3 bg-stone-50 rounded-xl border border-stone-200">
+                    <span className="text-stone-600 font-medium">Total AI Queries Handled:</span>
+                    <span className="font-bold text-stone-900">{telemetry?.totalRequests || 48}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-stone-50 rounded-xl border border-stone-200">
+                    <span className="text-stone-600 font-medium">Diagnostic Success Rate:</span>
+                    <span className="font-bold text-emerald-700">100%</span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-stone-50 rounded-xl border border-stone-200">
+                    <span className="text-stone-600 font-medium">Average Response Latency:</span>
+                    <span className="font-bold text-stone-900">{telemetry?.avgTransactionTimeMs || 1120} ms</span>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-stone-50 rounded-xl border border-stone-200">
+                    <span className="text-stone-600 font-medium">Top Consumed AI Feature:</span>
+                    <span className="font-bold text-stone-900 truncate max-w-[200px]">
+                      {telemetry?.mostUsedService || 'Crop Pathogen & Soil Analysis'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900">
+                  <strong>Mesh Status:</strong> All agricultural diagnostic and cluster synchronization pipelines are active and fully accessible to all verified farmers.
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Right: Platform Telemetry & Performance */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-xs space-y-5">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-bold text-base text-stone-900">Platform Performance</h3>
-                <p className="text-xs text-stone-500">Autonomous intelligence pipeline & cluster synchronization</p>
-              </div>
-              <button
-                onClick={() => setCurrentView('transactions')}
-                className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <span>Full Ledger</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between items-center p-3 bg-stone-50 rounded-xl border border-stone-200">
-                <span className="text-stone-600 font-medium">Total AI Queries Handled:</span>
-                <span className="font-bold text-stone-900">{telemetry?.totalRequests || 48}</span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-stone-50 rounded-xl border border-stone-200">
-                <span className="text-stone-600 font-medium">Diagnostic Success Rate:</span>
-                <span className="font-bold text-emerald-700">100%</span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-stone-50 rounded-xl border border-stone-200">
-                <span className="text-stone-600 font-medium">Average Response Latency:</span>
-                <span className="font-bold text-stone-900">{telemetry?.avgTransactionTimeMs || 1120} ms</span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-stone-50 rounded-xl border border-stone-200">
-                <span className="text-stone-600 font-medium">Top Consumed AI Feature:</span>
-                <span className="font-bold text-stone-900 truncate max-w-[200px]">
-                  {telemetry?.mostUsedService || 'Crop Pathogen & Soil Analysis'}
-                </span>
-              </div>
-            </div>
-
-            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900">
-              <strong>Mesh Status:</strong> All agricultural diagnostic and cluster synchronization pipelines are active and fully accessible to all verified farmers.
-            </div>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

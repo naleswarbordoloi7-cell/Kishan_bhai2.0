@@ -17,7 +17,6 @@ export interface AppConfig {
   appUrl: string;
   corsOrigins: string[];
   maxUploadSizeBytes: number;
-  monthlyApiBudgetInr: number;
   rateLimitAuthWindowMs: number;
   rateLimitAuthMaxReqs: number;
   rateLimitAiWindowMs: number;
@@ -44,7 +43,6 @@ export const config: AppConfig = {
     ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((s) => s.trim())
     : ['*'],
   maxUploadSizeBytes: parseInt(process.env.MAX_UPLOAD_SIZE_BYTES || '10485760', 10), // 10MB default
-  monthlyApiBudgetInr: parseInt(process.env.MONTHLY_API_BUDGET_INR || '1500', 10),
   rateLimitAuthWindowMs: 60 * 1000, // 1 minute
   rateLimitAuthMaxReqs: 10,
   rateLimitAiWindowMs: 60 * 1000,

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { UserRole, UserProfile } from '../../shared/types';
 import { AnimatedKishanLogo } from '../components/AnimatedKishanLogo';
+import { VillageChampionRegisterForm } from '../components/champion/VillageChampionRegisterForm';
 import {
   signInWithFirebaseGoogle,
   formatAuthErrorMessage,
@@ -74,7 +75,7 @@ export const LoginPage: React.FC = () => {
   const { setCurrentUser, setUserRole } = useUserStore();
   const { setCurrentView, addToast, language, setIsLogoSplashOpen } = useApp();
 
-  const [mainTab, setMainTab] = useState<'login' | 'register' | 'forgot-password'>('login');
+  const [mainTab, setMainTab] = useState<'login' | 'register' | 'champion-register' | 'forgot-password'>('login');
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -526,21 +527,59 @@ export const LoginPage: React.FC = () => {
   };
 
   // Instant Persona Logins for Testing
-  const handleInstantDemoLogin = async (chosenRole: UserRole, defaultName: string) => {
-    const demoUser: UserProfile = {
-      id: `usr_demo_${chosenRole.toLowerCase()}`,
-      fullName: defaultName,
-      email: `${chosenRole.toLowerCase()}@kishanbhai.in`,
-      phone: '+91 98251 44320',
-      role: chosenRole,
-      village: 'Anandpur',
-      state: 'Gujarat',
-      verified: true,
-      farmSizeAcres: chosenRole === 'FARMER' ? 4.5 : undefined,
-      crops: chosenRole === 'FARMER' ? ['Cotton', 'Groundnut', 'Wheat'] : undefined,
-      preferredLanguage: language === 'hi' ? 'hi' : 'en',
-      createdAt: new Date().toISOString(),
-    };
+  const handleInstantDemoLogin = async (chosenRole: UserRole, defaultName: string, isApproved = true) => {
+    let demoUser: UserProfile;
+
+    if (chosenRole === 'CHAMPION') {
+      if (isApproved) {
+        demoUser = {
+          id: 'usr_champ_vikram',
+          fullName: 'Vikramsinh Jadeja',
+          email: 'vikram.jadeja@kishanbhai.in',
+          phone: '+91 97240 88192',
+          role: 'CHAMPION',
+          village: 'Anandpur Hub',
+          state: 'Gujarat',
+          district: 'Rajkot',
+          verified: true, // Officially approved Sarpanch
+          farmSizeAcres: 8.0,
+          crops: ['Cotton', 'Cumin', 'Wheat'],
+          preferredLanguage: language === 'hi' ? 'hi' : 'en',
+          createdAt: '2026-05-10T11:00:00Z',
+        };
+      } else {
+        demoUser = {
+          id: 'usr_champ_anita',
+          fullName: 'Anita Devi',
+          email: 'anita.devi@kishanbhai.in',
+          phone: '+91 98123 45678',
+          role: 'CHAMPION',
+          village: 'Anandpur',
+          district: 'Rajkot',
+          state: 'Gujarat',
+          verified: false, // Locked until verification is approved
+          farmSizeAcres: 6.0,
+          crops: ['Cotton', 'Groundnut'],
+          preferredLanguage: language === 'hi' ? 'hi' : 'en',
+          createdAt: '2026-08-01T10:00:00Z',
+        };
+      }
+    } else {
+      demoUser = {
+        id: `usr_demo_${chosenRole.toLowerCase()}`,
+        fullName: defaultName,
+        email: `${chosenRole.toLowerCase()}@kishanbhai.in`,
+        phone: '+91 98251 44320',
+        role: chosenRole,
+        village: 'Anandpur',
+        state: 'Gujarat',
+        verified: true,
+        farmSizeAcres: chosenRole === 'FARMER' ? 4.5 : undefined,
+        crops: chosenRole === 'FARMER' ? ['Cotton', 'Groundnut', 'Wheat'] : undefined,
+        preferredLanguage: language === 'hi' ? 'hi' : 'en',
+        createdAt: new Date().toISOString(),
+      };
+    }
 
     setCurrentUser(demoUser);
     setUserRole(chosenRole);
@@ -557,11 +596,21 @@ export const LoginPage: React.FC = () => {
       login_method: 'demo',
     });
 
-    addToast(
-      language === 'hi' ? 'डेमो लॉगिन सफल' : 'Demo Login Successful',
-      language === 'hi' ? `${defaultName} के रूप में प्रवेश किया` : `Logged in as ${defaultName}`,
-      'success'
-    );
+    if (chosenRole === 'CHAMPION' && !demoUser.verified) {
+      addToast(
+        language === 'hi' ? '🔒 सरपंच डैशबोर्ड लॉक' : '🔒 Village Champion Access Locked',
+        language === 'hi'
+          ? 'अनीता देवी (आवेदक): सत्यापन प्रक्रिया लंबित है।'
+          : 'Anita Devi (Applicant): Verification process is in progress.',
+        'info'
+      );
+    } else {
+      addToast(
+        language === 'hi' ? 'डेमो लॉगिन सफल' : 'Demo Login Successful',
+        language === 'hi' ? `${demoUser.fullName} के रूप में प्रवेश किया` : `Logged in as ${demoUser.fullName}`,
+        'success'
+      );
+    }
     navigateToRoleDashboard(chosenRole);
   };
 
@@ -599,7 +648,7 @@ export const LoginPage: React.FC = () => {
       {/* Main Authentication Card */}
       <div className="w-full bg-white rounded-2xl border border-stone-200/90 shadow-xl p-6 sm:p-6 space-y-5">
         {mainTab !== 'forgot-password' && (
-          <>
+          <div className="space-y-2">
             {/* Main Tab Switcher: Sign In vs Register */}
             <div className="grid grid-cols-2 p-1 bg-stone-100 rounded-2xl border border-stone-200/70">
               <button
@@ -636,7 +685,29 @@ export const LoginPage: React.FC = () => {
                 <span>{language === 'hi' ? 'नया खाता (New User)' : 'New Account'}</span>
               </button>
             </div>
-          </>
+
+            {/* Dedicated Option: Register as a Village Champion (Requirement 1) */}
+            <button
+              type="button"
+              id="tab-champion-reg-btn"
+              onClick={() => {
+                setMainTab('champion-register');
+                setErrorMessage('');
+              }}
+              className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 border shadow-2xs ${
+                mainTab === 'champion-register'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                  : 'bg-amber-50/90 text-amber-900 border-amber-200/90 hover:bg-amber-100 hover:border-amber-300'
+              }`}
+            >
+              <Building className="w-3.5 h-3.5 text-amber-700" />
+              <span>
+                {language === 'hi'
+                  ? '🏛️ ग्राम प्रधान / सरपंच: "Register as a Village Champion"'
+                  : '🏛️ Register as a Village Champion (Sarpanch / Lead)'}
+              </span>
+            </button>
+          </div>
         )}
 
         {/* Error Notification */}
@@ -833,7 +904,7 @@ export const LoginPage: React.FC = () => {
                   {language === 'hi' ? '⚡ त्वरित डेमो लॉगिन (1-Click)' : '⚡ Quick Demo Login (1-Click)'}
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button
                   type="button"
                   onClick={() => handleInstantDemoLogin('FARMER', 'Ramesh Patel')}
@@ -846,21 +917,37 @@ export const LoginPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => handleInstantDemoLogin('CHAMPION', 'Sunita Devi')}
-                  className="p-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl text-center transition-all cursor-pointer active:scale-95"
+                  onClick={() => handleInstantDemoLogin('CHAMPION', 'Anita Devi', false)}
+                  className="p-2 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl text-center transition-all cursor-pointer active:scale-95 relative"
                 >
+                  <div className="absolute top-1 right-1">
+                    <Lock className="w-2.5 h-2.5 text-amber-700" />
+                  </div>
                   <UserCheck className="w-4 h-4 mx-auto text-amber-800 mb-1" />
-                  <div className="font-bold text-xs text-amber-950 truncate">सुनीता देवी</div>
-                  <div className="text-[10px] text-amber-700">चैंपियन (Leader)</div>
+                  <div className="font-bold text-xs text-amber-950 truncate">अनीता देवी</div>
+                  <div className="text-[10px] text-amber-800 font-semibold">🔒 लॉक आवेदक</div>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleInstantDemoLogin('BUYER', 'Vikram Mehta')}
+                  onClick={() => handleInstantDemoLogin('CHAMPION', 'Vikramsinh Jadeja', true)}
+                  className="p-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl text-center transition-all cursor-pointer active:scale-95 relative"
+                >
+                  <div className="absolute top-1 right-1">
+                    <Check className="w-2.5 h-2.5 text-emerald-700" />
+                  </div>
+                  <Building className="w-4 h-4 mx-auto text-emerald-800 mb-1" />
+                  <div className="font-bold text-xs text-emerald-950 truncate">विक्रमसिंह</div>
+                  <div className="text-[10px] text-emerald-800 font-semibold">✓ सरपंच (Approved)</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleInstantDemoLogin('BUYER', 'Arunav Sengupta')}
                   className="p-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl text-center transition-all cursor-pointer active:scale-95"
                 >
                   <Building className="w-4 h-4 mx-auto text-blue-800 mb-1" />
-                  <div className="font-bold text-xs text-blue-950 truncate">विक्रम मेहता</div>
+                  <div className="font-bold text-xs text-blue-950 truncate">अरुणव सेन</div>
                   <div className="text-[10px] text-blue-700">खरीदार (Buyer)</div>
                 </button>
               </div>
@@ -910,13 +997,20 @@ export const LoginPage: React.FC = () => {
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { id: 'FARMER', label: language === 'hi' ? '🌾 किसान' : '🌾 Farmer' },
-                  { id: 'CHAMPION', label: language === 'hi' ? '🤝 चैंपियन' : '🤝 Leader' },
+                  { id: 'CHAMPION', label: language === 'hi' ? '🤝 ग्राम प्रधान / चैंपियन' : '🤝 Village Champion' },
                   { id: 'BUYER', label: language === 'hi' ? '🏢 खरीदार' : '🏢 Buyer' },
                 ].map((item) => (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => setRegRole(item.id as UserRole)}
+                    onClick={() => {
+                      if (item.id === 'CHAMPION') {
+                        setRegRole('CHAMPION');
+                        setMainTab('champion-register');
+                      } else {
+                        setRegRole(item.id as UserRole);
+                      }
+                    }}
                     className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
                       regRole === item.id
                         ? 'bg-green-50 border-green-700 text-green-700'
@@ -1170,6 +1264,18 @@ export const LoginPage: React.FC = () => {
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* TAB: VILLAGE CHAMPION REGISTRATION (Requirement 1)       */}
+        {/* ========================================================= */}
+        {mainTab === 'champion-register' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <VillageChampionRegisterForm
+              onSuccess={() => setCurrentView('champion-dashboard')}
+              onCancel={() => setMainTab('login')}
+            />
           </div>
         )}
 

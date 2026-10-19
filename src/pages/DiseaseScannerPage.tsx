@@ -325,112 +325,115 @@ export const DiseaseScannerPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-300">
       {/* 1. PAGE HEADER */}
-      <div className="bg-gradient-to-r from-[#1B3B11] via-[#244516] to-green-700 text-white p-6 sm:p-8 rounded-2xl shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2">
+      <div className="bg-white dark:bg-[#141C18] border border-emerald-900/10 dark:border-stone-800 p-6 sm:p-7 rounded-3xl shadow-sm shadow-emerald-950/5 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        {/* Subtle decorative background organic glow */}
+        <div className="absolute -top-16 -right-16 w-48 h-48 bg-emerald-100/40 dark:bg-emerald-900/20 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="space-y-2 relative">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs font-bold tracking-wide uppercase">
-              <Scan className="w-3.5 h-3.5" />
-              <span>🔬 AI Crop Disease Scanner</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-700/20 text-[#144633] dark:text-emerald-300 text-xs font-bold tracking-wide uppercase">
+              <Scan className="w-3.5 h-3.5 text-emerald-700" />
+              <span>{language === 'hi' ? 'एआई फसल डॉक्टर' : 'AI Crop Doctor'}</span>
             </span>
 
             {/* Trust Indicator */}
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-medium border border-white/15">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>AI-powered • Fast analysis • Farmer-friendly</span>
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FAF8F5] dark:bg-stone-900 text-stone-700 dark:text-stone-300 text-xs font-medium border border-stone-200 dark:border-stone-800">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{language === 'hi' ? 'ICAR व KVK दिशा-निर्देश आधारित' : 'ICAR & KVK Guided Agronomy'}</span>
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-white">
-            {language === 'hi' ? '🔬 एआई फसल रोग स्कैनर' : 'AI Crop Disease Scanner'}
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#144633] dark:text-[#ECFDF5]">
+            {language === 'hi' ? '🔬 एआई फसल रोग स्कैनर व परामर्श' : 'AI Crop Disease Diagnostic Engine'}
           </h1>
-          <p className="text-emerald-100/90 text-sm sm:text-base max-w-2xl leading-relaxed">
+          <p className="text-stone-600 dark:text-stone-400 text-xs sm:text-sm max-w-2xl leading-relaxed">
             {language === 'hi'
-              ? 'अपनी फसल की तस्वीर अपलोड करें और किसान भाई को संभावित समस्याओं की पहचान करने दें।'
-              : 'Upload a photo of your crop and let Kisan Bhai identify possible problems.'}
+              ? 'प्रभावित पत्ती का फोटो लें — 3 सेकंड में रोग पहचान, जैविक देसी काढ़ा व प्रमाणित रासायनिक स्प्रे की सही मात्रा पाएं।'
+              : 'Capture or upload an affected leaf — get instant pathogen identification with dual biological and certified spray prescriptions.'}
           </p>
         </div>
 
-        {/* Demo Mode Switch for Hackathon Presentation */}
-        <div className="bg-emerald-950/80 border border-emerald-500/40 p-4 rounded-2xl backdrop-blur-md self-start md:self-auto min-w-[200px] flex flex-col gap-2">
+        {/* Demo Mode Switch for Presentation */}
+        <div className="bg-[#FAF8F5] dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 p-4 rounded-2xl shrink-0 self-start md:self-auto min-w-[210px] flex flex-col gap-2 relative">
           <div className="flex items-center justify-between gap-3">
-            <div className="text-xs font-bold text-white flex items-center gap-1.5">
-              <Zap className="w-4 h-4 text-amber-400" />
-              <span>Demo Mode</span>
+            <div className="text-xs font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+              <Zap className="w-4 h-4 text-amber-500" />
+              <span>{language === 'hi' ? 'कैलिब्रेटेड डेमो मोड' : 'Calibrated Mode'}</span>
             </div>
             <button
               onClick={() => setIsDemoMode(!isDemoMode)}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                isDemoMode ? 'bg-emerald-500' : 'bg-stone-700'
+                isDemoMode ? 'bg-emerald-800' : 'bg-stone-300 dark:bg-stone-700'
               }`}
             >
               <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
                   isDemoMode ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
             </button>
           </div>
-          <span className="text-[11px] text-emerald-200/80">
+          <span className="text-[11px] text-stone-500 dark:text-stone-400">
             {isDemoMode
-              ? 'Using calibrated agronomy presets for instant presentation'
-              : 'Using live Computer Vision ML pipeline'}
+              ? (language === 'hi' ? 'त्वरित प्रस्तुति हेतु प्री-कैलिब्रेटेड सैम्पल्स' : 'Instant offline calibrated farm presets')
+              : (language === 'hi' ? 'लाइव कंप्यूटर विजन मॉडल' : 'Live server-side vision model')}
           </span>
         </div>
       </div>
 
       {/* 2. MODE NAVIGATION TABS */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2 sm:p-2.5 rounded-2xl border border-stone-200 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#141C18] p-2 sm:p-2.5 rounded-2xl border border-stone-200/90 dark:border-stone-800 shadow-2xs">
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => setActiveViewTab('scanner')}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeViewTab === 'scanner'
-                ? 'bg-green-700 text-white shadow-sm'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                ? 'bg-emerald-800 text-white shadow-2xs'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800'
             }`}
           >
             <Scan className="w-4 h-4" />
-            <span>{language === 'hi' ? '🔬 नया एआई स्कैन' : '🔬 AI Disease Scanner'}</span>
+            <span>{language === 'hi' ? 'नया एआई स्कैन' : 'AI Disease Scanner'}</span>
           </button>
 
           <button
             onClick={() => setActiveViewTab('timeline')}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeViewTab === 'timeline'
-                ? 'bg-green-700 text-white shadow-sm'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                ? 'bg-emerald-800 text-white shadow-2xs'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800'
             }`}
           >
             <Activity className="w-4 h-4" />
             <span>
-              {language === 'hi' ? '🌾 पैच स्वास्थ्य व उपचार टाइमलाइन' : '🌾 Patch Health Timelines'}
+              {language === 'hi' ? 'भूखंड स्वास्थ्य टाइमलाइन' : 'Patch Timelines'}
             </span>
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                 activeViewTab === 'timeline'
-                  ? 'bg-emerald-800 text-emerald-100'
-                  : 'bg-emerald-100 text-green-700'
+                  ? 'bg-emerald-950 text-emerald-200'
+                  : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
               }`}
             >
-              {cropPatches.length} {language === 'hi' ? 'भूखंड' : 'Plots'}
+              {cropPatches.length} {language === 'hi' ? 'प्लॉट' : 'Plots'}
             </span>
           </button>
 
           <button
             onClick={() => setActiveViewTab('history')}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeViewTab === 'history'
-                ? 'bg-green-700 text-white shadow-sm'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                ? 'bg-emerald-800 text-white shadow-2xs'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800'
             }`}
           >
             <Clock className="w-4 h-4" />
-            <span>{language === 'hi' ? '📜 स्कैन इतिहास' : '📜 Diagnostic History'}</span>
+            <span>{language === 'hi' ? 'स्कैन इतिहास' : 'Diagnostic History'}</span>
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                 activeViewTab === 'history'
-                  ? 'bg-emerald-800 text-emerald-100'
-                  : 'bg-stone-200 text-stone-700'
+                  ? 'bg-emerald-950 text-emerald-200'
+                  : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
               }`}
             >
               {diseaseScans.length}
@@ -440,11 +443,11 @@ export const DiseaseScannerPage: React.FC = () => {
 
         {/* Quick helper tip */}
         <div className="hidden md:flex items-center gap-2 text-xs text-stone-500 pr-2">
-          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
           <span>
             {language === 'hi'
-              ? 'प्रत्येक फसल भूखंड के उपचार व सुधार का ऐतिहासिक रिकॉर्ड रखें'
-              : 'Track disease progress & spray dosages per crop plot'}
+              ? 'उपचार व सुधार का ऐतिहासिक रिकॉर्ड खेत स्तर पर सहेजा जाता है'
+              : 'Field-level spray dosages and pathology history stored'}
           </span>
         </div>
       </div>
@@ -463,7 +466,7 @@ export const DiseaseScannerPage: React.FC = () => {
 
       {/* VIEW: HISTORY TAB */}
       {activeViewTab === 'history' && (
-        <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-sm">
+        <div className="bg-white dark:bg-[#141C18] rounded-3xl border border-stone-200/90 dark:border-stone-800 p-6 sm:p-8 shadow-sm">
           <DiseaseScanHistory
             scans={diseaseScans}
             onSelectScan={(scan) => {
@@ -485,18 +488,18 @@ export const DiseaseScannerPage: React.FC = () => {
         {/* Left Column: Upload Area, Crop Selector & Scan Controls */}
         <div className="lg:col-span-5 space-y-6">
           {/* 2. UPLOAD AREA CARD */}
-          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 space-y-5">
+          <div className="bg-white dark:bg-[#141C18] rounded-3xl border border-emerald-900/10 dark:border-stone-800 shadow-sm p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
-                <Camera className="w-5 h-5 text-green-700" />
+              <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                <Camera className="w-4 h-4 text-emerald-800 dark:text-emerald-400" />
                 <span>
                   {language === 'hi'
-                    ? 'प्रभावित फसल की स्पष्ट तस्वीर अपलोड करें'
-                    : 'Upload a clear photo of the affected crop'}
+                    ? 'प्रभावित पत्ती का फोटो लें'
+                    : 'Target Leaf Diagnosis Frame'}
                 </span>
               </h2>
               {selectedImage && (
-                <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                   Ready to scan
                 </span>
               )}
@@ -519,7 +522,7 @@ export const DiseaseScannerPage: React.FC = () => {
               className="hidden"
             />
 
-            {/* Drag & Drop Card / Image Preview */}
+            {/* Drag & Drop Card / Image Preview with Diagnostic Framing Crosshairs */}
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -531,8 +534,8 @@ export const DiseaseScannerPage: React.FC = () => {
                 isDragging
                   ? 'border-emerald-500 bg-emerald-50/70 scale-98'
                   : selectedImage
-                  ? 'border-stone-200 bg-stone-950'
-                  : 'border-stone-300 hover:border-emerald-600 bg-stone-50/80 hover:bg-emerald-50/30'
+                  ? 'border-emerald-800/20 bg-stone-950'
+                  : 'border-emerald-900/20 dark:border-stone-700 hover:border-emerald-700 bg-[#FAF8F5] dark:bg-stone-900/50'
               }`}
             >
               {selectedImage ? (
@@ -544,7 +547,7 @@ export const DiseaseScannerPage: React.FC = () => {
                     referrerPolicy="no-referrer"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-stone-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4 text-white">
-                    <span className="text-xs font-medium">Click to replace image</span>
+                    <span className="text-xs font-semibold">Click to replace photo</span>
                   </div>
 
                   {/* Top-Right Badge: File Size & Remove */}
@@ -564,52 +567,66 @@ export const DiseaseScannerPage: React.FC = () => {
                   </div>
                 </>
               ) : (
-                <div className="space-y-3 pointer-events-none">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-100/90 text-green-700 flex items-center justify-center mx-auto group-hover:scale-105 transition-transform shadow-xs">
-                    <Upload className="w-7 h-7" />
+                <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+                  {/* Diagnostic Crosshairs overlay */}
+                  <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-emerald-700/60 rounded-tl-sm pointer-events-none" />
+                  <div className="absolute top-3 right-3 w-5 h-5 border-t-2 border-r-2 border-emerald-700/60 rounded-tr-sm pointer-events-none" />
+                  <div className="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-emerald-700/60 rounded-bl-sm pointer-events-none" />
+                  <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-emerald-700/60 rounded-br-sm pointer-events-none" />
+
+                  {/* Center Target Indicator */}
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-800 text-white flex items-center justify-center shadow-md shadow-emerald-950/15 mb-3 group-hover:scale-105 transition-transform">
+                    <Camera className="w-7 h-7 text-amber-300" />
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-stone-800">
-                      Drag & Drop photo here, or browse
-                    </p>
-                    <p className="text-xs text-stone-500 mt-1">
-                      Supports JPG, JPEG, PNG, WEBP
-                    </p>
+
+                  <p className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
+                    {language === 'hi' ? 'पत्ती को फ्रेम के बीच में रखें' : 'Position affected leaf within frame'}
+                  </p>
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1 max-w-xs">
+                    {language === 'hi' 
+                      ? 'सीधी धूप व छाया से बचें • 15 सेमी की दूरी रखें' 
+                      : 'Keep 15cm distance • Clear focus • High outdoor contrast'}
+                  </p>
+
+                  <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-[10px] font-semibold text-stone-600 dark:text-stone-300 shadow-2xs">
+                    <span>JPG, PNG, WEBP</span>
+                    <span>·</span>
+                    <span className="text-emerald-700 dark:text-emerald-400">Max 15MB</span>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Quick Action Upload Controls (Take Photo & Upload Image) */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-2xl border border-stone-200 shadow-xs transition-all cursor-pointer"
+                className="flex items-center justify-center gap-2 py-3 px-3 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-[#144633] dark:text-emerald-200 text-xs font-bold rounded-xl border border-emerald-700/25 shadow-2xs transition-all cursor-pointer min-h-[48px]"
               >
-                <Camera className="w-4 h-4 text-emerald-700" />
-                <span>📷 Take Photo</span>
+                <Camera className="w-4 h-4 text-emerald-800 dark:text-emerald-400" />
+                <span>{language === 'hi' ? '📷 फोटो खीचें' : '📷 Take Photo'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center gap-2 py-3 px-4 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-2xl border border-stone-200 shadow-xs transition-all cursor-pointer"
+                className="flex items-center justify-center gap-2 py-3 px-3 bg-white dark:bg-stone-900 hover:bg-stone-100 text-stone-800 dark:text-stone-200 text-xs font-bold rounded-xl border border-stone-200 dark:border-stone-800 shadow-2xs transition-all cursor-pointer min-h-[48px]"
               >
-                <Upload className="w-4 h-4 text-emerald-700" />
-                <span>📁 Upload Image</span>
+                <Upload className="w-4 h-4 text-stone-600 dark:text-stone-400" />
+                <span>{language === 'hi' ? '📁 गैलरी से चुनें' : '📁 Upload Photo'}</span>
               </button>
             </div>
 
             {/* 3. CROP SELECTION */}
-            <div className="space-y-2 pt-2 border-t border-stone-100">
-              <label className="block text-xs font-bold text-stone-700">
-                Select Crop Species (or Auto-detect)
+            <div className="space-y-1.5 pt-2 border-t border-stone-100 dark:border-stone-800">
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300">
+                {language === 'hi' ? 'फसल का प्रकार चुनें (या ऑटो-डिटेक्ट)' : 'Crop Species (or Auto-detect)'}
               </label>
               <select
                 value={selectedCrop}
                 onChange={(e) => setSelectedCrop(e.target.value)}
-                className="w-full py-3 px-3.5 bg-stone-50 border border-stone-200 rounded-2xl text-xs font-bold text-stone-800 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                className="w-full py-2.5 px-3 bg-[#FAF8F5] dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-bold text-stone-800 dark:text-stone-200 focus:ring-2 focus:ring-emerald-700 focus:outline-hidden"
               >
                 {CROP_OPTIONS.map((c) => (
                   <option key={c} value={c}>
@@ -619,51 +636,20 @@ export const DiseaseScannerPage: React.FC = () => {
               </select>
             </div>
 
-            {/* Firebase Cloud Storage Archive Indicator */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-xs">
-              <div className="flex items-center gap-2">
-                <Cloud className="w-4 h-4 text-emerald-700 shrink-0" />
-                <div>
-                  <div className="font-bold text-emerald-950 flex items-center gap-1.5">
-                    <span>Firebase Storage (Production Bucket)</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  </div>
-                  <div className="text-[11px] text-emerald-800">
-                    {isUploadingToStorage
-                      ? 'Archiving leaf photo to storage bucket...'
-                      : storageFileUrl
-                      ? 'Leaf photo secured in Firebase Storage'
-                      : 'Leaf photos are safely archived to production bucket'}
-                  </div>
-                </div>
-              </div>
-              <span className="text-[10px] font-mono text-emerald-700 bg-white/80 px-2 py-1 rounded-lg border border-emerald-200 hidden sm:inline">
-                kishan-bhai-a1c8d
-              </span>
-            </div>
-
-            {/* Tip Box */}
-            <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-2.5">
-              <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-900 leading-relaxed">
-                <strong className="font-bold">Tip:</strong> For better results, capture the affected leaf in good lighting and keep it in focus.
-              </p>
-            </div>
-
             {/* Main Action Button: Analyze Crop */}
             <button
               onClick={handleAnalyzeCrop}
               disabled={isScanning || !selectedImage}
-              className={`w-full flex items-center justify-center gap-2.5 py-4 px-6 text-sm font-bold rounded-2xl shadow-md transition-all cursor-pointer ${
+              className={`w-full flex items-center justify-center gap-2 py-3.5 px-6 text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer min-h-[48px] ${
                 !selectedImage
-                  ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                  ? 'bg-stone-200 dark:bg-stone-800 text-stone-400 cursor-not-allowed'
                   : isScanning
-                  ? 'bg-emerald-900 text-emerald-200 cursor-wait'
-                  : 'bg-green-700 hover:bg-green-800 text-white hover:shadow-lg active:scale-99'
+                  ? 'bg-emerald-950 text-emerald-300 cursor-wait'
+                  : 'bg-emerald-800 hover:bg-emerald-900 text-white hover:shadow-lg active:scale-98'
               }`}
             >
-              <Scan className={`w-5 h-5 ${isScanning ? 'animate-spin' : ''}`} />
-              <span>{isScanning ? 'Analyzing Crop...' : 'Analyze Crop'}</span>
+              <Scan className={`w-4 h-4 text-amber-300 ${isScanning ? 'animate-spin' : ''}`} />
+              <span>{isScanning ? (language === 'hi' ? 'रोग विश्लेषण चालू है...' : 'Analyzing Crop Pathogens...') : (language === 'hi' ? 'रोग विश्लेषण शुरू करें' : 'Run Pathogen Diagnosis')}</span>
             </button>
           </div>
 

@@ -62,15 +62,10 @@ export class AIService {
   }
 
   /**
-   * Track server-side usage and cost telemetry in INR
+   * Track server-side request count telemetry
    */
   private trackUsage(tokensUsed: number, service: 'chat' | 'vision' | 'analysis') {
-    // Pricing estimate for gemini-2.5-flash / gemini-3.7-flash
-    const costInr = (tokensUsed / 1000) * 0.0065 * 86.5; // ~$0.000075 / 1k tokens converted to INR
     db.budgetStats.totalApiRequests += 1;
-    db.budgetStats.currentUsageInr = Number((db.budgetStats.currentUsageInr + costInr).toFixed(2));
-    db.budgetStats.remainingBudgetInr = Math.max(0, Number((db.budgetStats.monthlyLimitInr - db.budgetStats.currentUsageInr).toFixed(2)));
-    db.budgetStats.breakdown.geminiAiInr = Number((db.budgetStats.breakdown.geminiAiInr + costInr).toFixed(2));
   }
 
   /**

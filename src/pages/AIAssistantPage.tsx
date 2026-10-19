@@ -326,8 +326,8 @@ export const AIAssistantPage: React.FC = () => {
         }
       }
 
-      // Execute direct deep multispectral analysis if requested and image is provided
-      if (aiData.suggestedPaidService === 'crop-analysis' && imageToSend) {
+      // Execute free direct multispectral analysis if requested and image is provided (100% Free for Farmers)
+      if ((aiData.suggestedPaidService === 'crop-analysis' || aiData.suggestedService === 'crop-analysis') && imageToSend) {
         try {
           const paidRes = await fetch('/api/paid/crop-analysis', {
             method: 'POST',

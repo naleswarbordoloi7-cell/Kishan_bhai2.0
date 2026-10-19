@@ -550,11 +550,8 @@ IMPORTANT INSTRUCTIONS:
       }
     }
 
-    // Update API budget tracking
-    db.budgetStats.currentUsageInr += 0.08;
-    db.budgetStats.remainingBudgetInr = Math.max(0, db.budgetStats.monthlyLimitInr - db.budgetStats.currentUsageInr);
+    // Update API telemetry
     db.budgetStats.totalApiRequests += 1;
-    db.budgetStats.breakdown.geminiAiInr += 0.08;
 
     let responseText = response.text || '';
     if (!responseText && toolExplanation) {
@@ -1139,13 +1136,13 @@ Provide a comprehensive diagnosis formatted with:
 }
 
 /**
- * Execute Deep Paid Crop Analysis
+ * Execute Deep Free Crop Analysis (100% Free Public Agronomy for Farmers)
  */
-export async function generatePaidCropAnalysis(
+export async function generateCropAnalysis(
   cropName: string,
   symptoms: string,
   imageProvided: boolean,
-  txId: string
+  txId?: string
 ) {
   try {
     const ai = getGeminiClient();
@@ -1153,7 +1150,7 @@ export async function generatePaidCropAnalysis(
 Crop: ${cropName}
 Reported Symptoms / Observation: ${symptoms}
 Image Attached: ${imageProvided ? 'Yes' : 'No'}
-Verified Payment TxID: ${txId}
+Service Type: 100% Free Public Agricultural Diagnosis (ICAR Standard)
 
 Provide:
 1. Disease / Condition Identification with Confidence Score (e.g. 96%)
@@ -1217,3 +1214,5 @@ Provide:
     };
   }
 }
+
+export const generatePaidCropAnalysis = generateCropAnalysis;

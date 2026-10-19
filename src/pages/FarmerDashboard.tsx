@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { HomeSearchBar } from '../components/HomeSearchBar';
+import { MandiTicker } from '../components/MandiTicker';
 import { WeatherData } from '../../shared/types';
 import {
   SUPPORTED_LANGUAGES,
@@ -202,85 +203,169 @@ export const FarmerDashboard: React.FC = () => {
       <HomeSearchBar />
 
       {/* ========================================================= */}
+      {/* 1. MODERN WARM AGRI GREETING & DAYLIGHT FARM ANCHOR       */}
+      {/* ========================================================= */}
+      <section className="bg-white dark:bg-[#141C18] border border-emerald-900/10 dark:border-stone-800 rounded-3xl p-4 sm:p-6 shadow-sm shadow-emerald-950/5 relative overflow-hidden">
+        {/* Subtle decorative background organic glow */}
+        <div className="absolute -top-16 -right-16 w-48 h-48 bg-emerald-100/40 dark:bg-emerald-900/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-amber-100/40 dark:bg-amber-900/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-700/20 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
+                <MapPin className="w-3 h-3 text-emerald-700" />
+                <span>{farmerProfile?.village || 'आनंदपुर'}, {farmerProfile?.district || 'राजकोट'} ({farmerProfile?.state || 'गुजरात'})</span>
+              </span>
+              <span className="text-stone-400">·</span>
+              <span className="text-xs text-stone-600 dark:text-stone-400 font-medium">
+                {weather?.condition || 'हल्की धूप व अनुकूल मौसम'}
+              </span>
+            </div>
+
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#144633] dark:text-[#ECFDF5] tracking-tight">
+              {language === 'hi' 
+                ? `राम-राम, ${farmerProfile?.name || 'रमेशभाई'} जी 🌾` 
+                : language === 'gu'
+                ? `રામ-રામ, ${farmerProfile?.name || 'રમેશભાઈ'} જી 🌾`
+                : `Welcome, ${farmerProfile?.name || 'Ramesh Patel'} 🌾`}
+            </h1>
+
+            {/* Farm stage metadata with zero-pill discipline */}
+            <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-stone-600 dark:text-stone-300">
+              <span className="font-semibold text-emerald-900 dark:text-emerald-200">
+                🌱 {cropDisplayName}
+              </span>
+              <span className="text-stone-300 dark:text-stone-700">·</span>
+              <span>4.2 हेक्टेयर (10.5 बीघा)</span>
+              <span className="text-stone-300 dark:text-stone-700">·</span>
+              <span>फूल व डोडी अवस्था (Flowering)</span>
+              <span className="text-stone-300 dark:text-stone-700">·</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                फसल स्वास्थ्य {cropHealthScore}%
+              </span>
+            </div>
+          </div>
+
+          {/* Daylight Action Quick Controls (Voice Playback & Fast Diagnosis) */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
+            <button
+              onClick={handlePlayAdvisoryAudio}
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl font-bold text-xs shadow-xs transition-all cursor-pointer ${
+                isPlayingAudio 
+                  ? 'bg-amber-600 text-white animate-pulse' 
+                  : 'bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-[#144633] dark:text-emerald-200 border border-emerald-700/25'
+              }`}
+            >
+              {isPlayingAudio ? (
+                <>
+                  <VolumeX className="w-4 h-4" />
+                  <span>{language === 'hi' ? 'आवाज़ रोकें' : 'Stop Audio'}</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-4 h-4 text-emerald-700" />
+                  <span>{language === 'hi' ? 'दैनिक सलाह सुनें 🎙️' : 'Play Farm Advisory 🎙️'}</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => setCurrentView('disease-scanner')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-700 hover:from-emerald-900 hover:to-emerald-800 text-white font-bold text-xs shadow-md shadow-emerald-950/20 active:scale-95 transition-all cursor-pointer"
+            >
+              <Camera className="w-4 h-4 text-amber-300" />
+              <span>{language === 'hi' ? 'फसल जांचें' : 'Scan Leaf'}</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* 2. REAL-TIME APMC MANDI TICKER (LIVE COMMODITY SCROLLER)  */}
+      {/* ========================================================= */}
+      <MandiTicker />
+
+      {/* ========================================================= */}
       {/* 3. THE "BIG 4" PRIMARY ACTION TILES (EASY FOR ANY FARMER) */}
       {/* ========================================================= */}
       <section id="big-4-action-tiles" className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-100 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-500" />
+          <h2 className="text-base sm:text-lg font-bold text-[#144633] dark:text-stone-100 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-500" />
             <span>
               {language === 'hi'
-                ? 'सबसे जरूरी 4 काम (सीधा 1-टैप)'
+                ? 'त्वरित 4 कृषि क्रियाएं'
                 : language === 'gu'
                 ? 'સૌથી મહત્વપૂર્ણ ૪ સુવિધાઓ'
                 : 'Top 4 Immediate Actions'}
             </span>
           </h2>
-          <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-1 rounded-full">
-            {language === 'hi' ? 'आसान उपयोग' : 'One Tap'}
+          <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-700/20 px-2.5 py-0.5 rounded-full">
+            {language === 'hi' ? '1-टैप डायरेक्ट' : 'Instant Direct'}
           </span>
         </div>
 
-        <div className="flex flex-row overflow-x-auto gap-3.5 pb-3 pt-1 scrollbar-none snap-x -mx-3 px-3 sm:mx-0 sm:px-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* TILE 1: CROP DOCTOR (SCAN LEAF) */}
           <div
             id="action-scan-leaf"
             onClick={() => setCurrentView('disease-scanner')}
-            className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white rounded-2xl p-4 sm:p-4 shadow-md border-2 border-emerald-500 hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between min-w-[260px] sm:min-w-[280px] max-w-[290px] flex-shrink-0 snap-start group"
+            className="bg-white dark:bg-[#141C18] rounded-2xl p-4 sm:p-5 border border-emerald-900/10 dark:border-stone-800 hover:border-emerald-600/50 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
           >
             <div>
               <div className="flex items-center justify-between">
-                <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-xs">
-                  <Camera className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-xl group-hover:scale-105 transition-transform">
+                  <Camera className="w-5 h-5" />
                 </div>
-                <span className="bg-white text-emerald-900 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase shadow-xs">
-                  {language === 'hi' ? 'रोग पहचान' : 'Crop Doctor'}
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                  {language === 'hi' ? 'रोग डॉक्टर' : 'AI Doctor'}
                 </span>
               </div>
 
-              <h3 className="text-lg sm:text-xl font-black text-white mt-3 leading-tight">
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 mt-3 leading-tight group-hover:text-emerald-800 dark:group-hover:text-emerald-400">
                 {language === 'hi' ? 'पत्ती का फोटो लें' : language === 'gu' ? 'પાંદડાનો ફોટો લો' : 'Scan Leaf Photo'}
               </h3>
-              <p className="text-emerald-100 text-xs mt-1 line-clamp-2">
+              <p className="text-stone-600 dark:text-stone-400 text-xs mt-1.5 leading-relaxed">
                 {language === 'hi'
-                  ? 'रोग पहचानें व तुरंत सही दवा और देसी इलाज पाएं'
-                  : 'Identify crop disease and get certified spray dose'}
+                  ? 'रोग पहचानें व तुरंत सही दवा और जैविक उपचार पाएं'
+                  : 'Instant diagnosis with chemical doses and organic remedies'}
               </p>
             </div>
 
-            <button className="mt-3 w-full py-2.5 bg-white hover:bg-emerald-50 text-emerald-900 font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm">
-              <span>{language === 'hi' ? 'कैमरा खोलें 📸' : 'Open Camera 📸'}</span>
+            <button className="mt-4 w-full py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-2xs group-hover:shadow-xs transition-all">
+              <span>{language === 'hi' ? 'कैमरा खोलें' : 'Open Camera'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* TILE 2: VOICE KISAN AI (SPEAK QUESTIONS) */}
+          {/* TILE 2: VOICE KISAN AI */}
           <div
             id="action-voice-ai"
             onClick={() => setCurrentView('ai-assistant')}
-            className="bg-gradient-to-br from-[#1b3d14] to-[#26531d] text-white rounded-2xl p-4 sm:p-4 shadow-md border-2 border-emerald-600 hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between min-w-[260px] sm:min-w-[280px] max-w-[290px] flex-shrink-0 snap-start group"
+            className="bg-white dark:bg-[#141C18] rounded-2xl p-4 sm:p-5 border border-amber-900/15 dark:border-stone-800 hover:border-amber-600/50 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
           >
             <div>
               <div className="flex items-center justify-between">
-                <div className="p-2.5 bg-amber-400 text-stone-950 rounded-2xl">
-                  <Mic className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                <div className="p-2.5 bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300 rounded-xl group-hover:scale-105 transition-transform">
+                  <Mic className="w-5 h-5" />
                 </div>
-                <span className="bg-amber-400 text-stone-950 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-100/60 dark:bg-amber-950 px-2 py-0.5 rounded-md">
                   {language === 'hi' ? 'बोलकर पूछें' : 'Voice AI'}
                 </span>
               </div>
 
-              <h3 className="text-lg sm:text-xl font-black text-white mt-3 leading-tight">
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 mt-3 leading-tight group-hover:text-amber-800 dark:group-hover:text-amber-400">
                 {language === 'hi' ? 'खेती के सवाल पूछें' : language === 'gu' ? 'ખેતીના પ્રશ્નો પૂછો' : 'Ask Kisan AI'}
               </h3>
-              <p className="text-emerald-200 text-xs mt-1 line-clamp-2">
+              <p className="text-stone-600 dark:text-stone-400 text-xs mt-1.5 leading-relaxed">
                 {language === 'hi'
-                  ? 'माइक दबाएं और अपनी भाषा में कोई भी सवाल बोलें'
-                  : 'Speak questions in your language for 24/7 answers'}
+                  ? 'माइक दबाएं और अपनी भाषा में 24/7 विशेषज्ञ सलाह लें'
+                  : 'Speak questions in your regional dialect for 24/7 expert answers'}
               </p>
             </div>
 
-            <button className="mt-3 w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm">
+            <button className="mt-4 w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-all">
               <span>{language === 'hi' ? 'माइक चालू करें 🎙️' : 'Start Voice 🎙️'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -289,36 +374,38 @@ export const FarmerDashboard: React.FC = () => {
           {/* TILE 3: TODAY'S IRRIGATION VERDICT & PUMP */}
           <div
             id="action-smart-water"
-            className="bg-white dark:bg-[#161c14] rounded-2xl p-4 sm:p-4 shadow-md border-2 border-sky-300 dark:border-sky-800 flex flex-col justify-between min-w-[260px] sm:min-w-[280px] max-w-[290px] flex-shrink-0 snap-start"
+            className="bg-white dark:bg-[#141C18] rounded-2xl p-4 sm:p-5 border border-sky-900/15 dark:border-stone-800 hover:border-sky-600/50 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between">
-                <div className="p-2.5 bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 rounded-2xl">
-                  <Droplets className="w-6 h-6" />
+                <div className="p-2.5 bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 rounded-xl">
+                  <Droplets className="w-5 h-5" />
                 </div>
                 <span
-                  className={`font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase ${
-                    isPumpRunning ? 'bg-emerald-600 text-white animate-pulse' : 'bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300'
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase ${
+                    isPumpRunning 
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 animate-pulse' 
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
                   }`}
                 >
                   {isPumpRunning ? '● पंप चालू' : '○ पंप बंद'}
                 </span>
               </div>
 
-              <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100 mt-3 leading-tight">
-                {language === 'hi' ? 'सिंचाई: आज पानी न दें ❌' : 'Hold Water Today ❌'}
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 mt-3 leading-tight">
+                {language === 'hi' ? 'सिंचाई: आज पानी न दें' : 'Hold Water Today'}
               </h3>
-              <p className="text-stone-600 dark:text-stone-400 text-xs mt-1 line-clamp-2">
+              <p className="text-stone-600 dark:text-stone-400 text-xs mt-1.5 leading-relaxed">
                 {language === 'hi'
-                  ? `नमी ${moisturePct}% (अनुकूल) • कल बारिश होगी`
-                  : `Soil Moisture ${moisturePct}% • Rain tomorrow`}
+                  ? `मिट्टी नमी ${moisturePct}% (अनुकूल) · कल 70% बारिश संभव`
+                  : `Soil Moisture ${moisturePct}% (Optimal) · Rain expected tomorrow`}
               </p>
             </div>
 
             <button
               onClick={handleTogglePump}
               disabled={isPumpLoading}
-              className={`mt-3 w-full py-2.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer ${
+              className={`mt-4 w-full py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all active:scale-98 cursor-pointer ${
                 isPumpRunning
                   ? 'bg-rose-600 hover:bg-rose-700 text-white'
                   : 'bg-sky-700 hover:bg-sky-800 text-white'
@@ -331,8 +418,8 @@ export const FarmerDashboard: React.FC = () => {
               )}
               <span>
                 {isPumpRunning
-                  ? (language === 'hi' ? '⏹️ पंप बंद करें' : 'Stop Pump')
-                  : (language === 'hi' ? '▶️ पंप चालू करें' : 'Start Pump')}
+                  ? (language === 'hi' ? 'पंप बंद करें' : 'Stop Pump')
+                  : (language === 'hi' ? 'पंप चालू करें' : 'Start Pump')}
               </span>
             </button>
           </div>
@@ -341,33 +428,33 @@ export const FarmerDashboard: React.FC = () => {
           <div
             id="action-mandi-rate"
             onClick={() => setCurrentView('market-prices')}
-            className="bg-white dark:bg-[#161c14] rounded-2xl p-4 sm:p-4 shadow-md border-2 border-amber-300 dark:border-amber-800 hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between min-w-[260px] sm:min-w-[280px] max-w-[290px] flex-shrink-0 snap-start group"
+            className="bg-white dark:bg-[#141C18] rounded-2xl p-4 sm:p-5 border border-stone-200 dark:border-stone-800 hover:border-emerald-600/50 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
           >
             <div>
               <div className="flex items-center justify-between">
-                <div className="p-2.5 bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 rounded-2xl">
-                  <TrendingUp className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-xl group-hover:scale-105 transition-transform">
+                  <TrendingUp className="w-5 h-5" />
                 </div>
-                <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-black text-[11px] px-2.5 py-0.5 rounded-full uppercase">
+                <span className="text-[10px] font-bold uppercase text-emerald-800 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
                   +₹220 उछाल 📈
                 </span>
               </div>
 
               <div className="mt-3">
-                <span className="text-[11px] font-bold text-stone-500 uppercase">
+                <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-tight">
                   {language === 'hi' ? 'कपास (Bt Cotton)' : 'Cotton Rate'}
                 </span>
-                <div className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100 mt-0.5">
-                  ₹7,620 <span className="text-xs text-stone-500 font-normal">/क्विंटल</span>
+                <div className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100 font-mono tabular-nums mt-0.5">
+                  ₹7,620 <span className="text-xs text-stone-500 font-sans font-normal">/क्विंटल</span>
                 </div>
-                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">
-                  ⭐ Gondal APMC (सर्वोच्च भाव)
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold mt-1">
+                  ⭐ गोंडल APMC (Gondal Yard)
                 </p>
               </div>
             </div>
 
-            <button className="mt-3 w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-stone-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm">
-              <span>{language === 'hi' ? 'सभी मंडियां देखें 📊' : 'View All Mandis 📊'}</span>
+            <button className="mt-4 w-full py-2 bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-all">
+              <span>{language === 'hi' ? 'सभी मंडियां देखें' : 'View Mandis'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

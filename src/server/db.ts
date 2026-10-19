@@ -22,6 +22,9 @@ import {
   SharedClusterCart,
   SharedCartItem,
   SharedCartItemContributor,
+  ChampionVerificationRequest,
+  ChampionVerificationStatus,
+  ChampionDesignation,
 } from '../../shared/types.js';
 import {
   CROP_RECOMMENDATIONS_DATABASE,
@@ -31,6 +34,7 @@ import {
 
 class InMemoryDB {
   users: Map<string, UserProfile> = new Map();
+  championVerifications: Map<string, ChampionVerificationRequest> = new Map();
   clusters: Map<string, VirtualCluster> = new Map();
   clusterChatMessages: Map<string, ClusterChatMessage[]> = new Map();
   sharedCarts: Map<string, SharedClusterCart> = new Map();
@@ -68,6 +72,7 @@ class InMemoryDB {
 
   public clearAllData() {
     this.users.clear();
+    this.championVerifications.clear();
     this.clusters.clear();
     this.bulkRequirements.clear();
     this.machinery.clear();
@@ -153,9 +158,281 @@ class InMemoryDB {
       createdAt: '2026-05-20T14:15:00Z',
     };
 
+    // Candidate Village Champion: Anita Devi (Awaiting final approval / under review)
+    const u4: UserProfile = {
+      id: 'usr_champ_anita',
+      fullName: 'Anita Devi',
+      email: 'anita.devi@kishanbhai.in',
+      phone: '+91 98123 45678',
+      role: 'CHAMPION',
+      village: 'Anandpur',
+      district: 'Rajkot',
+      state: 'Gujarat',
+      verified: false, // Locked until verification approved!
+      farmSizeAcres: 6.0,
+      crops: ['Cotton', 'Groundnut'],
+      preferredLanguage: 'hi',
+      createdAt: '2026-08-01T10:00:00Z',
+    };
+
     this.users.set(u1.id, u1);
     this.users.set(u2.id, u2);
     this.users.set(u3.id, u3);
+    this.users.set(u4.id, u4);
+
+    // Seed Champion Verification Requests
+    // 1) Vikramsinh Jadeja - Approved
+    const reqVikram: ChampionVerificationRequest = {
+      id: 'cv_req_vikram_01',
+      userId: u2.id,
+      createdAt: '2026-05-10T11:00:00Z',
+      updatedAt: '2026-05-12T14:30:00Z',
+      status: 'APPROVED',
+      currentStep: 7,
+      registrationData: {
+        userId: u2.id,
+        legalFullName: 'Vikramsinh Danubha Jadeja',
+        mobile: '+91 97240 88192',
+        email: 'vikram.jadeja@kishanbhai.in',
+        state: 'Gujarat',
+        district: 'Rajkot',
+        block: 'Kotda Sangani',
+        villageName: 'Anandpur Hub',
+        gramPanchayatName: 'Anandpur Gram Panchayat',
+        designation: 'SARPANCH',
+        gramPanchayatIdNumber: 'GP-GUJ-RJK-2021-042',
+        panchayatOfficeAddress: 'Gram Panchayat Bhavan, Station Road, Anandpur',
+        agreedToTerms: true,
+        termsAgreedAt: '2026-05-10T11:05:00Z',
+      },
+      identityCheck: {
+        provider: 'AUTHORIZED_AADHAAR_GATEWAY',
+        idType: 'AADHAAR_MASKED',
+        maskedId: 'XXXX-XXXX-8819',
+        providerTxnRef: 'UIDAI-SANDBOX-AUTH-8829103',
+        consentObtained: true,
+        consentTimestamp: '2026-05-10T11:08:00Z',
+        verifiedAt: '2026-05-10T11:09:12Z',
+        status: 'VERIFIED',
+        remarks: 'Consent-verified masked Aadhaar via UIDAI Authorized Gateway',
+      },
+      documents: [
+        {
+          id: 'doc_vikram_01',
+          docType: 'ELECTION_CERTIFICATE',
+          fileName: 'State_Election_Commission_Sarpanch_Certificate_2021.pdf',
+          fileSize: 1420500,
+          uploadedAt: '2026-05-10T11:15:00Z',
+          secureViewToken: 'sec_tok_vikram_cert_8829',
+          status: 'VALID',
+          remarks: 'Official seal and returning officer signature verified',
+        },
+      ],
+      faceVerification: {
+        provider: 'LIVENESS_FACE_MATCH_AI',
+        livenessPassed: true,
+        livenessConfidence: 0.98,
+        faceMatchScore: 0.96,
+        spoofDetected: false,
+        selfieCaptureTimestamp: '2026-05-10T11:20:00Z',
+        verifiedAt: '2026-05-10T11:20:30Z',
+        status: 'VERIFIED',
+        remarks: 'Live selfie matched against authorized identity photo with 96% match',
+      },
+      designationCheck: {
+        officialSourceChecked: 'E_GRAM_SWARAJ',
+        crossReferenceMatched: true,
+        gramPanchayatConfirmed: 'Anandpur Gram Panchayat (LGD: 162940)',
+        tenurePeriod: '2021 - 2026',
+        status: 'VERIFIED',
+        verifiedAt: '2026-05-10T11:25:00Z',
+        remarks: 'e-GramSwaraj directory confirmed incumbent Sarpanch',
+      },
+      adminDecision: {
+        decidedBy: 'District Nodal Officer (Govt Admin)',
+        decidedAt: '2026-05-12T14:30:00Z',
+        decision: 'APPROVED',
+        reason: 'All 6 verification checks passed. Official election certificate validated against e-GramSwaraj.',
+        adminNotes: 'Full Village Champion privileges granted.',
+      },
+      auditLogs: [
+        {
+          id: 'log_vikram_01',
+          timestamp: '2026-05-10T11:00:00Z',
+          actorId: u2.id,
+          actorName: 'Vikramsinh Danubha Jadeja',
+          actorRole: 'APPLICANT',
+          action: 'REGISTER_CHAMPION_APPLICATION',
+          previousStatus: 'REGISTERED',
+          newStatus: 'IDENTITY_PENDING',
+        },
+        {
+          id: 'log_vikram_02',
+          timestamp: '2026-05-10T11:09:12Z',
+          actorId: u2.id,
+          actorName: 'Vikramsinh Danubha Jadeja',
+          actorRole: 'APPLICANT',
+          action: 'IDENTITY_VERIFIED',
+          previousStatus: 'IDENTITY_PENDING',
+          newStatus: 'DOCUMENTS_PENDING',
+        },
+        {
+          id: 'log_vikram_03',
+          timestamp: '2026-05-10T11:25:00Z',
+          actorId: u2.id,
+          actorName: 'Vikramsinh Danubha Jadeja',
+          actorRole: 'APPLICANT',
+          action: 'SUBMITTED_FOR_REVIEW',
+          previousStatus: 'DOCUMENTS_PENDING',
+          newStatus: 'UNDER_REVIEW',
+        },
+        {
+          id: 'log_vikram_04',
+          timestamp: '2026-05-12T14:30:00Z',
+          actorId: 'admin_sys_01',
+          actorName: 'District Nodal Officer',
+          actorRole: 'ADMIN',
+          action: 'ADMIN_APPROVE_APPLICATION',
+          previousStatus: 'UNDER_REVIEW',
+          newStatus: 'APPROVED',
+          notes: 'Sarpanch credentials and liveness verified successfully.',
+        },
+      ],
+    };
+
+    // 2) Anita Devi - Under Review
+    const reqAnita: ChampionVerificationRequest = {
+      id: 'cv_req_anita_02',
+      userId: u4.id,
+      createdAt: '2026-08-01T10:00:00Z',
+      updatedAt: '2026-08-01T10:45:00Z',
+      status: 'UNDER_REVIEW',
+      currentStep: 6, // Step 6: Admin Review
+      registrationData: {
+        userId: u4.id,
+        legalFullName: 'Anita Devi Parmar',
+        mobile: '+91 98123 45678',
+        email: 'anita.devi@kishanbhai.in',
+        state: 'Gujarat',
+        district: 'Rajkot',
+        block: 'Gondal',
+        villageName: 'Anandpur',
+        gramPanchayatName: 'Anandpur Gram Panchayat',
+        designation: 'SARPANCH',
+        gramPanchayatIdNumber: 'GP-GUJ-RJK-2022-108',
+        panchayatOfficeAddress: 'Gram Panchayat Office, Near Main Chowk, Anandpur',
+        agreedToTerms: true,
+        termsAgreedAt: '2026-08-01T10:05:00Z',
+      },
+      identityCheck: {
+        provider: 'AUTHORIZED_AADHAAR_GATEWAY',
+        idType: 'AADHAAR_MASKED',
+        maskedId: 'XXXX-XXXX-4567',
+        providerTxnRef: 'UIDAI-SANDBOX-AUTH-9014522',
+        consentObtained: true,
+        consentTimestamp: '2026-08-01T10:10:00Z',
+        verifiedAt: '2026-08-01T10:11:30Z',
+        status: 'VERIFIED',
+        remarks: 'Consent obtained; masked identifier verified.',
+      },
+      documents: [
+        {
+          id: 'doc_anita_01',
+          docType: 'ELECTION_CERTIFICATE',
+          fileName: 'Panchayat_Election_Notification_Sarpanch_AnitaDevi.pdf',
+          fileSize: 2104500,
+          uploadedAt: '2026-08-01T10:20:00Z',
+          secureViewToken: 'sec_tok_anita_cert_9104',
+          status: 'PENDING',
+          remarks: 'Submitted for verification officer review.',
+        },
+        {
+          id: 'doc_anita_02',
+          docType: 'GOV_AUTHORIZATION_LETTER',
+          fileName: 'Block_Development_Officer_Authorization_Letter.pdf',
+          fileSize: 984000,
+          uploadedAt: '2026-08-01T10:22:00Z',
+          secureViewToken: 'sec_tok_anita_auth_9105',
+          status: 'PENDING',
+        },
+      ],
+      faceVerification: {
+        provider: 'LIVENESS_FACE_MATCH_AI',
+        livenessPassed: true,
+        livenessConfidence: 0.99,
+        faceMatchScore: 0.94,
+        spoofDetected: false,
+        selfieCaptureTimestamp: '2026-08-01T10:30:00Z',
+        verifiedAt: '2026-08-01T10:30:45Z',
+        status: 'VERIFIED',
+        remarks: 'Passive liveness detection passed (blink and micro-movement verified). Match score: 94%.',
+      },
+      designationCheck: {
+        officialSourceChecked: 'E_GRAM_SWARAJ',
+        crossReferenceMatched: true,
+        gramPanchayatConfirmed: 'Anandpur Gram Panchayat (LGD: 162940)',
+        tenurePeriod: '2022 - 2027',
+        status: 'VERIFIED',
+        verifiedAt: '2026-08-01T10:38:00Z',
+        remarks: 'Panchayati Raj registry matched Anita Devi as Sarpanch for Anandpur GP.',
+      },
+      auditLogs: [
+        {
+          id: 'log_anita_01',
+          timestamp: '2026-08-01T10:00:00Z',
+          actorId: u4.id,
+          actorName: 'Anita Devi Parmar',
+          actorRole: 'APPLICANT',
+          action: 'REGISTER_CHAMPION_APPLICATION',
+          previousStatus: 'REGISTERED',
+          newStatus: 'IDENTITY_PENDING',
+        },
+        {
+          id: 'log_anita_02',
+          timestamp: '2026-08-01T10:11:30Z',
+          actorId: u4.id,
+          actorName: 'Anita Devi Parmar',
+          actorRole: 'APPLICANT',
+          action: 'IDENTITY_VERIFIED',
+          previousStatus: 'IDENTITY_PENDING',
+          newStatus: 'DOCUMENTS_PENDING',
+        },
+        {
+          id: 'log_anita_03',
+          timestamp: '2026-08-01T10:25:00Z',
+          actorId: u4.id,
+          actorName: 'Anita Devi Parmar',
+          actorRole: 'APPLICANT',
+          action: 'DOCUMENTS_UPLOADED',
+          previousStatus: 'DOCUMENTS_PENDING',
+          newStatus: 'FACE_VERIFICATION_PENDING',
+        },
+        {
+          id: 'log_anita_04',
+          timestamp: '2026-08-01T10:30:45Z',
+          actorId: u4.id,
+          actorName: 'Anita Devi Parmar',
+          actorRole: 'APPLICANT',
+          action: 'FACE_VERIFICATION_PASSED',
+          previousStatus: 'FACE_VERIFICATION_PENDING',
+          newStatus: 'DESIGNATION_VERIFICATION_PENDING',
+        },
+        {
+          id: 'log_anita_05',
+          timestamp: '2026-08-01T10:45:00Z',
+          actorId: u4.id,
+          actorName: 'Anita Devi Parmar',
+          actorRole: 'APPLICANT',
+          action: 'SUBMITTED_FOR_ADMIN_REVIEW',
+          previousStatus: 'DESIGNATION_VERIFICATION_PENDING',
+          newStatus: 'UNDER_REVIEW',
+          notes: 'Applicant completed all steps; waiting for admin approval decision.',
+        },
+      ],
+    };
+
+    this.championVerifications.set(reqVikram.id, reqVikram);
+    this.championVerifications.set(reqAnita.id, reqAnita);
 
     // 2. Verified Active Virtual Clusters
     const c1: VirtualCluster = {
@@ -950,12 +1227,12 @@ class InMemoryDB {
     this.machinery.set(m2.id, m2);
     this.machinery.set(m3.id, m3);
 
-    // 6. Recent Real Blockchain Transactions
+    // 6. Recent Real Blockchain Transactions (Cluster Collective Input Purchasing & Harvest Escrows)
     const tx1: TransactionRecord = {
       id: 'tx_alg_8819241',
-      serviceName: 'Kishan AI Paid Agronomy Diagnosis',
-      serviceId: 'crop-analysis',
-      amountUsdc: 0.005,
+      serviceName: 'Cluster Bio-NPK Wholesale Purchase Settlement',
+      serviceId: 'bulk-fertilizer-pool',
+      amountUsdc: 142.50,
       asset: 'USDC',
       network: 'Algorand Testnet',
       status: 'SETTLED',
@@ -970,9 +1247,9 @@ class InMemoryDB {
 
     const tx2: TransactionRecord = {
       id: 'tx_alg_8819242',
-      serviceName: 'Hyperlocal Micro-Climate Advisory',
-      serviceId: 'weather-intelligence',
-      amountUsdc: 0.002,
+      serviceName: 'Pooled Sharbati Wheat Institutional Buyer Escrow',
+      serviceId: 'harvest-lot-escrow',
+      amountUsdc: 285.00,
       asset: 'USDC',
       network: 'Algorand Testnet',
       status: 'SETTLED',

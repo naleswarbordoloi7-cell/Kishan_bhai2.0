@@ -24,28 +24,30 @@ export const GOPLAUSIBLE_CONFIG = {
   version: '1.0',
 };
 
+// All AI crop diagnosis and agronomy services are 100% Free Public Services for farmers
 export const DEFAULT_SERVICE_PRICING = {
   'crop-analysis': {
     serviceId: 'crop-analysis',
     name: 'AI Crop Multispectral & Disease Analysis',
-    priceUsdc: 0.002,
-    priceMicroUsdc: 2000,
-    description: 'High-resolution pathogen detection, disease severity index, and targeted bio-fertilizer recommendations.',
+    priceUsdc: 0,
+    priceMicroUsdc: 0,
+    isFree: true,
+    description: 'High-resolution pathogen detection, disease severity index, and targeted bio-fertilizer recommendations (100% Free for Farmers).',
   },
   'farm-intelligence': {
     serviceId: 'farm-intelligence',
     name: 'Virtual Cluster Macro Farm Intelligence Report',
-    priceUsdc: 0.005,
-    priceMicroUsdc: 5000,
+    priceUsdc: 0,
+    priceMicroUsdc: 0,
+    isFree: true,
     description: 'Soil nutrient mapping, regional pest surveillance alerts, and predictive yield forecast.',
   },
   'weather-intelligence': {
     serviceId: 'weather-intelligence',
     name: 'Micro-Climate Hyperlocal Weather Advisory',
-    priceUsdc: 0.001,
-    priceMicroUsdc: 1000,
-    description: '14-day precision frost & monsoon precipitation model tailored to your exact cluster acreage.',
+    priceUsdc: 0,
+    priceMicroUsdc: 0,
+    isFree: true,
+    description: '14-day precision precipitation and weather models tailored to your cluster acreage.',
   },
 } as const;
-
-export const MONTHLY_API_BUDGET_INR = 1500;
