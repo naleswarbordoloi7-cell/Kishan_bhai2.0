@@ -4,11 +4,11 @@
   "type": "module",
   "description": "Kishan Bhai - Small Farms. One Powerful Network.",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "node ./node_modules/tsx/dist/cli.mjs server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "lint": "tsc --noEmit",
-    "test": "tsx tests/run-tests.ts"
+    "test": "node ./node_modules/tsx/dist/cli.mjs tests/run-tests.ts"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +22,7 @@
     "clsx": "^2.1.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "es-toolkit": "^1.52.0",
     "express": "^5.2.1",
     "firebase": "^12.19.0",
     "jsonwebtoken": "^9.0.3",

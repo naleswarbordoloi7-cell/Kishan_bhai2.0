@@ -196,11 +196,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [language]
   );
 
-  // Open directly into Farmer Dashboard with full active capability
+  // Authentication and application routing state
   const [currentView, setCurrentViewState] = useState<string>(() => {
     try {
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname.replace(/^\//, '').toLowerCase();
+        if (path === 'login' || path === 'auth' || path === 'signin') return 'login';
+        if (path === 'register' || path === 'signup') return 'register';
+        if (path === 'forgot-password' || path === 'reset-password') return 'forgot-password';
+        if (path === 'verify-otp') return 'verify-otp';
+      }
       const savedView = localStorage.getItem('kb_current_view');
-      if (savedView && savedView !== 'login') return savedView;
+      if (savedView) return savedView;
       return 'farmer-dashboard';
     } catch {
       return 'farmer-dashboard';
@@ -211,7 +218,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentViewState(view);
     try {
       localStorage.setItem('kb_current_view', view);
+      if (typeof window !== 'undefined') {
+        const cleanPath = view === 'farmer-dashboard' ? '/' : `/${view}`;
+        if (window.location.pathname !== cleanPath) {
+          window.history.pushState(null, '', cleanPath);
+        }
+      }
     } catch {}
+  }, []);
+
+  // Listen for browser back / forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname.replace(/^\//, '').toLowerCase();
+        if (path === 'login' || path === 'auth' || path === 'signin') {
+          setCurrentViewState('login');
+        } else if (path === 'register' || path === 'signup') {
+          setCurrentViewState('register');
+        } else if (path === 'forgot-password' || path === 'reset-password') {
+          setCurrentViewState('forgot-password');
+        } else if (path === 'verify-otp') {
+          setCurrentViewState('verify-otp');
+        } else if (path) {
+          setCurrentViewState(path);
+        } else {
+          setCurrentViewState('farmer-dashboard');
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
   const [toasts, setToasts] = useState<{ id: string; title: string; message: string; type: 'success' | 'info' | 'error' }[]>([]);
 

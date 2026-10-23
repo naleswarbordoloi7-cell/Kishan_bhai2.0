@@ -32,7 +32,7 @@ const isProd = process.env.NODE_ENV === 'production';
 
 export const config: AppConfig = {
   env: (process.env.NODE_ENV as any) || 'development',
-  port: parseInt(process.env.PORT || '3000', 10),
+  port: parseInt(process.env.PORT || '3001', 10),
   // Strict DEMO_MODE flag: false by default in production, true only if explicitly requested
   demoMode: process.env.DEMO_MODE === 'true' || (!isProd && process.env.DEMO_MODE !== 'false'),
   jwtSecret: process.env.JWT_SECRET || 'kisan_bhai_secure_jwt_production_secret_key_2026_seed_to_sale',

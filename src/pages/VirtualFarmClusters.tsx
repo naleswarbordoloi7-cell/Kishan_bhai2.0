@@ -15,6 +15,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { VirtualCluster } from '../../shared/types';
+import { KishanCommunitySection } from '../components/community/KishanCommunitySection';
 
 export const VirtualFarmClustersPage: React.FC = () => {
   const { currentUser, userRole } = useUserStore();
@@ -315,6 +316,12 @@ export const VirtualFarmClustersPage: React.FC = () => {
         </div>
         )}
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+           KISHAN COMMUNITY — FARMERS TOGETHER
+           Mounted below Virtual Farm Clusters overview
+      ════════════════════════════════════════════════════════════════════ */}
+      <KishanCommunitySection />
 
       {/* Create Cluster Modal */}
       {showCreateModal && (

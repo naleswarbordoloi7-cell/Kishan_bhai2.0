@@ -27,12 +27,12 @@ export const AdminDashboard: React.FC = () => {
     fetch('/api/admin/stats')
       .then((res) => res.json())
       .then((data) => setStats(data))
-      .catch(() => {});
+      .catch(() => { });
 
     fetch('/api/admin/telemetry')
       .then((res) => res.json())
       .then((data) => setTelemetry(data))
-      .catch(() => {});
+      .catch(() => { });
   };
 
   useEffect(() => {
@@ -82,11 +82,10 @@ export const AdminDashboard: React.FC = () => {
       <div className="flex items-center gap-2.5 border-b border-stone-200 pb-3">
         <button
           onClick={() => setActiveAdminTab('champion-verifications')}
-          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${
-            activeAdminTab === 'champion-verifications'
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${activeAdminTab === 'champion-verifications'
               ? 'bg-green-700 text-white shadow-sm'
               : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-          }`}
+            }`}
         >
           <ShieldCheck className="w-4 h-4" />
           <span>Village Champion KYC & Authorization Desk</span>
@@ -97,11 +96,10 @@ export const AdminDashboard: React.FC = () => {
 
         <button
           onClick={() => setActiveAdminTab('overview')}
-          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${
-            activeAdminTab === 'overview'
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${activeAdminTab === 'overview'
               ? 'bg-green-700 text-white shadow-sm'
               : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-          }`}
+            }`}
         >
           <BarChart3 className="w-4 h-4" />
           <span>Platform Ops & Infrastructure</span>
@@ -199,6 +197,7 @@ export const AdminDashboard: React.FC = () => {
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
+
 
                 <div className="space-y-3 text-xs">
                   <div className="flex justify-between items-center p-3 bg-stone-50 rounded-xl border border-stone-200">

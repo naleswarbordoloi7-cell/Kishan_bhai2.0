@@ -4,7 +4,7 @@ AI-Powered Smart Agriculture Platform
 
 Team: Arjuna
 Team Leader: Naleswar
-Team Members: Naleswar, Lakshya, Pragati, Sudipta
+Team Members: Naleswar, Lakshya, Priya,Arushi,Arjit
 
 📌 About the Project
 
@@ -191,7 +191,7 @@ Add the versions and tools required by the actual project, such as Node.js, Pyth
 
 Clone the Repository
 
-git clone https://github.com/naleswarbordoloi7-cell/Kishan_bhai2.0.git
+git clone <https://github.com/naleswarbordoloi7-cell/Kishan_bhai2.0.git>
 cd Kishan_bhai2.0
 
 Install and Run
@@ -202,7 +202,7 @@ Security: Provide environment-variable names in documentation, but never publish
 
 🎬 Project Demo Video
 
-YouTube Demo: https://youtu.be/_oahw_XMGQ8
+YouTube Demo: <https://youtu.be/_oahw_XMGQ8>
 
 The video should demonstrate the actual application, its working features, and the project workflow. If the submission requires a 15–20 minute unlisted video, verify the video duration and visibility settings before submitting.
 
@@ -218,9 +218,9 @@ Choose a license with the team and add the corresponding LICENSE file to the rep
 
 🔗 Project Links
 
-GitHub Repository: https://github.com/naleswarbordoloi7-cell/Kishan_bhai2.0
+GitHub Repository: <https://github.com/naleswarbordoloi7-cell/Kishan_bhai2.0>
 
-YouTube Demo: https://youtu.be/_oahw_XMGQ8
+YouTube Demo: <https://youtu.be/_oahw_XMGQ8>
 
 Architecture Diagram: Add link
 

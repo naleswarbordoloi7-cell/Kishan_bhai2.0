@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
-import { Navbar } from "./components/Navbar";
-import { Sidebar } from "./components/Sidebar";
+import { AppSidebar } from "./components/AppSidebar";
+import { TopHeader } from "./components/TopHeader";
 import { NfcModal } from "./components/NfcModal";
 import { ToastContainer } from "./components/ToastContainer";
 import { ApiRetryNotification } from "./components/ApiRetryNotification";
@@ -51,6 +51,7 @@ const AppContent: React.FC = () => {
   } = useApp();
 
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('full');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const renderCurrentView = () => {
     switch (currentView) {
@@ -111,16 +112,32 @@ const AppContent: React.FC = () => {
         return <SettingsPage />;
       case "auth":
       case "login":
-        return <LoginPage />;
+      case "signin":
+        return <LoginPage initialMode="login" />;
+      case "register":
+      case "signup":
+        return <LoginPage initialMode="register" />;
+      case "forgot-password":
+      case "reset-password":
+        return <LoginPage initialMode="forgot-password" />;
+      case "verify-otp":
+        return <LoginPage initialMode="otp-login" />;
       default:
         return <LandingPage />;
     }
   };
 
-  const isLanding =
-    currentView === "landing" ||
+  const isAuthRoute =
+    currentView === "login" ||
     currentView === "auth" ||
-    currentView === "login";
+    currentView === "signin" ||
+    currentView === "register" ||
+    currentView === "signup" ||
+    currentView === "forgot-password" ||
+    currentView === "reset-password" ||
+    currentView === "verify-otp";
+
+  const isLanding = currentView === "landing" || isAuthRoute;
 
   // Device frame wrapper style classes
   let frameContainerClass = "min-h-screen bg-transparent flex flex-col text-stone-900 font-sans antialiased selection:bg-green-200 w-full";
@@ -157,12 +174,27 @@ const AppContent: React.FC = () => {
           </div>
         )}
 
-        <div className="shrink-0 z-40">
-          <Navbar />
-        </div>
+        {/* Top Header - Hidden on all authentication pages */}
+        {!isAuthRoute && (
+          <div className="shrink-0 z-40">
+            <TopHeader onOpenSidebar={() => setIsMobileSidebarOpen(true)} />
+          </div>
+        )}
 
         <div className="flex-1 flex w-full relative overflow-hidden">
-          <main className="flex-1 overflow-y-auto min-h-[calc(100vh-4rem)] pb-20 scroll-smooth">
+          {/* Dark-Green Vertical App Sidebar - Desktop Fixed & Mobile Slide-Out Drawer */}
+          {!isAuthRoute && (
+            <AppSidebar
+              isOpenOnMobile={isMobileSidebarOpen}
+              onCloseMobile={() => setIsMobileSidebarOpen(false)}
+            />
+          )}
+
+          <main
+            className={`flex-1 overflow-y-auto scroll-smooth bg-[#F7F8F2] ${
+              isAuthRoute ? "min-h-screen pb-0" : "min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8 pb-24"
+            }`}
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentView}
@@ -170,7 +202,7 @@ const AppContent: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="w-full h-full"
+                className="w-full h-full max-w-7xl mx-auto"
               >
                 {renderCurrentView()}
               </motion.div>
@@ -195,7 +227,7 @@ const AppContent: React.FC = () => {
         />
         <ToastContainer />
         <ScrollToTopButton />
-        {!isLanding && <MobileBottomNav />}
+        {!isLanding && !isAuthRoute && <MobileBottomNav />}
       </div>
     </div>
   );

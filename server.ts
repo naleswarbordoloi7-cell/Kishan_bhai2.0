@@ -9,6 +9,7 @@ import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
@@ -81,7 +82,7 @@ const serverSupabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPA
 const serverSupabase = createClient(serverSupabaseUrl, serverSupabaseKey);
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3001;
 
 // Security & Observability Middlewares
 app.use(securityHeaders);
@@ -3474,6 +3475,21 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
+    app.use('*all', async (req, res, next) => {
+      const url = req.originalUrl;
+      if (url.startsWith('/api') || url.startsWith('/health') || url.startsWith('/ready') || url.startsWith('/ws')) {
+        return next();
+      }
+      try {
+        const indexPath = path.resolve(process.cwd(), 'index.html');
+        let template = fs.readFileSync(indexPath, 'utf-8');
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e: any) {
+        vite.ssrFixStacktrace(e);
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));

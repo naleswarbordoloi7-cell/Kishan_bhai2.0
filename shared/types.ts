@@ -1353,3 +1353,118 @@ export interface ChampionVerificationRequest {
   auditLogs: ChampionAuditLogEntry[];
 }
 
+// ----------------------------------------------------
+// KISHAN COMMUNITY — FARMERS TOGETHER DATA MODELS
+// ----------------------------------------------------
+
+export type CommunityGroupCategory =
+  | 'Rice Farming'
+  | 'Wheat Farming'
+  | 'Cotton Farming'
+  | 'Vegetable Farming'
+  | 'Organic Farming'
+  | 'Dairy Farming'
+  | 'Modern Farming Technology'
+  | 'Agricultural Business'
+  | 'Irrigation and Water Management'
+  | 'Pest and Disease Management'
+  | 'General Farmer Discussion'
+  | string;
+
+export interface GroupResourceItem {
+  id: string;
+  title: string;
+  type: 'PDF' | 'GUIDE' | 'VIDEO' | 'SCHEME';
+  description: string;
+  url?: string;
+}
+
+export interface FarmerCommunityGroup {
+  id: string;
+  name: string;
+  description: string;
+  category: CommunityGroupCategory;
+  location: string;
+  cropInterest: string;
+  imageUrl?: string;
+  isPrivate: boolean;
+  rules?: string[];
+  ownerId: string;
+  ownerName: string;
+  moderatorIds: string[];
+  memberIds: string[];
+  memberCount: number;
+  pendingRequestIds?: string[];
+  pinnedPostIds?: string[];
+  resources?: GroupResourceItem[];
+  createdAt: string;
+}
+
+export interface CommunityPollOption {
+  id: string;
+  text: string;
+  votes: number;
+  votedUserIds: string[];
+}
+
+export interface CommunityPoll {
+  id: string;
+  question: string;
+  options: CommunityPollOption[];
+  totalVotes: number;
+}
+
+export type CommunityPostType = 'DISCUSSION' | 'QUESTION' | 'TIP' | 'ANNOUNCEMENT';
+
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorVillage?: string;
+  authorAvatar?: string;
+  content: string;
+  likesCount: number;
+  likedUserIds: string[];
+  isHelpful?: boolean;
+  parentId?: string;
+  replies?: CommunityComment[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CommunityPost {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorRole?: string;
+  authorVillage?: string;
+  authorAvatar?: string;
+  groupId?: string;
+  groupName?: string;
+  category: string;
+  postType: CommunityPostType;
+  content: string;
+  images?: string[];
+  poll?: CommunityPoll;
+  likesCount: number;
+  likedUserIds: string[];
+  commentsCount: number;
+  comments?: CommunityComment[];
+  savedUserIds: string[];
+  isPinned?: boolean;
+  isHelpfulAnswered?: boolean;
+  createdAt: string;
+}
+
+export interface ContentReport {
+  id: string;
+  targetType: 'POST' | 'COMMENT';
+  targetId: string;
+  reportedBy: string;
+  reporterName?: string;
+  reason: 'MISINFORMATION_HARMFUL' | 'SPAM_SCAM' | 'INAPPROPRIATE_LANGUAGE' | 'OFF_TOPIC' | 'OTHER';
+  details?: string;
+  createdAt: string;
+}
+
