@@ -23,6 +23,7 @@ export interface AppConfig {
   rateLimitAiMaxReqs: number;
   weatherCacheTtlMs: number;
   mandiCacheTtlMs: number;
+  mandiApiKey: string;
   databaseUrl?: string;
   redisUrl?: string;
   sentryDsn?: string;
@@ -49,6 +50,7 @@ export const config: AppConfig = {
   rateLimitAiMaxReqs: 20,
   weatherCacheTtlMs: 30 * 60 * 1000, // 30 minutes
   mandiCacheTtlMs: 60 * 60 * 1000, // 1 hour
+  mandiApiKey: process.env.MANDI_API_KEY || process.env.DATA_GOV_IN_API_KEY || '9ef84268-d588-465a-a308-a864a43d0070',
   databaseUrl: process.env.DATABASE_URL,
   redisUrl: process.env.REDIS_URL,
   sentryDsn: process.env.SENTRY_DSN,

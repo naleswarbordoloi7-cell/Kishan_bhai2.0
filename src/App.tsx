@@ -22,6 +22,7 @@ import { VirtualFarmClustersPage } from "./pages/VirtualFarmClusters";
 import { BulkBuyingPage } from "./pages/BulkBuying";
 import { HarvestPoolingPage } from "./pages/HarvestPooling";
 import { BuyerMarketplacePage } from "./pages/BuyerMarketplace";
+import { BuyerOffersPage } from "./pages/BuyerOffersPage";
 import { MachineryPage } from "./pages/Machinery";
 import { AIAssistantPage } from "./pages/AIAssistantPage";
 import { WeatherModule } from "./pages/WeatherModule";
@@ -74,6 +75,8 @@ const AppContent: React.FC = () => {
         return <HarvestPoolingPage />;
       case "marketplace":
         return <BuyerMarketplacePage />;
+      case "buyer-offers":
+        return <BuyerOffersPage />;
       case "machinery":
         return <MachineryPage />;
       case "ai-assistant":

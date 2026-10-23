@@ -5,7 +5,7 @@
   "description": "Kishan Bhai - Small Farms. One Powerful Network.",
   "scripts": {
     "dev": "node ./node_modules/tsx/dist/cli.mjs server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "vite build && node --max-old-space-size=4096 ./node_modules/esbuild/bin/esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "lint": "tsc --noEmit",
     "test": "node ./node_modules/tsx/dist/cli.mjs tests/run-tests.ts"

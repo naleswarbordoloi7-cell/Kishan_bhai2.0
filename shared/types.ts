@@ -1148,36 +1148,58 @@ export interface FarmDiaryEntry {
 export type FarmDiaryRecord = FarmDiaryEntry;
 
 // 10. Community Module
+export type CommunityPostType = 'DISCUSSION' | 'QUESTION' | 'TIP' | 'ANNOUNCEMENT';
+
 export interface CommunityComment {
   id: string;
+  postId?: string;
+  authorId?: string;
   authorName: string;
-  authorRole: string;
-  village: string;
+  authorRole?: string;
+  village?: string;
+  authorVillage?: string;
+  authorAvatar?: string;
   content: string;
+  likesCount?: number;
+  likedUserIds?: string[];
+  isHelpful?: boolean;
+  parentId?: string;
+  replies?: CommunityComment[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CommunityPost {
   id: string;
+  authorId?: string;
   authorName: string;
-  authorVillage: string;
+  authorVillage?: string;
   authorDistrict?: string;
-  authorState: string;
-  authorRole: 'Farmer' | 'Village Champion' | 'KVK Agronomist' | string;
+  authorState?: string;
+  authorRole?: 'Farmer' | 'Village Champion' | 'KVK Agronomist' | string;
   authorAvatar?: string;
   authorBadge?: string;
-  title: string;
+  groupId?: string;
+  groupName?: string;
+  title?: string;
   content: string;
   category: 'Crop Advice' | 'Pest Outbreak' | 'Machinery Sharing' | 'Market Trends' | 'Success Story' | string;
   cropTag?: string;
   tags?: string[];
   imageUrl?: string;
+  images?: string[];
+  postType?: CommunityPostType;
+  poll?: CommunityPoll;
   likesCount: number;
   commentsCount: number;
   repliesCount?: number;
-  comments: CommunityComment[];
+  comments?: CommunityComment[];
+  likedUserIds?: string[];
+  savedUserIds?: string[];
   isLiked?: boolean;
   isBookmarked?: boolean;
+  isPinned?: boolean;
+  isHelpfulAnswered?: boolean;
   createdAt: string;
 }
 export type CommunityPostItem = CommunityPost;
@@ -1412,49 +1434,6 @@ export interface CommunityPoll {
   question: string;
   options: CommunityPollOption[];
   totalVotes: number;
-}
-
-export type CommunityPostType = 'DISCUSSION' | 'QUESTION' | 'TIP' | 'ANNOUNCEMENT';
-
-export interface CommunityComment {
-  id: string;
-  postId: string;
-  authorId: string;
-  authorName: string;
-  authorVillage?: string;
-  authorAvatar?: string;
-  content: string;
-  likesCount: number;
-  likedUserIds: string[];
-  isHelpful?: boolean;
-  parentId?: string;
-  replies?: CommunityComment[];
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface CommunityPost {
-  id: string;
-  authorId: string;
-  authorName: string;
-  authorRole?: string;
-  authorVillage?: string;
-  authorAvatar?: string;
-  groupId?: string;
-  groupName?: string;
-  category: string;
-  postType: CommunityPostType;
-  content: string;
-  images?: string[];
-  poll?: CommunityPoll;
-  likesCount: number;
-  likedUserIds: string[];
-  commentsCount: number;
-  comments?: CommunityComment[];
-  savedUserIds: string[];
-  isPinned?: boolean;
-  isHelpfulAnswered?: boolean;
-  createdAt: string;
 }
 
 export interface ContentReport {

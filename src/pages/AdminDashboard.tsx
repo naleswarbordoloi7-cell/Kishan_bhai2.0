@@ -12,16 +12,18 @@ import {
   ArrowRight,
   Database,
   Server,
+  Award,
 } from 'lucide-react';
 import { ApiBudgetCard } from '../components/ApiBudgetCard';
 import { ALGORAND_TESTNET_CONFIG } from '../../shared/constants';
 import { AdminChampionVerifications } from '../components/admin/AdminChampionVerifications';
+import { AdminLoyaltyManager } from '../components/admin/AdminLoyaltyManager';
 
 export const AdminDashboard: React.FC = () => {
   const { setCurrentView } = useApp();
   const [stats, setStats] = useState<any>(null);
   const [telemetry, setTelemetry] = useState<any>(null);
-  const [activeAdminTab, setActiveAdminTab] = useState<'overview' | 'champion-verifications'>('champion-verifications');
+  const [activeAdminTab, setActiveAdminTab] = useState<'overview' | 'champion-verifications' | 'loyalty-rules'>('loyalty-rules');
 
   const loadData = () => {
     fetch('/api/admin/stats')
@@ -104,9 +106,25 @@ export const AdminDashboard: React.FC = () => {
           <BarChart3 className="w-4 h-4" />
           <span>Platform Ops & Infrastructure</span>
         </button>
+
+        <button
+          onClick={() => setActiveAdminTab('loyalty-rules')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${activeAdminTab === 'loyalty-rules'
+              ? 'bg-green-700 text-white shadow-sm'
+              : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+            }`}
+        >
+          <Award className="w-4 h-4" />
+          <span>Kishan Rewards Rules</span>
+          <span className="bg-amber-300 text-amber-950 text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+            Loyalty Engine
+          </span>
+        </button>
       </div>
 
-      {activeAdminTab === 'champion-verifications' ? (
+      {activeAdminTab === 'loyalty-rules' ? (
+        <AdminLoyaltyManager />
+      ) : activeAdminTab === 'champion-verifications' ? (
         <AdminChampionVerifications />
       ) : (
         <>

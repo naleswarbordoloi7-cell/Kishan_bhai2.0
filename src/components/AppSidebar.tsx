@@ -72,6 +72,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       icon: Store,
     },
     {
+      id: 'buyer-offers',
+      labelEn: 'Buyer Offers',
+      labelHi: 'खरीदार ऑफ़र (Kisan Rewards)',
+      icon: Award,
+      badge: 'Rewards',
+    },
+    {
       id: 'profit-calculator',
       labelEn: 'Tools',
       labelHi: 'कृषि टूल्स (Tools)',

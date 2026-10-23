@@ -33,6 +33,9 @@ import {
 import farmerImg from '../assets/images/farmer_champion_portrait_1790247882281.jpg';
 import heroAgriImg from '../assets/images/hero_agri_landscape_1790247857958.jpg';
 import { WeatherData } from '../../shared/types';
+import { KishanRewardsCard } from '../components/loyalty/KishanRewardsCard';
+import { RepeatOrderModal } from '../components/loyalty/RepeatOrderModal';
+import { RewardsHistoryModal } from '../components/loyalty/RewardsHistoryModal';
 
 interface FarmTask {
   id: string;
@@ -67,6 +70,10 @@ export const FarmerDashboard: React.FC = () => {
 
   // Quick Question Input State for Kishan AI
   const [aiQuestion, setAiQuestion] = useState('');
+
+  // Kisan Rewards Loyalty Modals State
+  const [showRewardsHistory, setShowRewardsHistory] = useState(false);
+  const [showRepeatOrder, setShowRepeatOrder] = useState(false);
 
   // Daily Farm Plan checklist with local persistence
   const [farmTasks, setFarmTasks] = useState<FarmTask[]>(() => {
@@ -184,8 +191,8 @@ export const FarmerDashboard: React.FC = () => {
 
   // Weather Values
   const currentTemp = weather?.temperatureC ?? 31;
-  const weatherCondition = weather?.conditionText ?? 'Partly Cloudy';
-  const humidity = weather?.humidityPct ?? 48;
+  const weatherCondition = (weather as any)?.conditionText || (weather as any)?.condition || 'Partly Cloudy';
+  const humidity = (weather as any)?.humidityPct || (weather as any)?.humidity || 48;
   const windSpeed = weather?.windSpeedKmh ?? 14;
 
   // Mandi Dataset with Multi-Region Filtering
@@ -359,6 +366,16 @@ export const FarmerDashboard: React.FC = () => {
           </div>
 
         </div>
+      </section>
+
+      {/* ============================================================= */}
+      {/* KISHAN BHAI KISAN REWARDS — LOYALTY & SMART BUYER ACCESS      */}
+      {/* ============================================================= */}
+      <section>
+        <KishanRewardsCard
+          onOpenHistory={() => setShowRewardsHistory(true)}
+          onOpenRepeatOrder={() => setShowRepeatOrder(true)}
+        />
       </section>
 
       {/* ============================================================= */}
@@ -885,6 +902,17 @@ export const FarmerDashboard: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Kisan Rewards Modals */}
+      <RepeatOrderModal
+        isOpen={showRepeatOrder}
+        onClose={() => setShowRepeatOrder(false)}
+      />
+
+      <RewardsHistoryModal
+        isOpen={showRewardsHistory}
+        onClose={() => setShowRewardsHistory(false)}
+      />
     </div>
   );
 };

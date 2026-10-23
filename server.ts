@@ -60,6 +60,7 @@ import { marketService } from './src/server/services/MarketService.js';
 import { diseaseScannerService } from './src/server/services/DiseaseScannerService.js';
 import { auditService } from './src/server/services/AuditService.js';
 import { schemeService } from './src/server/services/SchemeService.js';
+import { loyaltyService } from './src/server/services/LoyaltyService.js';
 import { sendSuccess, sendError, AppError } from './src/server/core/errors.js';
 import { config } from './src/server/core/config.js';
 import {
@@ -2585,6 +2586,83 @@ app.get('/api/mandi/prices', (req, res) => {
 app.get('/api/mandi/commodities', (req, res) => {
   const meta = marketService.getCommodityList();
   res.json(meta);
+});
+
+// 8c. KISHAN BHAI KISAN REWARDS & SMART BUYER ACCESS APIS
+app.get('/api/farmer/rewards', (req, res) => {
+  try {
+    const farmerId = (req.query.farmerId as string) || 'farmer_01';
+    const profile = loyaltyService.getFarmerLoyalty(farmerId);
+    res.json({ success: true, ...profile });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/farmer/rewards/history', (req, res) => {
+  try {
+    const farmerId = (req.query.farmerId as string) || 'farmer_01';
+    const profile = loyaltyService.getFarmerLoyalty(farmerId);
+    res.json({ success: true, ledger: profile.recentLedger });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/farmer/buyer-offers', (req, res) => {
+  try {
+    const farmerId = (req.query.farmerId as string) || 'farmer_01';
+    const offersData = loyaltyService.getBuyerOffers(farmerId);
+    res.json({ success: true, ...offersData });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/orders/:orderId/repeat', (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { farmerId, crop, quantityQuintals, agreedPricePerQuintal, deliveryDate, buyerId } = req.body;
+    if (!crop || !quantityQuintals || !agreedPricePerQuintal) {
+      return res.status(400).json({ success: false, error: 'Crop, quantity and price are required for repeat order.' });
+    }
+    const result = loyaltyService.createRepeatOrder({
+      farmerId: farmerId || 'farmer_01',
+      originalTransactionId: orderId,
+      crop,
+      quantityQuintals: Number(quantityQuintals),
+      agreedPricePerQuintal: Number(agreedPricePerQuintal),
+      deliveryDate: deliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      buyerId,
+    });
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/buyer-offers/:offerId/respond', (req, res) => {
+  try {
+    const { offerId } = req.params;
+    const { farmerId, farmerName, proposedQuantityQuintals, message } = req.body;
+    res.json({
+      success: true,
+      inquiryId: `inq_${Date.now()}`,
+      offerId,
+      message: `Your inquiry for ${proposedQuantityQuintals || 25} quintals has been transmitted to the verified buyer. They will contact you shortly.`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/loyalty/rules', (req, res) => {
+  try {
+    const rules = loyaltyService.getLevelRules();
+    res.json({ success: true, rules });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.get('/api/weather/current', async (req, res) => {
