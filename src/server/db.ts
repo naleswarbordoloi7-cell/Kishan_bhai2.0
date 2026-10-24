@@ -25,6 +25,14 @@ import {
   ChampionVerificationRequest,
   ChampionVerificationStatus,
   ChampionDesignation,
+  LoyaltyTier,
+  LoyaltyActivityType,
+  LoyaltyLedgerEntry,
+  LoyaltyAccount,
+  LoyaltyRewardItem,
+  LoyaltyRewardRedemption,
+  OrderRating,
+  LoyaltyAdminConfig,
 } from '../../shared/types.js';
 import {
   CROP_RECOMMENDATIONS_DATABASE,
@@ -51,6 +59,40 @@ class InMemoryDB {
   soilRecords: Map<string, SoilRecordHistoryItem> = new Map();
   appointments: Map<string, any> = new Map();
   usedTxHashes: Set<string> = new Set();
+  
+  // Two-Sided Farmer + Buyer Loyalty Store
+  loyaltyAccounts: Map<string, LoyaltyAccount> = new Map();
+  loyaltyLedger: Map<string, LoyaltyLedgerEntry> = new Map();
+  loyaltyRewards: Map<string, LoyaltyRewardItem> = new Map();
+  loyaltyRedemptions: Map<string, LoyaltyRewardRedemption> = new Map();
+  processedLoyaltyEvents: Set<string> = new Set();
+  orderRatings: Map<string, OrderRating> = new Map();
+
+  loyaltyConfig: LoyaltyAdminConfig = {
+    pointsRules: {
+      buyerVerification: 50,
+      buyerPurchaseCompleted: 100,
+      buyerDeliveryConfirmed: 50,
+      buyerRatingSubmitted: 20,
+      buyerRepeatPurchase: 50,
+      farmerVerification: 100,
+      farmerSaleCompleted: 100,
+      farmerDeliveryConfirmed: 50,
+      farmerQualityMaintained: 50,
+      farmerRatingReceived: 20,
+      repeatTransactionBonus: 50,
+    },
+    tierThresholds: {
+      gold: 500,
+      platinum: 1500,
+      diamond: 3500,
+    },
+    fairnessGuarantees: {
+      higherTierNeverInflatesCropPrice: true,
+      lowerTierFarmersHaveEqualMandiAccess: true,
+      serverAuthoritativeLedger: true,
+    },
+  };
   
   budgetStats: ApiBudgetStats = {
     monthlyLimitInr: 1500,
@@ -86,6 +128,12 @@ class InMemoryDB {
     this.soilHealth.clear();
     this.soilRecords.clear();
     this.usedTxHashes.clear();
+    this.loyaltyAccounts.clear();
+    this.loyaltyLedger.clear();
+    this.loyaltyRewards.clear();
+    this.loyaltyRedemptions.clear();
+    this.processedLoyaltyEvents.clear();
+    this.orderRatings.clear();
     this.budgetStats = {
       monthlyLimitInr: 1500,
       currentUsageInr: 0,
@@ -1631,6 +1679,1233 @@ class InMemoryDB {
         algorandNodeInr: 0.58,
       },
     };
+
+    // Initialize two-sided loyalty rewards system
+    this.seedLoyaltyData();
+  }
+
+  // ==========================================
+  // LOYALTY REWARDS METHODS & CALCULATIONS
+  // ==========================================
+
+  public calculateTier(points: number): {
+    tier: LoyaltyTier;
+    pointsToNextTier: number;
+    nextTier: LoyaltyTier | null;
+    progressPercent: number;
+  } {
+    const thresholds = this.loyaltyConfig.tierThresholds;
+    if (points >= thresholds.diamond) {
+      return {
+        tier: 'DIAMOND',
+        pointsToNextTier: 0,
+        nextTier: null,
+        progressPercent: 100,
+      };
+    } else if (points >= thresholds.platinum) {
+      const range = thresholds.diamond - thresholds.platinum;
+      const currentProgress = points - thresholds.platinum;
+      return {
+        tier: 'PLATINUM',
+        pointsToNextTier: thresholds.diamond - points,
+        nextTier: 'DIAMOND',
+        progressPercent: Math.min(100, Math.round((currentProgress / range) * 100)),
+      };
+    } else if (points >= thresholds.gold) {
+      const range = thresholds.platinum - thresholds.gold;
+      const currentProgress = points - thresholds.gold;
+      return {
+        tier: 'GOLD',
+        pointsToNextTier: thresholds.platinum - points,
+        nextTier: 'PLATINUM',
+        progressPercent: Math.min(100, Math.round((currentProgress / range) * 100)),
+      };
+    } else {
+      const range = thresholds.gold;
+      return {
+        tier: 'SILVER',
+        pointsToNextTier: thresholds.gold - points,
+        nextTier: 'GOLD',
+        progressPercent: Math.min(100, Math.round((points / range) * 100)),
+      };
+    }
+  }
+
+  public getUnlockedBenefits(role: 'FARMER' | 'BUYER', tier: LoyaltyTier): string[] {
+    if (role === 'FARMER') {
+      const silver = [
+        'Standard verified buyer offers & mandi price info',
+        'Transparent digital escrow settlement',
+        'Cluster pooling access',
+      ];
+      const gold = [
+        ...silver,
+        'Additional eligible buyer opportunities',
+        'Bulk-selling priority allocation',
+        'Machinery hire rebate eligibility',
+      ];
+      const platinum = [
+        ...gold,
+        'Additional premium institutional buyer matches',
+        'Priority transport & logistics dispatching',
+        'Dedicated ICAR advisory concierge',
+      ];
+      const diamond = [
+        ...platinum,
+        'Priority consideration for high-volume procurement',
+        'Zero platform fees on cluster escrow',
+        'Annual Agri-Leadership badge',
+      ];
+
+      switch (tier) {
+        case 'DIAMOND':
+          return diamond;
+        case 'PLATINUM':
+          return platinum;
+        case 'GOLD':
+          return gold;
+        case 'SILVER':
+        default:
+          return silver;
+      }
+    } else {
+      const silver = [
+        'Discover verified farmers & clusters',
+        'View eligible crop listings with moisture specs',
+        'Submit purchase requests',
+        'Track orders & verified deliveries',
+        'Earn points from verified completed purchases',
+      ];
+      const gold = [
+        ...silver,
+        'Access additional eligible procurement opportunities',
+        'One-click repeat order tools',
+        'Loyalty benefits & fee waivers on eligible orders',
+        'Purchase history & spending analytics',
+      ];
+      const platinum = [
+        ...gold,
+        'Access eligible bulk-purchase volume opportunities',
+        'Advanced multi-attribute crop & supplier filtering',
+        'Priority dispute & delivery support',
+        'Repeat purchase multiplier bonuses',
+      ];
+      const diamond = [
+        ...platinum,
+        'Access high-volume forward contract sourcing',
+        'Dedicated procurement manager & escrow desk',
+        'Custom API access for ERP procurement',
+        'VIP supplier summits & direct farm gate visits',
+      ];
+
+      switch (tier) {
+        case 'DIAMOND':
+          return diamond;
+        case 'PLATINUM':
+          return platinum;
+        case 'GOLD':
+          return gold;
+        case 'SILVER':
+        default:
+          return silver;
+      }
+    }
+  }
+
+  public getOrCreateLoyaltyAccount(userId: string, role?: 'FARMER' | 'BUYER', userName?: string): LoyaltyAccount {
+    let account = this.loyaltyAccounts.get(userId);
+    if (!account) {
+      const user = this.users.get(userId);
+      const effectiveRole: 'FARMER' | 'BUYER' = role || (user?.role === 'BUYER' ? 'BUYER' : 'FARMER');
+      const effectiveName = userName || user?.fullName || (effectiveRole === 'BUYER' ? 'Verified Buyer' : 'Verified Farmer');
+      const now = new Date().toISOString();
+
+      const tierCalc = this.calculateTier(0);
+      account = {
+        userId,
+        userName: effectiveName,
+        userRole: effectiveRole,
+        tier: 'SILVER',
+        points: 0,
+        lifetimePointsEarned: 0,
+        pointsToNextTier: tierCalc.pointsToNextTier,
+        nextTier: tierCalc.nextTier,
+        progressPercent: 0,
+        tierThresholds: {
+          silver: 0,
+          gold: this.loyaltyConfig.tierThresholds.gold,
+          platinum: this.loyaltyConfig.tierThresholds.platinum,
+          diamond: this.loyaltyConfig.tierThresholds.diamond,
+        },
+        unlockedBenefits: this.getUnlockedBenefits(effectiveRole, 'SILVER'),
+        eligibleBulkOpportunities: false,
+        eligiblePremiumMatches: false,
+        prioritySupportUnlocked: false,
+        repeatTransactionCount: 0,
+        completedTransactionsCount: 0,
+        ratingsCount: 0,
+        averageRatingScore: 5.0,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      this.loyaltyAccounts.set(userId, account);
+
+      // Auto-award initial verification points if user is verified
+      if (user?.verified) {
+        const verifPoints =
+          effectiveRole === 'BUYER'
+            ? this.loyaltyConfig.pointsRules.buyerVerification
+            : this.loyaltyConfig.pointsRules.farmerVerification;
+        this.awardLoyaltyPoints({
+          userId,
+          role: effectiveRole,
+          userName: effectiveName,
+          activityType: 'PROFILE_VERIFICATION',
+          title: `${effectiveRole === 'BUYER' ? 'Buyer' : 'Farmer'} Verification Complete`,
+          points: verifPoints,
+          referenceId: `verif_${userId}`,
+          notes: 'Awarded for completing digital identity and credential verification.',
+          idempotencyKey: `verif_${userId}`,
+        });
+      }
+    }
+    return this.loyaltyAccounts.get(userId)!;
+  }
+
+  public awardLoyaltyPoints(params: {
+    userId: string;
+    role?: 'FARMER' | 'BUYER';
+    userName?: string;
+    activityType: LoyaltyActivityType;
+    title: string;
+    points: number;
+    referenceId?: string;
+    notes?: string;
+    idempotencyKey?: string;
+  }): { success: boolean; account: LoyaltyAccount; ledgerEntry?: LoyaltyLedgerEntry; message: string } {
+    if (params.idempotencyKey && this.processedLoyaltyEvents.has(params.idempotencyKey)) {
+      const existingAccount = this.getOrCreateLoyaltyAccount(params.userId, params.role, params.userName);
+      return {
+        success: true,
+        account: existingAccount,
+        message: 'Event was already rewarded previously (idempotent duplicate avoided).',
+      };
+    }
+
+    const account = this.getOrCreateLoyaltyAccount(params.userId, params.role, params.userName);
+    const now = new Date().toISOString();
+
+    account.points += params.points;
+    if (params.points > 0) {
+      account.lifetimePointsEarned += params.points;
+    }
+
+    // Recalculate Tier
+    const tierInfo = this.calculateTier(account.points);
+    account.tier = tierInfo.tier;
+    account.pointsToNextTier = tierInfo.pointsToNextTier;
+    account.nextTier = tierInfo.nextTier;
+    account.progressPercent = tierInfo.progressPercent;
+    account.unlockedBenefits = this.getUnlockedBenefits(account.userRole, account.tier);
+    account.eligibleBulkOpportunities = account.tier === 'GOLD' || account.tier === 'PLATINUM' || account.tier === 'DIAMOND';
+    account.eligiblePremiumMatches = account.tier === 'PLATINUM' || account.tier === 'DIAMOND';
+    account.prioritySupportUnlocked = account.tier === 'PLATINUM' || account.tier === 'DIAMOND';
+    account.updatedAt = now;
+
+    if (params.activityType === 'CROP_SALE_COMPLETED' || params.activityType === 'PURCHASE_COMPLETED') {
+      account.completedTransactionsCount += 1;
+    } else if (params.activityType === 'REPEAT_TRANSACTION_BONUS') {
+      account.repeatTransactionCount += 1;
+    }
+
+    const ledgerEntry: LoyaltyLedgerEntry = {
+      id: `led_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: account.userId,
+      userRole: account.userRole,
+      activityType: params.activityType,
+      title: params.title,
+      pointsDelta: params.points,
+      resultingBalance: account.points,
+      timestamp: now,
+      referenceId: params.referenceId,
+      notes: params.notes,
+      isReversed: false,
+    };
+
+    this.loyaltyLedger.set(ledgerEntry.id, ledgerEntry);
+    if (params.idempotencyKey) {
+      this.processedLoyaltyEvents.add(params.idempotencyKey);
+    }
+
+    return {
+      success: true,
+      account,
+      ledgerEntry,
+      message: `Successfully awarded ${params.points} points for ${params.title}. New balance: ${account.points} pts.`,
+    };
+  }
+
+  public reverseLoyaltyPoints(params: {
+    userId: string;
+    referenceId: string;
+    reason: string;
+  }): { success: boolean; account?: LoyaltyAccount; ledgerEntry?: LoyaltyLedgerEntry; message: string } {
+    const account = this.loyaltyAccounts.get(params.userId);
+    if (!account) {
+      return { success: false, message: 'Loyalty account not found' };
+    }
+
+    // Find all entries associated with this referenceId that have not been reversed
+    const matchingEntries = Array.from(this.loyaltyLedger.values()).filter(
+      (e) => e.userId === params.userId && e.referenceId === params.referenceId && !e.isReversed && e.pointsDelta > 0
+    );
+
+    if (matchingEntries.length === 0) {
+      return { success: false, message: 'No un-reversed reward points found for this reference ID.' };
+    }
+
+    const totalToDeduct = matchingEntries.reduce((sum, e) => sum + e.pointsDelta, 0);
+    matchingEntries.forEach((e) => {
+      e.isReversed = true;
+    });
+
+    account.points = Math.max(0, account.points - totalToDeduct);
+    const tierInfo = this.calculateTier(account.points);
+    account.tier = tierInfo.tier;
+    account.pointsToNextTier = tierInfo.pointsToNextTier;
+    account.nextTier = tierInfo.nextTier;
+    account.progressPercent = tierInfo.progressPercent;
+    account.unlockedBenefits = this.getUnlockedBenefits(account.userRole, account.tier);
+    account.updatedAt = new Date().toISOString();
+
+    const reversalEntry: LoyaltyLedgerEntry = {
+      id: `led_rev_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: account.userId,
+      userRole: account.userRole,
+      activityType: 'POINTS_REVERSAL_CANCELLATION',
+      title: `Points Reversal: ${params.reason}`,
+      pointsDelta: -totalToDeduct,
+      resultingBalance: account.points,
+      timestamp: new Date().toISOString(),
+      referenceId: params.referenceId,
+      notes: `Reversal policy enforced. Invalidation reason: ${params.reason}`,
+      isReversed: false,
+    };
+
+    this.loyaltyLedger.set(reversalEntry.id, reversalEntry);
+
+    return {
+      success: true,
+      account,
+      ledgerEntry: reversalEntry,
+      message: `Reversed ${totalToDeduct} loyalty points. Current balance: ${account.points} pts.`,
+    };
+  }
+
+  public redeemReward(params: {
+    userId: string;
+    rewardId: string;
+  }): { success: boolean; redemption?: LoyaltyRewardRedemption; account?: LoyaltyAccount; error?: string } {
+    const reward = this.loyaltyRewards.get(params.rewardId);
+    if (!reward) {
+      return { success: false, error: 'Reward item not found' };
+    }
+    if (!reward.isAvailable) {
+      return { success: false, error: 'This reward is currently unavailable' };
+    }
+
+    let account = this.loyaltyAccounts.get(params.userId);
+    if (!account) {
+      account = this.getOrCreateLoyaltyAccount(params.userId);
+    }
+
+    if (reward.eligibleRole !== 'BOTH' && reward.eligibleRole !== account.userRole) {
+      return { success: false, error: `This reward is exclusively for ${reward.eligibleRole.toLowerCase()} accounts.` };
+    }
+
+    // Check tier eligibility
+    const tierRanks: Record<LoyaltyTier, number> = { SILVER: 0, GOLD: 1, PLATINUM: 2, DIAMOND: 3 };
+    if (tierRanks[account.tier] < tierRanks[reward.minTier]) {
+      return { success: false, error: `Requires ${reward.minTier} tier or higher (Current: ${account.tier})` };
+    }
+
+    if (account.points < reward.pointsCost) {
+      return { success: false, error: `Insufficient loyalty points. Have: ${account.points}, Required: ${reward.pointsCost}` };
+    }
+
+    // Deduct points
+    account.points -= reward.pointsCost;
+    const tierInfo = this.calculateTier(account.points);
+    account.tier = tierInfo.tier;
+    account.pointsToNextTier = tierInfo.pointsToNextTier;
+    account.nextTier = tierInfo.nextTier;
+    account.progressPercent = tierInfo.progressPercent;
+    account.unlockedBenefits = this.getUnlockedBenefits(account.userRole, account.tier);
+    account.updatedAt = new Date().toISOString();
+
+    const voucherCode = `KB-${reward.category.substring(0, 3)}-${Date.now().toString(36).toUpperCase()}`;
+    const expiresAt = new Date(Date.now() + reward.expiryDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const redemption: LoyaltyRewardRedemption = {
+      id: `red_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      rewardId: reward.id,
+      userId: account.userId,
+      userRole: account.userRole,
+      pointsDeducted: reward.pointsCost,
+      voucherCode,
+      rewardTitle: reward.title,
+      discountValueText: reward.discountValueText,
+      status: 'ACTIVE',
+      redeemedAt: new Date().toISOString(),
+      expiresAt,
+    };
+
+    this.loyaltyRedemptions.set(redemption.id, redemption);
+
+    const ledgerEntry: LoyaltyLedgerEntry = {
+      id: `led_red_${Date.now()}`,
+      userId: account.userId,
+      userRole: account.userRole,
+      activityType: 'REWARD_REDEMPTION',
+      title: `Redeemed: ${reward.title}`,
+      pointsDelta: -reward.pointsCost,
+      resultingBalance: account.points,
+      timestamp: new Date().toISOString(),
+      referenceId: redemption.id,
+      notes: `Voucher Code: ${voucherCode}. Valid until ${expiresAt.split('T')[0]}.`,
+    };
+    this.loyaltyLedger.set(ledgerEntry.id, ledgerEntry);
+
+    return {
+      success: true,
+      redemption,
+      account,
+    };
+  }
+
+  public confirmDelivery(orderId: string, userId: string, isBuyer: boolean): { success: boolean; message: string; req?: BuyerPurchaseRequest } {
+    const req = this.purchaseRequests.get(orderId);
+    if (!req) {
+      return { success: false, message: 'Order / purchase request not found' };
+    }
+
+    req.status = 'COMPLETED';
+    this.purchaseRequests.set(orderId, req);
+
+    const buyerPoints = this.loyaltyConfig.pointsRules.buyerDeliveryConfirmed;
+    const farmerPoints = this.loyaltyConfig.pointsRules.farmerDeliveryConfirmed;
+
+    const buyerId = req.buyerId;
+    const lot = this.harvestLots.get(req.harvestLotId);
+    const farmerId = lot?.farmerId || 'usr_farmer_ramesh';
+
+    // Buyer delivery confirmation
+    this.awardLoyaltyPoints({
+      userId: buyerId,
+      role: 'BUYER',
+      userName: req.buyerName,
+      activityType: 'DELIVERY_CONFIRMED',
+      title: `Delivery Confirmation: ${req.crop} (${(req.quantityKg / 1000).toFixed(1)} Tons)`,
+      points: buyerPoints,
+      referenceId: req.id,
+      notes: `Verified receipt of harvest goods at ${req.deliveryLocation}.`,
+      idempotencyKey: `delivery_buyer_${req.id}`,
+    });
+
+    // Farmer delivery confirmation
+    this.awardLoyaltyPoints({
+      userId: farmerId,
+      role: 'FARMER',
+      userName: req.farmerName || 'Ramesh Patel',
+      activityType: 'DELIVERY_CONFIRMED',
+      title: `Successful Delivery Confirmed: ${req.crop}`,
+      points: farmerPoints,
+      referenceId: req.id,
+      notes: `Buyer certified arrival of ${req.crop} lot.`,
+      idempotencyKey: `delivery_farmer_${req.id}`,
+    });
+
+    return { success: true, message: 'Delivery confirmed. Loyalty points credited to both accounts.', req };
+  }
+
+  public submitRating(params: {
+    orderId: string;
+    farmerId: string;
+    buyerId: string;
+    buyerName: string;
+    ratingScore: number;
+    qualityFeedback: 'EXCELLENT' | 'GOOD' | 'AVERAGE' | 'SUBPAR';
+    deliveryOnTime: boolean;
+    comments: string;
+  }): { success: boolean; rating: OrderRating; farmerAccount: LoyaltyAccount; buyerAccount: LoyaltyAccount } {
+    const rating: OrderRating = {
+      id: `rat_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      orderId: params.orderId,
+      farmerId: params.farmerId,
+      buyerId: params.buyerId,
+      buyerName: params.buyerName,
+      ratingScore: params.ratingScore,
+      qualityFeedback: params.qualityFeedback,
+      deliveryOnTime: params.deliveryOnTime,
+      comments: params.comments,
+      submittedAt: new Date().toISOString(),
+    };
+
+    this.orderRatings.set(rating.id, rating);
+
+    // Award Buyer points for submitting genuine review
+    const buyerResult = this.awardLoyaltyPoints({
+      userId: params.buyerId,
+      role: 'BUYER',
+      userName: params.buyerName,
+      activityType: 'GENUINE_RATING_SUBMITTED',
+      title: `Submitted Genuine Farmer Rating (${params.ratingScore}★)`,
+      points: this.loyaltyConfig.pointsRules.buyerRatingSubmitted,
+      referenceId: rating.id,
+      notes: params.comments || 'Helpful feedback contributes to fair marketplace pricing and trust.',
+      idempotencyKey: `rating_buyer_${params.orderId}`,
+    });
+
+    // Award Farmer points for receiving review
+    const farmerAccount = this.getOrCreateLoyaltyAccount(params.farmerId, 'FARMER');
+    farmerAccount.ratingsCount += 1;
+    const existingRatings = Array.from(this.orderRatings.values()).filter((r) => r.farmerId === params.farmerId);
+    const sumRatings = existingRatings.reduce((sum, r) => sum + r.ratingScore, 0);
+    farmerAccount.averageRatingScore = Math.round((sumRatings / existingRatings.length) * 10) / 10;
+
+    const farmerResult = this.awardLoyaltyPoints({
+      userId: params.farmerId,
+      role: 'FARMER',
+      activityType: 'GENUINE_RATING_RECEIVED',
+      title: `Received Genuine Rating (${params.ratingScore}★) from ${params.buyerName}`,
+      points: this.loyaltyConfig.pointsRules.farmerRatingReceived,
+      referenceId: rating.id,
+      notes: `Crop quality: ${params.qualityFeedback}. Feedback: "${params.comments || 'No comments'}"`,
+      idempotencyKey: `rating_farmer_${params.orderId}`,
+    });
+
+    return {
+      success: true,
+      rating,
+      farmerAccount: farmerResult.account,
+      buyerAccount: buyerResult.account,
+    };
+  }
+
+  public repeatOrder(orderId: string, buyerId: string): { success: boolean; newRequest?: BuyerPurchaseRequest; error?: string } {
+    const originalReq = this.purchaseRequests.get(orderId);
+    if (!originalReq) {
+      return { success: false, error: 'Original order not found' };
+    }
+
+    const newRequest: BuyerPurchaseRequest = {
+      id: `req_rep_${Date.now()}`,
+      harvestLotId: originalReq.harvestLotId,
+      crop: originalReq.crop,
+      quantityKg: originalReq.quantityKg,
+      buyerId: buyerId || originalReq.buyerId,
+      buyerName: originalReq.buyerName,
+      buyerCompany: originalReq.buyerCompany,
+      offeredPricePerKg: originalReq.offeredPricePerKg,
+      totalOfferedInr: originalReq.totalOfferedInr,
+      deliveryLocation: originalReq.deliveryLocation,
+      status: 'PENDING',
+      requestedAt: new Date().toISOString(),
+      clusterName: originalReq.clusterName,
+      farmerName: originalReq.farmerName,
+    };
+
+    this.purchaseRequests.set(newRequest.id, newRequest);
+
+    return {
+      success: true,
+      newRequest,
+    };
+  }
+
+  private seedLoyaltyData() {
+    // 1. Seed Real Fulfillable Rewards
+    const rewardsList: LoyaltyRewardItem[] = [
+      {
+        id: 'rew_fee_waiver_50',
+        title: '50% Platform Escrow Fee Waiver',
+        description: 'Waive half of the standard 1.5% digital escrow settlement fee on your next completed marketplace trade.',
+        category: 'FEE_WAIVER',
+        eligibleRole: 'BOTH',
+        minTier: 'SILVER',
+        pointsCost: 250,
+        discountValueText: '50% Escrow Fee Off',
+        terms: 'Valid on 1 transaction within 45 days. Applied automatically at escrow lock stage.',
+        expiryDays: 45,
+        isAvailable: true,
+        maxRedemptionsPerUser: 5,
+        fulfilledByService: 'Escrow Settlement Smart Contract',
+      },
+      {
+        id: 'rew_fee_waiver_100',
+        title: '100% Zero-Fee Escrow Trade Voucher',
+        description: 'Complete one verified harvest trade with 0.0% platform fee. Maximum fee subsidy of ₹3,000.',
+        category: 'FEE_WAIVER',
+        eligibleRole: 'BOTH',
+        minTier: 'GOLD',
+        pointsCost: 600,
+        discountValueText: '100% Free Escrow Settlement',
+        terms: 'Applicable on lots up to 10 Tons. Cannot be combined with other promotional codes.',
+        expiryDays: 60,
+        isAvailable: true,
+        maxRedemptionsPerUser: 3,
+        fulfilledByService: 'Escrow Settlement Smart Contract',
+      },
+      {
+        id: 'rew_machinery_500',
+        title: '₹500 Modern Equipment Rental Credit',
+        description: 'Instant ₹500 discount on booking combine harvesters, laser levelers, or drone spraying via cluster machinery.',
+        category: 'MACHINERY',
+        eligibleRole: 'FARMER',
+        minTier: 'SILVER',
+        pointsCost: 400,
+        discountValueText: '₹500 Equipment Credit',
+        terms: 'Valid for all custom hiring centers listed in your district cluster. Minimum booking ₹1,500.',
+        expiryDays: 90,
+        isAvailable: true,
+        maxRedemptionsPerUser: 4,
+        fulfilledByService: 'Virtual Cluster Machinery Hub',
+      },
+      {
+        id: 'rew_machinery_1200',
+        title: '₹1,200 Priority Harvester Rental Voucher',
+        description: 'Premium peak-season harvester reservation guarantee with ₹1,200 direct subsidy.',
+        category: 'MACHINERY',
+        eligibleRole: 'FARMER',
+        minTier: 'GOLD',
+        pointsCost: 950,
+        discountValueText: '₹1,200 Machinery Subsidy',
+        terms: 'Guaranteed 24-hr machine dispatch during harvesting window. Verified village champions assist operator.',
+        expiryDays: 90,
+        isAvailable: true,
+        maxRedemptionsPerUser: 2,
+        fulfilledByService: 'Virtual Cluster Machinery Hub',
+      },
+      {
+        id: 'rew_logistics_750',
+        title: '₹750 Freight & Fuel Mandi Transport Subsidy',
+        description: 'Direct freight subsidy credited toward tractor trolley or tempo hauling from farm gate to central APMC depot.',
+        category: 'LOGISTICS',
+        eligibleRole: 'BOTH',
+        minTier: 'SILVER',
+        pointsCost: 500,
+        discountValueText: '₹750 Logistics Rebate',
+        terms: 'Must be routed through Kishan Bhai pooled transit logistics partner.',
+        expiryDays: 60,
+        isAvailable: true,
+        maxRedemptionsPerUser: 4,
+        fulfilledByService: 'Integrated Village Transport Dispatch',
+      },
+      {
+        id: 'rew_quality_lab',
+        title: 'Comprehensive Lab NIR Spectroscopy Moisture & Grade Test',
+        description: 'Complimentary certified digital lab assay report for grain protein, oil content, and moisture percentage.',
+        category: 'QUALITY_TESTING',
+        eligibleRole: 'BOTH',
+        minTier: 'SILVER',
+        pointsCost: 350,
+        discountValueText: 'Free Official Assay Report (₹600 Value)',
+        terms: 'Conducted at district authorized NABL partner laboratory or village champion testing kiosk.',
+        expiryDays: 120,
+        isAvailable: true,
+        maxRedemptionsPerUser: 6,
+        fulfilledByService: 'Quality Assurance & Certification Desk',
+      },
+      {
+        id: 'rew_priority_desk',
+        title: '30-Day ICAR Agronomist & Trade Concierge Pass',
+        description: 'Direct one-on-one phone and video consultation pass with certified ICAR senior agronomists and trade brokers.',
+        category: 'PRIORITY_SUPPORT',
+        eligibleRole: 'BOTH',
+        minTier: 'PLATINUM',
+        pointsCost: 1200,
+        discountValueText: 'VIP Concierge Hotline Pass',
+        terms: 'Priority queue with under 15-minute response SLA from 07:00 to 20:00 daily.',
+        expiryDays: 30,
+        isAvailable: true,
+        maxRedemptionsPerUser: 1,
+        fulfilledByService: 'ICAR Kisan Call Concierge',
+      },
+      {
+        id: 'rew_procurement_bulk_disc',
+        title: '₹2,500 Institutional Sourcing Fee Rebate',
+        description: 'Procurement processing fee deduction for verified institutional purchases exceeding 5 Metric Tons.',
+        category: 'FEE_WAIVER',
+        eligibleRole: 'BUYER',
+        minTier: 'PLATINUM',
+        pointsCost: 1500,
+        discountValueText: '₹2,500 Institutional Credit',
+        terms: 'Single use per bulk PO. Automatically applied on settlement invoice.',
+        expiryDays: 90,
+        isAvailable: true,
+        maxRedemptionsPerUser: 2,
+        fulfilledByService: 'Institutional Buyer Mandi Desk',
+      },
+    ];
+
+    rewardsList.forEach((r) => this.loyaltyRewards.set(r.id, r));
+
+    // 2. Seed Realistic Farmer Loyalty Account (Ramesh Patel: Gold Tier with 750 points)
+    const farmerId = 'usr_farmer_ramesh';
+    const farmerAccount: LoyaltyAccount = {
+      userId: farmerId,
+      userName: 'Ramesh Patel',
+      userRole: 'FARMER',
+      tier: 'GOLD',
+      points: 750,
+      lifetimePointsEarned: 1150,
+      pointsToNextTier: 750, // 1500 - 750
+      nextTier: 'PLATINUM',
+      progressPercent: 25, // (750-500)/1000 = 25%
+      tierThresholds: { silver: 0, gold: 500, platinum: 1500, diamond: 3500 },
+      unlockedBenefits: this.getUnlockedBenefits('FARMER', 'GOLD'),
+      eligibleBulkOpportunities: true,
+      eligiblePremiumMatches: false,
+      prioritySupportUnlocked: false,
+      repeatTransactionCount: 2,
+      completedTransactionsCount: 4,
+      ratingsCount: 3,
+      averageRatingScore: 4.9,
+      createdAt: '2026-06-15T09:00:00Z',
+      updatedAt: '2026-09-17T09:00:00Z',
+    };
+    this.loyaltyAccounts.set(farmerId, farmerAccount);
+
+    const farmerLedgerItems: LoyaltyLedgerEntry[] = [
+      {
+        id: 'led_f_01',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'PROFILE_VERIFICATION',
+        title: 'Farmer Identity & Landholding Verification',
+        pointsDelta: 100,
+        resultingBalance: 100,
+        timestamp: '2026-06-15T09:30:00Z',
+        referenceId: 'verif_doc_7821',
+        notes: 'Aadhaar + 7/12 Land Record verified by Sarpanch Vikram Jadeja.',
+      },
+      {
+        id: 'led_f_02',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'QUALITY_STANDARDS_VERIFIED',
+        title: 'Assay Lab Grade A Certification - Bt Cotton',
+        pointsDelta: 50,
+        resultingBalance: 150,
+        timestamp: '2026-07-10T11:00:00Z',
+        referenceId: 'lot_01',
+        notes: 'Moisture 8.2% and fiber strength certified.',
+      },
+      {
+        id: 'led_f_03',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'CROP_SALE_COMPLETED',
+        title: 'Completed Crop Sale: Bt Cotton (4.5 Tons)',
+        pointsDelta: 100,
+        resultingBalance: 250,
+        timestamp: '2026-07-20T14:00:00Z',
+        referenceId: 'req_init_cotton',
+        notes: 'Trade settled via secure Algorand Escrow with AgroPure Organics.',
+      },
+      {
+        id: 'led_f_04',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'DELIVERY_CONFIRMED',
+        title: 'Delivery Confirmed at Central Processing Depot',
+        pointsDelta: 50,
+        resultingBalance: 300,
+        timestamp: '2026-07-22T10:30:00Z',
+        referenceId: 'req_init_cotton',
+        notes: 'Verified receipt by buyer receiver.',
+      },
+      {
+        id: 'led_f_05',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'GENUINE_RATING_RECEIVED',
+        title: 'Received 5-Star Rating from AgroPure Organics',
+        pointsDelta: 20,
+        resultingBalance: 320,
+        timestamp: '2026-07-23T16:00:00Z',
+        referenceId: 'rat_init_01',
+        notes: 'Feedback: "Excellent staple length, clean packing, on-time haulage."',
+      },
+      {
+        id: 'led_f_06',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'CROP_SALE_COMPLETED',
+        title: 'Completed Crop Sale: Groundnut TG-37A (3.0 Tons)',
+        pointsDelta: 100,
+        resultingBalance: 420,
+        timestamp: '2026-08-14T12:00:00Z',
+        referenceId: 'req_init_groundnut',
+        notes: 'Sold to regional oil processing federation.',
+      },
+      {
+        id: 'led_f_07',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'DELIVERY_CONFIRMED',
+        title: 'Delivery Confirmed: Groundnut Lot',
+        pointsDelta: 50,
+        resultingBalance: 470,
+        timestamp: '2026-08-16T15:00:00Z',
+        referenceId: 'req_init_groundnut',
+        notes: 'Unloaded and weighed at Gondal yard.',
+      },
+      {
+        id: 'led_f_08',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'REPEAT_TRANSACTION_BONUS',
+        title: 'Repeat Transaction Loyalty Bonus',
+        pointsDelta: 50,
+        resultingBalance: 520,
+        timestamp: '2026-08-20T10:00:00Z',
+        referenceId: 'req_repeat_cotton_02',
+        notes: 'Rewarded for completing 2nd consecutive direct trade with certified buyer.',
+      },
+      {
+        id: 'led_f_09',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'CROP_SALE_COMPLETED',
+        title: 'Completed Crop Sale: Sharbati Wheat (6.0 Tons)',
+        pointsDelta: 100,
+        resultingBalance: 620,
+        timestamp: '2026-09-02T11:00:00Z',
+        referenceId: 'req_init_wheat',
+        notes: 'Clustered lot sale completed.',
+      },
+      {
+        id: 'led_f_10',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'DELIVERY_CONFIRMED',
+        title: 'Delivery Confirmed: Sharbati Wheat',
+        pointsDelta: 50,
+        resultingBalance: 670,
+        timestamp: '2026-09-04T17:00:00Z',
+        referenceId: 'req_init_wheat',
+        notes: 'Dispatched and certified by warehouse inspector.',
+      },
+      {
+        id: 'led_f_11',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'GENUINE_RATING_RECEIVED',
+        title: 'Received 5-Star Rating from ITC Sourcing',
+        pointsDelta: 20,
+        resultingBalance: 690,
+        timestamp: '2026-09-05T09:00:00Z',
+        referenceId: 'rat_wheat_01',
+        notes: 'Feedback: "Exceptional grain luster and zero moisture defect."',
+      },
+      {
+        id: 'led_f_12',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'REWARD_REDEMPTION',
+        title: 'Redeemed: ₹500 Modern Equipment Rental Credit',
+        pointsDelta: -400,
+        resultingBalance: 290,
+        timestamp: '2026-09-12T15:00:00Z',
+        referenceId: 'red_ramesh_01',
+        notes: 'Voucher KB-MAC-SEPT26 used for laser leveler booking.',
+      },
+      {
+        id: 'led_f_13',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'CROP_SALE_COMPLETED',
+        title: 'Completed Crop Sale: Bt Cotton Bales (2.5 Tons)',
+        pointsDelta: 100,
+        resultingBalance: 390,
+        timestamp: '2026-09-15T16:00:00Z',
+        referenceId: 'req_cotton_bales_03',
+        notes: 'Final pool harvest batch released.',
+      },
+      {
+        id: 'led_f_14',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'DELIVERY_CONFIRMED',
+        title: 'Delivery Confirmed: Final Cotton Batch',
+        pointsDelta: 50,
+        resultingBalance: 440,
+        timestamp: '2026-09-16T12:00:00Z',
+        referenceId: 'req_cotton_bales_03',
+        notes: 'Final delivery recorded in escrow.',
+      },
+      {
+        id: 'led_f_15',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'REPEAT_TRANSACTION_BONUS',
+        title: 'Eligible Repeat Sourcing Bonus',
+        pointsDelta: 50,
+        resultingBalance: 490,
+        timestamp: '2026-09-16T15:00:00Z',
+        referenceId: 'req_cotton_bales_03',
+        notes: 'Consecutive fulfillment reward.',
+      },
+      {
+        id: 'led_f_16',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'QUALITY_STANDARDS_VERIFIED',
+        title: 'Certified Organic Soil Carbon Standard',
+        pointsDelta: 50,
+        resultingBalance: 540,
+        timestamp: '2026-09-16T17:00:00Z',
+        referenceId: 'soil_cert_2026',
+        notes: 'Soil organic carbon above 0.6% standard.',
+      },
+      {
+        id: 'led_f_17',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'CROP_SALE_COMPLETED',
+        title: 'Completed Crop Sale: Premium Cumin (1.2 Tons)',
+        pointsDelta: 100,
+        resultingBalance: 640,
+        timestamp: '2026-09-17T08:00:00Z',
+        referenceId: 'req_cumin_01',
+        notes: 'High-grade cumin lot settled.',
+      },
+      {
+        id: 'led_f_18',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'DELIVERY_CONFIRMED',
+        title: 'Delivery Confirmed: Cumin Lot',
+        pointsDelta: 50,
+        resultingBalance: 690,
+        timestamp: '2026-09-17T08:30:00Z',
+        referenceId: 'req_cumin_01',
+        notes: 'Delivered at regional collection center.',
+      },
+      {
+        id: 'led_f_19',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'GENUINE_RATING_RECEIVED',
+        title: 'Received 5-Star Rating from Buyer Desk',
+        pointsDelta: 20,
+        resultingBalance: 710,
+        timestamp: '2026-09-17T08:45:00Z',
+        referenceId: 'rat_cumin_01',
+        notes: 'Buyer verified high purity.',
+      },
+      {
+        id: 'led_f_20',
+        userId: farmerId,
+        userRole: 'FARMER',
+        activityType: 'GENUINE_RATING_RECEIVED',
+        title: 'Marketplace Commendation Rating',
+        pointsDelta: 40,
+        resultingBalance: 750,
+        timestamp: '2026-09-17T09:00:00Z',
+        referenceId: 'rat_comm_01',
+        notes: 'Top performing grower in Anandpur Cluster.',
+      },
+    ];
+
+    farmerLedgerItems.forEach((entry) => {
+      this.loyaltyLedger.set(entry.id, entry);
+      if (entry.referenceId) {
+        this.processedLoyaltyEvents.add(`${entry.activityType}_${entry.referenceId}`);
+      }
+    });
+
+    // Active voucher for Ramesh Patel
+    const farmerVoucher: LoyaltyRewardRedemption = {
+      id: 'red_ramesh_01',
+      rewardId: 'rew_machinery_500',
+      userId: farmerId,
+      userRole: 'FARMER',
+      pointsDeducted: 400,
+      voucherCode: 'KB-MAC-SEPT26',
+      rewardTitle: '₹500 Modern Equipment Rental Credit',
+      discountValueText: '₹500 Equipment Credit',
+      status: 'USED',
+      redeemedAt: '2026-09-12T15:00:00Z',
+      expiresAt: '2026-12-12T15:00:00Z',
+      usedAt: '2026-09-13T10:00:00Z',
+      usedOrderReferenceId: 'book_mach_laser_01',
+    };
+    this.loyaltyRedemptions.set(farmerVoucher.id, farmerVoucher);
+
+    // 3. Seed Realistic Buyer Loyalty Accounts
+    const buyerIds = ['usr_buyer_1', 'usr_buyer_itc'];
+    buyerIds.forEach((bId) => {
+      const buyerName = bId === 'usr_buyer_itc' ? 'Arunav Sengupta (ITC Sourcing)' : 'Vikram Mehta (AgroPure Organics)';
+      const buyerAccount: LoyaltyAccount = {
+        userId: bId,
+        userName: buyerName,
+        userRole: 'BUYER',
+        tier: 'GOLD',
+        points: 580,
+        lifetimePointsEarned: 830,
+        pointsToNextTier: 920, // 1500 - 580
+        nextTier: 'PLATINUM',
+        progressPercent: 8,
+        tierThresholds: { silver: 0, gold: 500, platinum: 1500, diamond: 3500 },
+        unlockedBenefits: this.getUnlockedBenefits('BUYER', 'GOLD'),
+        eligibleBulkOpportunities: true,
+        eligiblePremiumMatches: false,
+        prioritySupportUnlocked: false,
+        repeatTransactionCount: 2,
+        completedTransactionsCount: 3,
+        ratingsCount: 3,
+        averageRatingScore: 5.0,
+        createdAt: '2026-05-20T10:00:00Z',
+        updatedAt: '2026-09-15T18:00:00Z',
+      };
+      this.loyaltyAccounts.set(bId, buyerAccount);
+
+      const buyerLedger: LoyaltyLedgerEntry[] = [
+        {
+          id: `led_b_${bId}_01`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'PROFILE_VERIFICATION',
+          title: 'Buyer Institutional Profile & GSTIN Verification',
+          pointsDelta: 50,
+          resultingBalance: 50,
+          timestamp: '2026-05-20T10:30:00Z',
+          referenceId: `buyer_gst_${bId}`,
+          notes: 'Corporate KYC and mandi trading license verified.',
+        },
+        {
+          id: `led_b_${bId}_02`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'PURCHASE_COMPLETED',
+          title: 'Completed Purchase: Bt Cotton (4.5 Tons)',
+          pointsDelta: 100,
+          resultingBalance: 150,
+          timestamp: '2026-07-20T14:30:00Z',
+          referenceId: 'req_init_cotton',
+          notes: 'Settled ₹3,15,000 to Anandpur Cluster escrow.',
+        },
+        {
+          id: `led_b_${bId}_03`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'DELIVERY_CONFIRMED',
+          title: 'Confirmed Successful Delivery of Cotton Lot',
+          pointsDelta: 50,
+          resultingBalance: 200,
+          timestamp: '2026-07-22T11:00:00Z',
+          referenceId: 'req_init_cotton',
+          notes: 'Digital sign-off at Ahmedabad central warehouse.',
+        },
+        {
+          id: `led_b_${bId}_04`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'GENUINE_RATING_SUBMITTED',
+          title: 'Submitted Rating for Farmer Ramesh Patel',
+          pointsDelta: 20,
+          resultingBalance: 220,
+          timestamp: '2026-07-23T16:00:00Z',
+          referenceId: 'rat_init_01',
+          notes: 'Awarded 5 stars for high quality and packaging.',
+        },
+        {
+          id: `led_b_${bId}_05`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'PURCHASE_COMPLETED',
+          title: 'Completed Purchase: Groundnut TG-37A (3.0 Tons)',
+          pointsDelta: 100,
+          resultingBalance: 320,
+          timestamp: '2026-08-14T13:00:00Z',
+          referenceId: 'req_init_groundnut',
+          notes: 'Direct farm lot purchase settled.',
+        },
+        {
+          id: `led_b_${bId}_06`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'DELIVERY_CONFIRMED',
+          title: 'Confirmed Delivery of Groundnut Lot',
+          pointsDelta: 50,
+          resultingBalance: 370,
+          timestamp: '2026-08-16T15:30:00Z',
+          referenceId: 'req_init_groundnut',
+          notes: 'Weighbridge slip certified.',
+        },
+        {
+          id: `led_b_${bId}_07`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'GENUINE_RATING_SUBMITTED',
+          title: 'Submitted Rating for Groundnut Lot',
+          pointsDelta: 20,
+          resultingBalance: 390,
+          timestamp: '2026-08-17T09:00:00Z',
+          referenceId: 'rat_init_groundnut',
+          notes: 'Verified transaction feedback logged.',
+        },
+        {
+          id: `led_b_${bId}_08`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'REPEAT_TRANSACTION_BONUS',
+          title: 'Eligible Repeat Purchase Bonus',
+          pointsDelta: 50,
+          resultingBalance: 440,
+          timestamp: '2026-08-20T10:30:00Z',
+          referenceId: 'req_repeat_cotton_02',
+          notes: 'Bonus credited for second repeat order with Anandpur cluster.',
+        },
+        {
+          id: `led_b_${bId}_09`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'PURCHASE_COMPLETED',
+          title: 'Completed Purchase: Sharbati Wheat (6.0 Tons)',
+          pointsDelta: 100,
+          resultingBalance: 540,
+          timestamp: '2026-09-02T11:30:00Z',
+          referenceId: 'req_init_wheat',
+          notes: 'Large volume procurement completed.',
+        },
+        {
+          id: `led_b_${bId}_10`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'DELIVERY_CONFIRMED',
+          title: 'Confirmed Delivery of Wheat Lot',
+          pointsDelta: 50,
+          resultingBalance: 590,
+          timestamp: '2026-09-04T17:30:00Z',
+          referenceId: 'req_init_wheat',
+          notes: 'Stored in climate-controlled grain silos.',
+        },
+        {
+          id: `led_b_${bId}_11`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'GENUINE_RATING_SUBMITTED',
+          title: 'Submitted Rating for Wheat Lot',
+          pointsDelta: 20,
+          resultingBalance: 610,
+          timestamp: '2026-09-05T09:30:00Z',
+          referenceId: 'rat_wheat_01',
+          notes: 'Commended low moisture content.',
+        },
+        {
+          id: `led_b_${bId}_12`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'REPEAT_TRANSACTION_BONUS',
+          title: 'Eligible Repeat Sourcing Bonus',
+          pointsDelta: 50,
+          resultingBalance: 660,
+          timestamp: '2026-09-12T12:30:00Z',
+          referenceId: 'req_repeat_wheat_02',
+          notes: 'Multi-order partnership milestone.',
+        },
+        {
+          id: `led_b_${bId}_13`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'REWARD_REDEMPTION',
+          title: 'Redeemed: 50% Platform Escrow Fee Waiver',
+          pointsDelta: -250,
+          resultingBalance: 410,
+          timestamp: '2026-09-13T14:00:00Z',
+          referenceId: `red_buyer_${bId}_01`,
+          notes: 'Voucher KB-FEE-BUYER50 generated.',
+        },
+        {
+          id: `led_b_${bId}_14`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'PURCHASE_COMPLETED',
+          title: 'Completed Purchase: Cumin Lot (1.2 Tons)',
+          pointsDelta: 100,
+          resultingBalance: 510,
+          timestamp: '2026-09-14T12:00:00Z',
+          referenceId: 'req_cumin_01',
+          notes: 'Direct grower purchase.',
+        },
+        {
+          id: `led_b_${bId}_15`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'DELIVERY_CONFIRMED',
+          title: 'Confirmed Delivery of Cumin Lot',
+          pointsDelta: 50,
+          resultingBalance: 560,
+          timestamp: '2026-09-14T16:00:00Z',
+          referenceId: 'req_cumin_01',
+          notes: 'Inspected and stamped.',
+        },
+        {
+          id: `led_b_${bId}_16`,
+          userId: bId,
+          userRole: 'BUYER',
+          activityType: 'GENUINE_RATING_SUBMITTED',
+          title: 'Submitted Rating for Cumin Sourcing',
+          pointsDelta: 20,
+          resultingBalance: 580,
+          timestamp: '2026-09-15T18:00:00Z',
+          referenceId: 'rat_cumin_01',
+          notes: '5 stars for aroma and purity.',
+        },
+      ];
+
+      buyerLedger.forEach((entry) => {
+        this.loyaltyLedger.set(entry.id, entry);
+        if (entry.referenceId) {
+          this.processedLoyaltyEvents.add(`${entry.activityType}_${entry.referenceId}`);
+        }
+      });
+
+      // Active voucher for buyer
+      const buyerVoucher: LoyaltyRewardRedemption = {
+        id: `red_buyer_${bId}_01`,
+        rewardId: 'rew_fee_waiver_50',
+        userId: bId,
+        userRole: 'BUYER',
+        pointsDeducted: 250,
+        voucherCode: `KB-FEE-${bId === 'usr_buyer_1' ? 'AGRO50' : 'ITC50'}`,
+        rewardTitle: '50% Platform Escrow Fee Waiver',
+        discountValueText: '50% Escrow Fee Off',
+        status: 'ACTIVE',
+        redeemedAt: '2026-09-13T14:00:00Z',
+        expiresAt: '2026-10-28T14:00:00Z',
+      };
+      this.loyaltyRedemptions.set(buyerVoucher.id, buyerVoucher);
+    });
+
+    // Seed order rating
+    const rating1: OrderRating = {
+      id: 'rat_init_01',
+      orderId: 'req_init_cotton',
+      farmerId: 'usr_farmer_ramesh',
+      buyerId: 'usr_buyer_1',
+      buyerName: 'Vikram Mehta (AgroPure Organics)',
+      ratingScore: 5,
+      qualityFeedback: 'EXCELLENT',
+      deliveryOnTime: true,
+      comments: 'Impeccable staple length and zero seed contamination. Delivered smoothly to Ahmedabad depot.',
+      submittedAt: '2026-07-23T16:00:00Z',
+    };
+    this.orderRatings.set(rating1.id, rating1);
   }
 }
 

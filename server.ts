@@ -2176,8 +2176,297 @@ app.post('/api/marketplace/request', (req, res) => {
   res.json({ success: true, request: newRequest });
 });
 
+// 7.1 MARKETPLACE STATUS UPDATE & LOYALTY MILESTONE TRIGGER
+app.post('/api/marketplace/update-status', (req, res) => {
+  const { requestId, status } = req.body;
+  if (!requestId || !status) {
+    return res.status(400).json({ error: 'requestId and status are required' });
+  }
+
+  const purchaseReq = db.purchaseRequests.get(requestId);
+  if (!purchaseReq) {
+    return res.status(404).json({ error: 'Purchase request not found' });
+  }
+
+  const prevStatus = purchaseReq.status;
+  purchaseReq.status = status;
+  db.purchaseRequests.set(requestId, purchaseReq);
+
+  // When status becomes COMPLETED, award points to Farmer and Buyer with idempotency
+  if (status === 'COMPLETED') {
+    const lot = db.harvestLots.get(purchaseReq.harvestLotId);
+    const farmerId = lot?.farmerId || 'usr_farmer_ramesh';
+    const buyerId = purchaseReq.buyerId;
+
+    // 1. Award Farmer for completed crop sale
+    db.awardLoyaltyPoints({
+      userId: farmerId,
+      role: 'FARMER',
+      userName: purchaseReq.farmerName || 'Ramesh Patel',
+      activityType: 'CROP_SALE_COMPLETED',
+      title: `Completed Crop Sale: ${purchaseReq.crop} (${(purchaseReq.quantityKg / 1000).toFixed(1)} Tons)`,
+      points: db.loyaltyConfig.pointsRules.farmerSaleCompleted,
+      referenceId: purchaseReq.id,
+      notes: `Verified escrow settlement ₹${purchaseReq.totalOfferedInr.toLocaleString()} with ${purchaseReq.buyerName}.`,
+      idempotencyKey: `sale_completed_farmer_${purchaseReq.id}`,
+    });
+
+    // 2. Award Buyer for completed purchase
+    db.awardLoyaltyPoints({
+      userId: buyerId,
+      role: 'BUYER',
+      userName: purchaseReq.buyerName,
+      activityType: 'PURCHASE_COMPLETED',
+      title: `Completed Purchase: ${purchaseReq.crop} (${(purchaseReq.quantityKg / 1000).toFixed(1)} Tons)`,
+      points: db.loyaltyConfig.pointsRules.buyerPurchaseCompleted,
+      referenceId: purchaseReq.id,
+      notes: `Escrow released to grower upon delivery acceptance.`,
+      idempotencyKey: `sale_completed_buyer_${purchaseReq.id}`,
+    });
+
+    // 3. Repeat transaction check: Check if buyer has prior completed trades
+    const priorCompletedOrders = Array.from(db.purchaseRequests.values()).filter(
+      (r) => r.id !== purchaseReq.id && r.buyerId === buyerId && r.status === 'COMPLETED'
+    );
+
+    if (priorCompletedOrders.length > 0) {
+      db.awardLoyaltyPoints({
+        userId: farmerId,
+        role: 'FARMER',
+        userName: purchaseReq.farmerName || 'Ramesh Patel',
+        activityType: 'REPEAT_TRANSACTION_BONUS',
+        title: `Repeat Sourcing Partnership Bonus`,
+        points: db.loyaltyConfig.pointsRules.repeatTransactionBonus,
+        referenceId: purchaseReq.id,
+        notes: `Rewarded for repeat trade with verified buyer ${purchaseReq.buyerName}.`,
+        idempotencyKey: `repeat_bonus_farmer_${purchaseReq.id}`,
+      });
+
+      db.awardLoyaltyPoints({
+        userId: buyerId,
+        role: 'BUYER',
+        userName: purchaseReq.buyerName,
+        activityType: 'REPEAT_TRANSACTION_BONUS',
+        title: `Repeat Procurement Loyalty Bonus`,
+        points: db.loyaltyConfig.pointsRules.repeatTransactionBonus,
+        referenceId: purchaseReq.id,
+        notes: `Rewarded for consecutive verified trade with ${purchaseReq.farmerName || 'cluster grower'}.`,
+        idempotencyKey: `repeat_bonus_buyer_${purchaseReq.id}`,
+      });
+    }
+  } else if (status === 'CANCELLED' && prevStatus === 'COMPLETED') {
+    // Reversal policy on cancelled / invalidated orders
+    const lot = db.harvestLots.get(purchaseReq.harvestLotId);
+    const farmerId = lot?.farmerId || 'usr_farmer_ramesh';
+    const buyerId = purchaseReq.buyerId;
+
+    db.reverseLoyaltyPoints({
+      userId: farmerId,
+      referenceId: purchaseReq.id,
+      reason: `Order ${purchaseReq.id} cancelled after completion.`,
+    });
+
+    db.reverseLoyaltyPoints({
+      userId: buyerId,
+      referenceId: purchaseReq.id,
+      reason: `Order ${purchaseReq.id} cancelled after completion.`,
+    });
+  }
+
+  res.json({
+    success: true,
+    request: purchaseReq,
+    message: `Order status updated to ${status}.`,
+  });
+});
+
+// ==========================================
+// 7.2 TWO-SIDED LOYALTY REWARDS SYSTEM APIS
+// ==========================================
+
+// 1. Get Loyalty Account Overview
+app.get('/api/loyalty/account', (req, res) => {
+  const userId = (req.query.userId as string) || (req.headers['x-user-id'] as string) || 'usr_farmer_ramesh';
+  const role = (req.query.role as 'FARMER' | 'BUYER') || (userId.includes('buyer') ? 'BUYER' : 'FARMER');
+  const userName = (req.query.userName as string) || undefined;
+
+  const account = db.getOrCreateLoyaltyAccount(userId, role, userName);
+  res.json({
+    success: true,
+    account,
+    fairnessNotice: 'Loyalty level unlocks access to additional eligible opportunities and discounts. A higher level does NOT guarantee a higher crop selling price.',
+  });
+});
+
+// 2. Get Auditable Loyalty Ledger
+app.get('/api/loyalty/ledger', (req, res) => {
+  const userId = (req.query.userId as string) || (req.headers['x-user-id'] as string) || 'usr_farmer_ramesh';
+  const limit = Number(req.query.limit) || 50;
+
+  const entries = Array.from(db.loyaltyLedger.values())
+    .filter((e) => e.userId === userId)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, limit);
+
+  res.json({
+    success: true,
+    userId,
+    ledger: entries,
+    totalEntries: entries.length,
+  });
+});
+
+// 3. Get Fulfillable Rewards Catalog
+app.get('/api/loyalty/rewards', (req, res) => {
+  const role = (req.query.role as 'FARMER' | 'BUYER' | 'ALL') || 'ALL';
+  const allRewards = Array.from(db.loyaltyRewards.values());
+
+  const filtered = allRewards.filter((r) => {
+    if (role === 'ALL') return true;
+    return r.eligibleRole === 'BOTH' || r.eligibleRole === role;
+  });
+
+  res.json({
+    success: true,
+    rewards: filtered,
+  });
+});
+
+// 4. Get User Redemptions / Active Vouchers
+app.get('/api/loyalty/redemptions', (req, res) => {
+  const userId = (req.query.userId as string) || (req.headers['x-user-id'] as string) || 'usr_farmer_ramesh';
+  const redemptions = Array.from(db.loyaltyRedemptions.values())
+    .filter((r) => r.userId === userId)
+    .sort((a, b) => new Date(b.redeemedAt).getTime() - new Date(a.redeemedAt).getTime());
+
+  res.json({
+    success: true,
+    userId,
+    redemptions,
+  });
+});
+
+// 5. Redeem a Reward Item
+app.post('/api/loyalty/redeem', (req, res) => {
+  const { userId, rewardId } = req.body;
+  if (!userId || !rewardId) {
+    return res.status(400).json({ error: 'userId and rewardId are required' });
+  }
+
+  const result = db.redeemReward({ userId, rewardId });
+  if (!result.success) {
+    return res.status(400).json({ error: result.error });
+  }
+
+  res.json({
+    success: true,
+    redemption: result.redemption,
+    account: result.account,
+    message: `Reward successfully redeemed! Voucher code: ${result.redemption?.voucherCode}`,
+  });
+});
+
+// 6. Confirm Successful Delivery (Milestone Trigger)
+app.post('/api/loyalty/confirm-delivery', (req, res) => {
+  const { orderId, userId, isBuyer } = req.body;
+  if (!orderId || !userId) {
+    return res.status(400).json({ error: 'orderId and userId are required' });
+  }
+
+  const result = db.confirmDelivery(orderId, userId, isBuyer !== false);
+  if (!result.success) {
+    return res.status(400).json({ error: result.message });
+  }
+
+  res.json(result);
+});
+
+// 7. Submit Genuine Order Rating & Quality Feedback
+app.post('/api/loyalty/rate-order', (req, res) => {
+  const { orderId, farmerId, buyerId, buyerName, ratingScore, qualityFeedback, deliveryOnTime, comments } = req.body;
+  if (!orderId || !farmerId || !buyerId || !ratingScore) {
+    return res.status(400).json({ error: 'Missing required rating fields (orderId, farmerId, buyerId, ratingScore)' });
+  }
+
+  const result = db.submitRating({
+    orderId,
+    farmerId,
+    buyerId,
+    buyerName: buyerName || 'Verified Buyer',
+    ratingScore: Number(ratingScore) || 5,
+    qualityFeedback: qualityFeedback || 'EXCELLENT',
+    deliveryOnTime: deliveryOnTime !== false,
+    comments: comments || '',
+  });
+
+  res.json(result);
+});
+
+// 8. Repeat Purchase / Order Tool
+app.post('/api/loyalty/repeat-order', (req, res) => {
+  const { orderId, buyerId } = req.body;
+  if (!orderId) {
+    return res.status(400).json({ error: 'orderId is required' });
+  }
+
+  const result = db.repeatOrder(orderId, buyerId);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error });
+  }
+
+  res.json({
+    success: true,
+    request: result.newRequest,
+    message: 'Repeat order proposal successfully generated from prior trade details.',
+  });
+});
+
+// 9. Reversal of Points (Policy Enforcement)
+app.post('/api/loyalty/reverse', (req, res) => {
+  const { userId, referenceId, reason } = req.body;
+  if (!userId || !referenceId) {
+    return res.status(400).json({ error: 'userId and referenceId are required' });
+  }
+
+  const result = db.reverseLoyaltyPoints({
+    userId,
+    referenceId,
+    reason: reason || 'Transaction invalidated or cancelled.',
+  });
+
+  if (!result.success) {
+    return res.status(400).json({ error: result.message });
+  }
+
+  res.json(result);
+});
+
+// 10. Admin Loyalty Config & Rules
+app.get('/api/loyalty/admin/config', (req, res) => {
+  res.json({
+    success: true,
+    config: db.loyaltyConfig,
+  });
+});
+
+app.post('/api/loyalty/admin/config', (req, res) => {
+  const { pointsRules, tierThresholds } = req.body;
+  if (pointsRules) {
+    db.loyaltyConfig.pointsRules = { ...db.loyaltyConfig.pointsRules, ...pointsRules };
+  }
+  if (tierThresholds) {
+    db.loyaltyConfig.tierThresholds = { ...db.loyaltyConfig.tierThresholds, ...tierThresholds };
+  }
+
+  res.json({
+    success: true,
+    config: db.loyaltyConfig,
+    message: 'Admin loyalty configuration updated successfully.',
+  });
+});
+
 // REAL-TIME MANDI MARKET PRICES API (Agmarknet Live APMC Integration)
-app.get('/api/market-prices', (req, res) => {
+app.get(['/api/market-prices', '/api/market/prices'], (req, res) => {
   const state = (req.query.state as string) || 'Gujarat';
   const district = (req.query.district as string) || 'Rajkot';
   const crop = (req.query.crop as string) || '';

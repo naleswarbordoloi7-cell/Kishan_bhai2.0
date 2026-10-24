@@ -1,0 +1,1116 @@
+# PROJECT: KISHAN BHAI — HOME / OVERVIEW PAGE
+
+Act as a senior UI/UX designer, product designer, React developer, and full-stack engineer specializing in modern AgriTech platforms.
+
+Design and implement a beautiful, premium, responsive, and functional Home / Overview Page for **Kishan Bhai**, an AI-powered agricultural platform built to help Indian farmers increase their market access, reduce farming costs, connect with verified buyers, and manage agricultural activities more efficiently.
+
+The platform connects farmers, agricultural buyers, industries, suppliers, machinery owners, and Village Champions.
+
+**Tagline:** Small Farms. One Powerful Network.
+
+## IMPORTANT DEVELOPMENT RULES
+
+1. First inspect the existing Kishan Bhai project.
+2. Understand its frontend framework, backend, database, authentication, routes, and existing features.
+3. Integrate the Home / Overview Page into the existing application.
+4. Do not rebuild the application from scratch.
+5. Do not delete or break existing features.
+6. Reuse existing components, APIs, authentication, and database models wherever possible.
+7. Do not create duplicate pages, routes, database tables, or components unnecessarily.
+8. Do not use fake live data, fabricated buyer offers, fake market prices, or fake user statistics.
+9. Connect features to the real backend when available.
+10. If an integration is missing, show an honest unavailable state instead of pretending the feature works.
+11. Focus on the Home / Overview Page and its navigation to existing features.
+12. Do not implement blockchain or x402 payment functionality.
+
+---
+
+# 1. BRAND IDENTITY
+
+Application name: Kishan Bhai
+
+Tagline: Small Farms. One Powerful Network.
+
+Brand personality:
+
+* Trustworthy
+* Farmer-friendly
+* Intelligent
+* Innovative
+* Affordable
+* Reliable
+* Community-driven
+
+### Color palette
+
+Use these exact colors:
+
+* Primary Green: #16803C
+* Dark Green: #105C2B
+* Light Green: #EAF7EC
+* Accent Yellow: #F5C542
+* Background: #F8FAF7
+* White: #FFFFFF
+* Main Text: #1F2937
+* Secondary Text: #6B7280
+* Border: #E5E7EB
+
+Use green for agriculture, growth, and trust. Use yellow for highlights, rewards, and important actions.
+
+Design a modern agricultural SaaS experience that is simple enough for farmers to understand and polished enough for agricultural businesses and investors.
+
+---
+
+# 2. HOME PAGE LAYOUT
+
+Create a complete home page with the following sections:
+
+1. Navigation bar.
+2. Hero section.
+3. Quick action dashboard.
+4. Kishan AI assistant.
+5. Smart Marketplace.
+6. Mandi Radar.
+7. Farmer and Buyer Loyalty Rewards.
+8. Virtual Farm Clusters.
+9. Bulk Buying.
+10. Harvest Pooling.
+11. Machinery Booking.
+12. Weather and Crop Insights.
+13. Farmer Community.
+14. Buyer and Industry Connections.
+15. Order and Transaction Tracking.
+16. Farmer Impact Dashboard.
+17. Trust and Verification.
+18. How Kishan Bhai Works.
+19. Call-to-action section.
+20. Footer.
+
+Show these sections in a logical order. Avoid overcrowding the page.
+
+For logged-in users, personalize the page according to their role.
+
+For visitors who are not logged in, show a public marketing home page with feature explanations and clear registration and login buttons.
+
+---
+
+# 3. NAVIGATION BAR
+
+Create a responsive navigation bar.
+
+### Left side
+
+Display the Kishan Bhai logo with a simple leaf, sprout, or crop symbol.
+
+Brand name: Kishan Bhai
+
+### Main navigation
+
+Include:
+
+* Home
+* Kishan AI
+* Marketplace
+* Mandi Prices
+* Farm Clusters
+* Machinery
+* Community
+* Rewards
+
+Use existing routes where available.
+
+If a route does not exist, create the navigation integration point and clearly identify the missing page rather than linking to a broken URL.
+
+### Right side
+
+For logged-out users:
+
+* Login
+* Create Account
+
+For logged-in users:
+
+* Notification icon.
+* User profile menu.
+* Current loyalty level.
+* Rewards shortcut.
+* Dashboard shortcut.
+* Logout.
+
+### Mobile navigation
+
+Use a compact header and accessible mobile navigation menu.
+
+Ensure:
+
+* Easy touch interaction.
+* No horizontal scrolling.
+* Clear active navigation state.
+* Keyboard accessibility.
+* Appropriate navigation based on user permissions.
+
+---
+
+# 4. HERO SECTION
+
+Create an attractive hero section that communicates the main value of Kishan Bhai immediately.
+
+### Main heading
+
+"Grow Smarter. Sell Better. Grow Together."
+
+### Supporting text
+
+"Your complete farming network for AI-powered guidance, trusted buyers, better market opportunities, shared resources, and smarter agricultural decisions."
+
+### Primary CTA
+
+"Explore Kishan Bhai"
+
+### Secondary CTA
+
+"Meet Kishan AI"
+
+For logged-out users, provide:
+
+* Create Farmer Account
+* Login
+
+### Hero visual
+
+Use a high-quality image or illustration of Indian farmers in green fields, agricultural crops, and a smartphone showing a farming dashboard.
+
+The image should communicate:
+
+* Modern agriculture.
+* Farmer empowerment.
+* Technology.
+* Community.
+* Opportunity.
+
+Use subtle green gradients and restrained decorative elements.
+
+Do not use fake farmer earnings, unsupported impact statistics, or misleading success claims.
+
+---
+
+# 5. QUICK ACTION DASHBOARD
+
+For authenticated users, display a personalized quick-action section.
+
+### Farmer actions
+
+* Ask Kishan AI.
+* Sell Crops.
+* Check Mandi Prices.
+* Find Buyers.
+* Join Farm Cluster.
+* Book Machinery.
+* View Rewards.
+* Track Orders.
+
+### Buyer actions
+
+* Find Farmers.
+* Browse Crop Listings.
+* Post Purchase Requirement.
+* Explore Bulk Buying.
+* Manage Orders.
+* View Rewards.
+* Repeat Purchase.
+* View Procurement History.
+
+### Village Champion actions
+
+* View Assigned Farmers.
+* Assist Farmer Registration.
+* Help Verify Information.
+* Monitor Cluster Activities.
+* View Assigned Tasks.
+
+### Admin actions
+
+Only show authorized actions:
+
+* Manage Users.
+* Verify Buyers.
+* Review Listings.
+* Monitor Transactions.
+* Manage Loyalty Rules.
+* View Platform Reports.
+
+Use the role supplied by the trusted authentication system.
+
+Do not expose admin actions to unauthorized users.
+
+---
+
+# 6. KISHAN AI — AGRICULTURAL AI ASSISTANT
+
+Create a prominent feature card for Kishan AI.
+
+### Heading
+
+"Meet Kishan AI"
+
+### Description
+
+"Your intelligent farming companion for crop guidance, farming questions, and agricultural decision support."
+
+### Capabilities
+
+When supported by actual integrations, Kishan AI should help with:
+
+* Crop selection guidance.
+* Crop disease identification assistance.
+* Pest and disease management information.
+* Fertilizer guidance.
+* Irrigation advice.
+* Soil health guidance.
+* Weather-related farming suggestions.
+* Crop price information.
+* Harvest planning.
+* General agricultural questions.
+
+### UI
+
+Display:
+
+* AI assistant icon.
+* Short description.
+* Example questions.
+* "Ask Kishan AI" button.
+* Recent conversation shortcut if supported.
+
+Example questions:
+
+* "Which crop may suit my soil?"
+* "How can I reduce water usage?"
+* "What should I check if my crop leaves turn yellow?"
+* "Compare available buyer offers for my crop."
+
+### Safety and accuracy
+
+* Do not fabricate agricultural facts or market data.
+* Use relevant location, crop, and soil context only when available and authorized.
+* Ask for missing details when they materially affect the answer.
+* Make clear when advice is uncertain.
+* Recommend qualified agricultural experts for serious crop disease or pesticide decisions.
+* Never present an unverified AI diagnosis as certain.
+
+---
+
+# 7. SMART AGRICULTURAL MARKETPLACE
+
+Create a marketplace section connecting farmers with verified buyers and agricultural industries.
+
+### Farmer features
+
+* Create crop listings.
+* Add crop name.
+* Add available quantity.
+* Add crop grade or quality information.
+* Set location.
+* Add harvest or availability date.
+* View eligible buyer offers.
+* Compare prices and requirements.
+* Receive buyer inquiries.
+* Manage orders.
+* Track delivery status.
+
+### Buyer features
+
+* Browse available crop listings.
+* Search by crop and location.
+* Filter by quantity, price, grade, and availability.
+* Post purchase requirements.
+* Contact farmers through authorized platform workflows.
+* Submit offers.
+* Manage procurement orders.
+* Review transaction history.
+
+### Buyer verification
+
+Display a verified badge only after successful verification.
+
+### Offer cards
+
+Each offer may display:
+
+* Buyer name.
+* Verification status.
+* Crop.
+* Offered price.
+* Price unit.
+* Required quantity.
+* Quality requirements.
+* Location.
+* Delivery terms.
+* Offer expiry.
+* Eligibility conditions.
+
+Only display information supported by actual database records or verified integrations.
+
+### Price transparency
+
+Allow farmers to compare available offers without hiding a better-priced offer solely because the farmer has a lower loyalty level.
+
+Never guarantee that a buyer offer is the best market price unless the data supports that claim.
+
+CTA: "Explore Marketplace"
+
+---
+
+# 8. MANDI RADAR
+
+Create a dedicated Mandi Radar section.
+
+Purpose: Help farmers understand available agricultural market prices and compare them with buyer offers.
+
+Display available information:
+
+* Crop name.
+* Mandi or market name.
+* Location.
+* Minimum price.
+* Maximum price.
+* Modal price.
+* Price unit.
+* Data source.
+* Last updated date and time.
+
+Allow users to:
+
+* Select a crop.
+* Select a location.
+* Compare markets.
+* View historical prices if available.
+* Compare mandi prices with actual buyer offers.
+
+### Data requirements
+
+* Use a genuine configured API or verified source.
+* Never invent current mandi prices.
+* Clearly mark historical or delayed information.
+* Handle unavailable data gracefully.
+* Normalize units before comparing prices.
+* Show indicative prices separately from confirmed buyer offers.
+
+If live market data is unavailable, display:
+
+"Market prices are currently unavailable. Please try again later."
+
+CTA: "Check Mandi Prices"
+
+---
+
+# 9. FARMER AND BUYER LOYALTY REWARDS
+
+Implement the two-sided **Kishan Bhai Kisan Rewards** program.
+
+Both farmers and buyers earn points for verified activities and progress through their own loyalty levels.
+
+## Farmer levels
+
+* Silver: 0–499 points.
+* Gold: 500–1,499 points.
+* Platinum: 1,500–3,499 points.
+* Diamond: 3,500+ points.
+
+## Buyer levels
+
+Use the same initial level names and thresholds, but calculate buyer points independently.
+
+* Silver: 0–499 points.
+* Gold: 500–1,499 points.
+* Platinum: 1,500–3,499 points.
+* Diamond: 3,500+ points.
+
+Make all thresholds and rewards configurable by an authorized administrator.
+
+## Example farmer rewards
+
+Farmers may earn points for:
+
+* Completing required profile verification.
+* Completing eligible crop sales.
+* Confirming successful deliveries.
+* Meeting verified quality standards.
+* Receiving genuine buyer ratings.
+
+## Example buyer rewards
+
+Buyers may earn points for:
+
+* Completing required buyer verification.
+* Completing eligible purchases.
+* Confirming successful deliveries.
+* Providing genuine post-transaction ratings.
+* Completing eligible repeat purchases.
+
+## Example benefits
+
+Depending on actual platform capabilities:
+
+* Eligible transaction-fee discounts.
+* Machinery-booking discounts.
+* Logistics benefits.
+* Bulk-selling or bulk-purchasing opportunities.
+* Additional eligible buyer or farmer matches.
+* Premium procurement tools.
+* Priority support.
+* Loyalty coupons.
+
+### Home page loyalty card
+
+For logged-in farmers, display:
+
+* Current farmer level.
+* Total points.
+* Progress to the next level.
+* Available benefits.
+* Points required for the next level.
+
+For logged-in buyers, display the equivalent buyer information.
+
+CTA: "View My Rewards"
+
+### Important rules
+
+* Award points only for verified activities.
+* Prevent duplicate reward processing.
+* Prevent fake transactions from generating points.
+* Keep an auditable reward history.
+* Do not guarantee a higher selling price based on level.
+* Do not hide ordinary eligible offers from lower-level users.
+* Display only rewards that are genuinely available.
+* Keep farmer and buyer points separate.
+
+For visitors who are not logged in, show a concise explanation of the loyalty program without inventing personal reward balances.
+
+---
+
+# 10. VIRTUAL FARM CLUSTERS
+
+Create a section introducing Virtual Farm Clusters.
+
+### Heading
+
+"Stronger Together"
+
+### Description
+
+"Connect with nearby farmers, coordinate agricultural needs, and unlock opportunities through collective participation."
+
+### Features
+
+* Join a cluster.
+* View cluster members.
+* View participating crops.
+* Coordinate shared agricultural resources.
+* Organize group buying.
+* Coordinate harvest planning.
+* Share relevant farming information.
+* View cluster activity and available opportunities.
+
+### Cluster card
+
+Display actual information when available:
+
+* Cluster name.
+* Location.
+* Member count.
+* Participating crops.
+* Available group opportunities.
+* Membership status.
+
+Do not fabricate member counts.
+
+CTA: "Explore Farm Clusters"
+
+---
+
+# 11. BULK BUYING
+
+Create a section that helps farmers coordinate purchases of agricultural inputs.
+
+Potential products:
+
+* Seeds.
+* Fertilizers.
+* Irrigation equipment.
+* Farm supplies.
+* Other approved agricultural products.
+
+### Workflow
+
+1. Farmers select the product they need.
+2. They enter the required quantity.
+3. Eligible farmers join a group order.
+4. The platform calculates combined demand.
+5. Verified suppliers provide actual offers.
+6. Farmers compare total costs and terms.
+7. Farmers confirm participation.
+8. The platform tracks fulfillment.
+
+Display:
+
+* Product.
+* Supplier.
+* Individual quantity.
+* Combined quantity.
+* Unit price.
+* Minimum order quantity.
+* Delivery terms.
+* Order deadline.
+* Estimated savings only when supported by a valid comparison.
+
+CTA: "Explore Bulk Buying"
+
+Never invent supplier discounts or guaranteed savings.
+
+---
+
+# 12. HARVEST POOLING
+
+Create a Harvest Pooling section.
+
+Purpose: Help farmers coordinate harvest quantities and explore larger purchase opportunities.
+
+Features:
+
+* Add expected harvest.
+* Select crop and estimated quantity.
+* Specify expected harvest date.
+* Join an eligible pooling opportunity.
+* View participating farmers.
+* Compare buyer requirements.
+* Review quality and delivery conditions.
+* Track the pooling process.
+
+Show a clear distinction between:
+
+* Expected harvest.
+* Harvest confirmed.
+* Quantity available.
+* Quantity committed to a buyer.
+
+Do not promise a buyer or sale before a real order or contract exists.
+
+CTA: "Explore Harvest Pooling"
+
+---
+
+# 13. MACHINERY BOOKING
+
+Create a machinery rental and booking section.
+
+Potential equipment:
+
+* Tractors.
+* Harvesters.
+* Seed drills.
+* Sprayers.
+* Tillage equipment.
+* Irrigation equipment.
+
+Features:
+
+* Search available machinery.
+* Filter by location and equipment type.
+* View rental rates.
+* View availability.
+* Select booking dates.
+* Review booking terms.
+* Submit a booking request.
+* Track booking status.
+
+Each listing should display:
+
+* Equipment name.
+* Owner or service provider.
+* Verification status.
+* Location.
+* Price and pricing unit.
+* Availability.
+* Booking conditions.
+
+Only show live availability when the backend provides it.
+
+CTA: "Book Machinery"
+
+---
+
+# 14. WEATHER AND CROP INSIGHTS
+
+Create a weather and crop insight card.
+
+When a verified weather integration is available, display:
+
+* Current weather.
+* Temperature.
+* Rain forecast.
+* Wind information when available.
+* Forecast period.
+* Data source.
+* Last updated time.
+
+Use the farmer's selected location or authorized location settings.
+
+Potential farming insights:
+
+* Weather-related fieldwork planning.
+* Irrigation considerations.
+* Harvest planning.
+* Crop protection reminders.
+
+Do not invent live weather conditions.
+
+If the API is not configured, display a clear unavailable state.
+
+Agricultural recommendations must account for crop stage and local conditions when those details are available.
+
+CTA: "View Farm Insights"
+
+---
+
+# 15. FARMER COMMUNITY
+
+Create a community section for farmers.
+
+Features:
+
+* Ask farming questions.
+* Share farming experiences.
+* Discuss crop management.
+* Share relevant agricultural information.
+* View approved community posts.
+* Comment on discussions.
+* Report misleading or abusive content.
+* Connect with eligible community groups.
+
+Display:
+
+* Recent posts.
+* Relevant discussions.
+* Community guidelines.
+* Moderation controls.
+
+Use real community content only.
+
+Do not generate fake farmer testimonials or fabricate community activity.
+
+CTA: "Join Farmer Community"
+
+---
+
+# 16. BUYER AND INDUSTRY CONNECTIONS
+
+Create a section that explains how Kishan Bhai connects farmers with agricultural buyers and industries.
+
+Features:
+
+* Verified buyer profiles.
+* Industry procurement requirements.
+* Crop demand listings.
+* Quantity requirements.
+* Quality standards.
+* Location and logistics requirements.
+* Offer comparison.
+* Eligible bulk procurement opportunities.
+
+Help farmers discover relevant buyers based on crop, quantity, quality, location, and buyer requirements.
+
+Higher loyalty levels may unlock additional opportunities only when the buyer's actual eligibility policy supports this.
+
+Do not guarantee premium prices or exclusive contracts.
+
+CTA: "Find Buyers"
+
+---
+
+# 17. ORDER AND TRANSACTION TRACKING
+
+Create a compact order tracking section for logged-in users.
+
+For farmers:
+
+* Crop listings.
+* Incoming offers.
+* Accepted orders.
+* Confirmed quantities.
+* Delivery status.
+* Completed sales.
+* Disputes or support requests.
+
+For buyers:
+
+* Purchase requirements.
+* Submitted offers.
+* Accepted orders.
+* Delivery status.
+* Completed purchases.
+* Support requests.
+
+Display only orders accessible to the authenticated user.
+
+Use actual backend transaction data.
+
+Show clear order statuses, such as:
+
+* Pending.
+* Accepted.
+* Preparing.
+* In Transit.
+* Delivered.
+* Completed.
+* Cancelled.
+* Under Review.
+
+Adapt statuses to the existing order workflow.
+
+CTA: "View All Orders"
+
+---
+
+# 18. FARMER IMPACT DASHBOARD
+
+Create an optional personal impact card for authenticated farmers.
+
+Display available, verifiable metrics such as:
+
+* Completed sales.
+* Total quantity sold.
+* Successful deliveries.
+* Active crop listings.
+* Group buying participation.
+* Verified loyalty points.
+* Confirmed savings, when supported by transaction data.
+
+For buyers, show:
+
+* Completed purchases.
+* Total quantity purchased.
+* Active procurement requests.
+* Successful deliveries.
+* Loyalty points.
+
+Never fabricate earnings, savings, transaction totals, farmer counts, or platform impact statistics.
+
+If data is missing, show a clear empty state.
+
+---
+
+# 19. TRUST AND VERIFICATION
+
+Create a section explaining the platform's trust features.
+
+Potential features:
+
+* Farmer verification.
+* Buyer verification.
+* Transparent crop listings.
+* Transaction records.
+* Delivery confirmations.
+* Verified reviews.
+* Support and complaint handling.
+
+Display a verification badge only after actual verification.
+
+Do not display fake security certifications, insurance claims, payment guarantees, or government endorsements.
+
+Clearly explain any protection or dispute-resolution services that genuinely exist.
+
+---
+
+# 20. HOW KISHAN BHAI WORKS
+
+Create a simple four-step section.
+
+### Step 1: Create an Account
+
+Register as a farmer, buyer, or another supported user role.
+
+### Step 2: Complete Your Profile
+
+Add relevant information and complete required verification.
+
+### Step 3: Explore Opportunities
+
+Access relevant AI assistance, market information, agricultural resources, and buyer or supplier opportunities.
+
+### Step 4: Connect and Grow
+
+Complete eligible transactions, track activities, and earn loyalty rewards for verified participation.
+
+Use simple icons and short explanations.
+
+---
+
+# 21. FINAL CALL TO ACTION
+
+Create a visually attractive CTA section.
+
+### Heading
+
+"Your Next Farming Opportunity Starts Here."
+
+### Description
+
+"Join Kishan Bhai to explore smarter farming, trusted connections, shared resources, and new agricultural opportunities."
+
+Buttons:
+
+* Create Farmer Account.
+* Join as Buyer.
+* Explore Kishan AI.
+
+If a registration route supports role selection, preselect the relevant role when a user clicks a role-specific CTA.
+
+Do not allow users to grant themselves privileged roles.
+
+---
+
+# 22. FOOTER
+
+Include:
+
+* Kishan Bhai logo.
+* Tagline.
+* About Kishan Bhai.
+* Marketplace.
+* Kishan AI.
+* Mandi Radar.
+* Virtual Farm Clusters.
+* Machinery Booking.
+* Farmer Community.
+* Loyalty Rewards.
+* Contact.
+* Privacy Policy.
+* Terms of Service.
+* Help and Support.
+
+Only link to pages that exist or are explicitly implemented.
+
+Do not invent a physical address, phone number, email address, partner organization, or official certification.
+
+---
+
+# 23. PERSONALIZED HOME PAGE
+
+The page should adapt to the user's authentication status and role.
+
+### Logged-out visitor
+
+Show:
+
+* Brand introduction.
+* Hero section.
+* Feature explanations.
+* Publicly available market information, if configured.
+* Login button.
+* Registration buttons.
+
+Do not show private dashboard data.
+
+### Logged-in farmer
+
+Prioritize:
+
+* Kishan AI.
+* Crop listings.
+* Buyer offers.
+* Mandi Radar.
+* Farmer Loyalty Rewards.
+* Farm Clusters.
+* Bulk Buying.
+* Harvest Pooling.
+* Machinery Booking.
+* Order Tracking.
+
+### Logged-in buyer
+
+Prioritize:
+
+* Crop listings.
+* Find Farmers.
+* Procurement requirements.
+* Bulk Buying.
+* Buyer Loyalty Rewards.
+* Purchase Management.
+* Repeat Orders.
+* Order Tracking.
+
+### Logged-in Village Champion
+
+Prioritize:
+
+* Assigned farmers.
+* Farmer onboarding.
+* Cluster participation.
+* Assigned tasks.
+* Verification workflows, where authorized.
+
+### Logged-in administrator
+
+Prioritize:
+
+* Authorized user management.
+* Buyer verification.
+* Listing moderation.
+* Order monitoring.
+* Reward configuration.
+* Reports and analytics.
+
+All role-based views must use trusted backend authorization.
+
+---
+
+# 24. TECHNICAL REQUIREMENTS
+
+If using a new React frontend, use:
+
+* React.
+* TypeScript.
+* Tailwind CSS.
+* Lucide React icons.
+* shadcn/ui components where appropriate.
+* React Router if routing is needed.
+* Existing API client and state management where available.
+
+If the project uses a different framework, follow the existing framework rather than migrating it.
+
+Build reusable components such as:
+
+* `Navbar`
+* `HeroSection`
+* `FeatureCard`
+* `KishanAISection`
+* `MarketplaceSection`
+* `MandiRadar`
+* `LoyaltyRewardsCard`
+* `FarmClusterSection`
+* `BulkBuyingSection`
+* `HarvestPoolingSection`
+* `MachineryBookingSection`
+* `WeatherInsights`
+* `CommunitySection`
+* `OrderTrackingCard`
+* `Footer`
+
+Keep the code modular and maintainable.
+
+Use the existing backend and database. Do not create duplicate models or APIs unnecessarily.
+
+---
+
+# 25. RESPONSIVE DESIGN
+
+Test at:
+
+* 320 × 640 mobile.
+* 375 × 812 mobile.
+* 430 × 932 mobile.
+* 768 × 1024 tablet.
+* 1366 × 768 laptop.
+* 1920 × 1080 desktop.
+
+Requirements:
+
+* No horizontal scrolling.
+* Responsive navigation.
+* Touch-friendly buttons.
+* Readable typography.
+* Consistent spacing.
+* Responsive feature grids.
+* Accessible menus and dialogs.
+* Appropriate image scaling.
+* Fast loading on slower internet connections.
+
+Use lazy loading for non-critical images where appropriate.
+
+---
+
+# 26. SECURITY, DATA QUALITY, AND PERFORMANCE
+
+* Protect authenticated routes.
+* Respect role-based permissions.
+* Do not expose private user information.
+* Never trust client-submitted loyalty points.
+* Prevent duplicate rewards.
+* Do not fabricate market prices or weather information.
+* Do not invent buyers or supplier offers.
+* Validate backend responses.
+* Handle network failures gracefully.
+* Avoid logging sensitive information.
+* Keep environment secrets out of frontend source code.
+* Optimize image sizes.
+* Avoid unnecessary dependencies.
+* Follow the project's existing security conventions.
+
+Do not add blockchain or x402 payment functionality.
+
+---
+
+# 27. IMPLEMENTATION WORKFLOW
+
+Before writing code:
+
+1. Inspect the existing repository.
+2. Identify the frontend and backend frameworks.
+3. Review the routing configuration.
+4. Review authentication and role management.
+5. Identify existing pages and reusable components.
+6. Review database models and available APIs.
+7. Determine which home page features are already implemented.
+8. Identify missing integrations.
+
+Then implement the Home / Overview Page in the existing architecture.
+
+For features that already exist, integrate the existing implementation.
+
+For features that do not exist:
+
+* Build only the UI and integration points needed for the requested home page.
+* Do not falsely present incomplete backend features as operational.
+* Clearly identify required APIs, database models, and external integrations.
+
+After implementation:
+
+* Run the development build.
+* Run type checks and available tests.
+* Fix errors caused by the changes.
+* Check responsive behavior.
+* Verify navigation.
+* Verify role-based visibility.
+* Confirm that existing functionality remains intact.
+
+Provide a summary of files created or modified and explain any remaining integration work.
+
+---
+
+# FINAL OBJECTIVE
+
+Create the official Kishan Bhai Home / Overview Page as a modern, farmer-friendly, AI-powered agricultural platform.
+
+The home page must bring together the major Kishan Bhai features:
+
+1. Kishan AI.
+2. Smart Marketplace.
+3. Mandi Radar.
+4. Farmer Loyalty Rewards.
+5. Buyer Loyalty Rewards.
+6. Virtual Farm Clusters.
+7. Bulk Buying.
+8. Harvest Pooling.
+9. Machinery Booking.
+10. Weather and Crop Insights.
+11. Farmer Community.
+12. Buyer and Industry Connections.
+13. Order and Transaction Tracking.
+14. Farmer Impact Dashboard.
+15. Trust and Verification.
+
+The final result should be visually impressive, mobile-friendly, easy to navigate, and integrated with the existing application.
+
+**Build the Home / Overview Page only. Preserve the existing Kishan Bhai application and all working features.**

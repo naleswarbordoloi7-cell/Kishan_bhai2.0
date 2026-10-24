@@ -1148,58 +1148,36 @@ export interface FarmDiaryEntry {
 export type FarmDiaryRecord = FarmDiaryEntry;
 
 // 10. Community Module
-export type CommunityPostType = 'DISCUSSION' | 'QUESTION' | 'TIP' | 'ANNOUNCEMENT';
-
 export interface CommunityComment {
   id: string;
-  postId?: string;
-  authorId?: string;
   authorName: string;
-  authorRole?: string;
-  village?: string;
-  authorVillage?: string;
-  authorAvatar?: string;
+  authorRole: string;
+  village: string;
   content: string;
-  likesCount?: number;
-  likedUserIds?: string[];
-  isHelpful?: boolean;
-  parentId?: string;
-  replies?: CommunityComment[];
   createdAt: string;
-  updatedAt?: string;
 }
 
 export interface CommunityPost {
   id: string;
-  authorId?: string;
   authorName: string;
-  authorVillage?: string;
+  authorVillage: string;
   authorDistrict?: string;
-  authorState?: string;
-  authorRole?: 'Farmer' | 'Village Champion' | 'KVK Agronomist' | string;
+  authorState: string;
+  authorRole: 'Farmer' | 'Village Champion' | 'KVK Agronomist' | string;
   authorAvatar?: string;
   authorBadge?: string;
-  groupId?: string;
-  groupName?: string;
-  title?: string;
+  title: string;
   content: string;
   category: 'Crop Advice' | 'Pest Outbreak' | 'Machinery Sharing' | 'Market Trends' | 'Success Story' | string;
   cropTag?: string;
   tags?: string[];
   imageUrl?: string;
-  images?: string[];
-  postType?: CommunityPostType;
-  poll?: CommunityPoll;
   likesCount: number;
   commentsCount: number;
   repliesCount?: number;
-  comments?: CommunityComment[];
-  likedUserIds?: string[];
-  savedUserIds?: string[];
+  comments: CommunityComment[];
   isLiked?: boolean;
   isBookmarked?: boolean;
-  isPinned?: boolean;
-  isHelpfulAnswered?: boolean;
   createdAt: string;
 }
 export type CommunityPostItem = CommunityPost;
@@ -1375,75 +1353,136 @@ export interface ChampionVerificationRequest {
   auditLogs: ChampionAuditLogEntry[];
 }
 
-// ----------------------------------------------------
-// KISHAN COMMUNITY — FARMERS TOGETHER DATA MODELS
-// ----------------------------------------------------
+// ==========================================
+// 14. Two-Sided Farmer & Buyer Loyalty Rewards System
+// ==========================================
 
-export type CommunityGroupCategory =
-  | 'Rice Farming'
-  | 'Wheat Farming'
-  | 'Cotton Farming'
-  | 'Vegetable Farming'
-  | 'Organic Farming'
-  | 'Dairy Farming'
-  | 'Modern Farming Technology'
-  | 'Agricultural Business'
-  | 'Irrigation and Water Management'
-  | 'Pest and Disease Management'
-  | 'General Farmer Discussion'
-  | string;
+export type LoyaltyTier = 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND';
 
-export interface GroupResourceItem {
+export type LoyaltyActivityType =
+  | 'PROFILE_VERIFICATION'
+  | 'CROP_SALE_COMPLETED'
+  | 'PURCHASE_COMPLETED'
+  | 'DELIVERY_CONFIRMED'
+  | 'QUALITY_STANDARDS_VERIFIED'
+  | 'GENUINE_RATING_RECEIVED'
+  | 'GENUINE_RATING_SUBMITTED'
+  | 'REPEAT_TRANSACTION_BONUS'
+  | 'REWARD_REDEMPTION'
+  | 'POINTS_REVERSAL_CANCELLATION'
+  | 'ADMIN_ADJUSTMENT';
+
+export interface LoyaltyLedgerEntry {
+  id: string;
+  userId: string;
+  userRole: 'FARMER' | 'BUYER' | 'CHAMPION';
+  activityType: LoyaltyActivityType;
+  title: string;
+  pointsDelta: number; // positive for earned, negative for deducted/reversed
+  resultingBalance: number;
+  timestamp: string;
+  referenceId?: string; // order ID, lot ID, rating ID, or voucher ID
+  notes?: string;
+  isReversed?: boolean;
+}
+
+export interface LoyaltyAccount {
+  userId: string;
+  userName: string;
+  userRole: 'FARMER' | 'BUYER';
+  tier: LoyaltyTier;
+  points: number;
+  lifetimePointsEarned: number;
+  pointsToNextTier: number;
+  nextTier: LoyaltyTier | null;
+  progressPercent: number; // 0 to 100
+  tierThresholds: {
+    silver: number;
+    gold: number;
+    platinum: number;
+    diamond: number;
+  };
+  unlockedBenefits: string[];
+  eligibleBulkOpportunities: boolean;
+  eligiblePremiumMatches: boolean;
+  prioritySupportUnlocked: boolean;
+  repeatTransactionCount: number;
+  completedTransactionsCount: number;
+  ratingsCount: number;
+  averageRatingScore: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LoyaltyRewardItem {
   id: string;
   title: string;
-  type: 'PDF' | 'GUIDE' | 'VIDEO' | 'SCHEME';
   description: string;
-  url?: string;
+  category: 'FEE_WAIVER' | 'MACHINERY' | 'LOGISTICS' | 'QUALITY_TESTING' | 'PRIORITY_SUPPORT';
+  eligibleRole: 'FARMER' | 'BUYER' | 'BOTH';
+  minTier: LoyaltyTier;
+  pointsCost: number;
+  discountValueText: string;
+  terms: string;
+  expiryDays: number;
+  isAvailable: boolean;
+  maxRedemptionsPerUser: number;
+  fulfilledByService: string; // Real system fulfillment link
 }
 
-export interface FarmerCommunityGroup {
+export interface LoyaltyRewardRedemption {
   id: string;
-  name: string;
-  description: string;
-  category: CommunityGroupCategory;
-  location: string;
-  cropInterest: string;
-  imageUrl?: string;
-  isPrivate: boolean;
-  rules?: string[];
-  ownerId: string;
-  ownerName: string;
-  moderatorIds: string[];
-  memberIds: string[];
-  memberCount: number;
-  pendingRequestIds?: string[];
-  pinnedPostIds?: string[];
-  resources?: GroupResourceItem[];
-  createdAt: string;
+  rewardId: string;
+  userId: string;
+  userRole: 'FARMER' | 'BUYER';
+  pointsDeducted: number;
+  voucherCode: string;
+  rewardTitle: string;
+  discountValueText: string;
+  status: 'ACTIVE' | 'USED' | 'EXPIRED';
+  redeemedAt: string;
+  expiresAt: string;
+  usedAt?: string;
+  usedOrderReferenceId?: string;
 }
 
-export interface CommunityPollOption {
+export interface OrderRating {
   id: string;
-  text: string;
-  votes: number;
-  votedUserIds: string[];
+  orderId: string;
+  farmerId: string;
+  buyerId: string;
+  buyerName: string;
+  ratingScore: number; // 1 to 5 stars
+  qualityFeedback: 'EXCELLENT' | 'GOOD' | 'AVERAGE' | 'SUBPAR';
+  deliveryOnTime: boolean;
+  comments: string;
+  submittedAt: string;
 }
 
-export interface CommunityPoll {
-  id: string;
-  question: string;
-  options: CommunityPollOption[];
-  totalVotes: number;
+export interface LoyaltyAdminConfig {
+  pointsRules: {
+    buyerVerification: number;
+    buyerPurchaseCompleted: number;
+    buyerDeliveryConfirmed: number;
+    buyerRatingSubmitted: number;
+    buyerRepeatPurchase: number;
+    farmerVerification: number;
+    farmerSaleCompleted: number;
+    farmerDeliveryConfirmed: number;
+    farmerQualityMaintained: number;
+    farmerRatingReceived: number;
+    repeatTransactionBonus: number;
+  };
+  tierThresholds: {
+    gold: number;
+    platinum: number;
+    diamond: number;
+  };
+  fairnessGuarantees: {
+    higherTierNeverInflatesCropPrice: boolean;
+    lowerTierFarmersHaveEqualMandiAccess: boolean;
+    serverAuthoritativeLedger: boolean;
+  };
 }
 
-export interface ContentReport {
-  id: string;
-  targetType: 'POST' | 'COMMENT';
-  targetId: string;
-  reportedBy: string;
-  reporterName?: string;
-  reason: 'MISINFORMATION_HARMFUL' | 'SPAM_SCAM' | 'INAPPROPRIATE_LANGUAGE' | 'OFF_TOPIC' | 'OTHER';
-  details?: string;
-  createdAt: string;
-}
 

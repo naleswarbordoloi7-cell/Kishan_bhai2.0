@@ -43,6 +43,7 @@ import { CommunityPage } from "./pages/CommunityPage";
 import { TalkToExpertPage } from "./pages/TalkToExpertPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { LoyaltyRewardsPage } from "./pages/LoyaltyRewardsPage";
 
 const AppContent: React.FC = () => {
   const {
@@ -113,6 +114,9 @@ const AppContent: React.FC = () => {
         return <AlertsPage />;
       case "settings":
         return <SettingsPage />;
+      case "loyalty":
+      case "rewards":
+        return <LoyaltyRewardsPage />;
       case "auth":
       case "login":
       case "signin":

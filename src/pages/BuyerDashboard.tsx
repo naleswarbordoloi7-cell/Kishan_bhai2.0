@@ -14,8 +14,15 @@ import {
   MapPin,
   ExternalLink,
   Coins,
+  Star,
+  RefreshCw,
+  Gift,
 } from 'lucide-react';
-import { HarvestPoolLot, BuyerPurchaseRequest } from '../../shared/types';
+import { HarvestPoolLot, BuyerPurchaseRequest, LoyaltyAccount, LoyaltyRewardItem, LoyaltyRewardRedemption } from '../../shared/types';
+import { LoyaltyCard } from '../components/loyalty/LoyaltyCard';
+import { RewardRedemptionModal } from '../components/loyalty/RewardRedemptionModal';
+import { OrderRatingModal } from '../components/loyalty/OrderRatingModal';
+import { loyaltyService } from '../services/loyaltyService';
 
 export const BuyerDashboard: React.FC = () => {
   const currentUser = useUserStore(state => state.currentUser);
@@ -26,6 +33,16 @@ export const BuyerDashboard: React.FC = () => {
   const [offeredPrice, setOfferedPrice] = useState<string>('');
   const [deliveryLocation, setDeliveryLocation] = useState<string>('Ahmedabad Processing Depot');
 
+  // Buyer Loyalty State
+  const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
+  const [loyaltyRewards, setLoyaltyRewards] = useState<LoyaltyRewardItem[]>([]);
+  const [loyaltyRedemptions, setLoyaltyRedemptions] = useState<LoyaltyRewardRedemption[]>([]);
+  const [showRewardsModal, setShowRewardsModal] = useState<boolean>(false);
+  const [ratingOrder, setRatingOrder] = useState<BuyerPurchaseRequest | null>(null);
+  const [loyaltyLoading, setLoyaltyLoading] = useState<boolean>(true);
+
+  const effectiveBuyerId = currentUser?.id || 'usr_buyer_1';
+
   useEffect(() => {
     fetch('/api/marketplace')
       .then((res) => res.json())
@@ -34,7 +51,47 @@ export const BuyerDashboard: React.FC = () => {
         if (data.purchaseRequests) setPurchaseRequests(data.purchaseRequests);
       })
       .catch(() => {});
-  }, []);
+
+    loyaltyService
+      .getAccount(effectiveBuyerId, 'BUYER')
+      .then((acc) => setLoyaltyAccount(acc))
+      .catch(() => {})
+      .finally(() => setLoyaltyLoading(false));
+
+    loyaltyService.getRewards('BUYER').then(setLoyaltyRewards).catch(() => {});
+    loyaltyService.getRedemptions(effectiveBuyerId).then(setLoyaltyRedemptions).catch(() => {});
+  }, [effectiveBuyerId]);
+
+  const handleConfirmDelivery = async (req: BuyerPurchaseRequest) => {
+    try {
+      const res = await loyaltyService.confirmDelivery(req.id, effectiveBuyerId, true);
+      addToast('Delivery Confirmed', res.message, 'success');
+      // Refresh requests and account
+      const [acc, mkt] = await Promise.all([
+        loyaltyService.getAccount(effectiveBuyerId, 'BUYER'),
+        fetch('/api/marketplace').then((r) => r.json()),
+      ]);
+      setLoyaltyAccount(acc);
+      if (mkt.purchaseRequests) setPurchaseRequests(mkt.purchaseRequests);
+    } catch (err: any) {
+      addToast('Error', err.message, 'error');
+    }
+  };
+
+  const handleRepeatOrder = async (orderId?: string) => {
+    try {
+      const targetId = orderId || purchaseRequests.find((r) => r.status === 'COMPLETED' || r.status === 'ACCEPTED')?.id;
+      if (!targetId) {
+        addToast('No Prior Orders', 'Submit a purchase proposal first to use the 1-click repeat tool.', 'info');
+        return;
+      }
+      const newReq = await loyaltyService.repeatOrder(targetId, effectiveBuyerId);
+      setPurchaseRequests((prev) => [newReq, ...prev]);
+      addToast('Repeat Order Created', `Created repeat purchase proposal for ${newReq.crop}.`, 'success');
+    } catch (err: any) {
+      addToast('Error', err.message, 'error');
+    }
+  };
 
   const handleCreatePurchaseRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +154,19 @@ export const BuyerDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Buyer Loyalty Rewards Card */}
+      <LoyaltyCard
+        account={loyaltyAccount}
+        loading={loyaltyLoading}
+        onViewRewards={() => setShowRewardsModal(true)}
+        onPrimaryAction={() => setCurrentView('marketplace')}
+        onSecondaryAction={() => setCurrentView('loyalty')}
+        onRepeatOrder={() => handleRepeatOrder()}
+        primaryActionLabel="Find Farmers"
+        secondaryActionLabel="All Loyalty Perks"
+        repeatActionLabel="Repeat Purchase"
+      />
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -230,6 +300,36 @@ export const BuyerDashboard: React.FC = () => {
                       <span>{(req.quantityKg / 1000).toFixed(1)} Tons @ ₹{req.offeredPricePerKg}/Kg</span>
                       <span className="font-bold text-stone-900">₹{req.totalOfferedInr.toLocaleString()}</span>
                     </div>
+
+                    {/* Loyalty Milestone Order Actions */}
+                    <div className="pt-1.5 flex flex-wrap gap-1.5 justify-end">
+                      {(req.status === 'ACCEPTED' || req.status === 'PENDING') && (
+                        <button
+                          onClick={() => handleConfirmDelivery(req)}
+                          className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-lg text-[10px] transition-colors cursor-pointer"
+                        >
+                          Confirm Delivery (+50 Pts)
+                        </button>
+                      )}
+                      {req.status === 'COMPLETED' && (
+                        <>
+                          <button
+                            onClick={() => setRatingOrder(req)}
+                            className="px-2.5 py-1 bg-amber-700 hover:bg-amber-800 text-white font-semibold rounded-lg text-[10px] transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <Star className="w-3 h-3 fill-amber-300 text-amber-300" />
+                            <span>Rate Farmer (+20 Pts)</span>
+                          </button>
+                          <button
+                            onClick={() => handleRepeatOrder(req.id)}
+                            className="px-2.5 py-1 bg-stone-800 hover:bg-stone-900 text-white font-semibold rounded-lg text-[10px] transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <RefreshCw className="w-3 h-3 text-stone-300" />
+                            <span>Repeat Order</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
@@ -313,6 +413,32 @@ export const BuyerDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Rewards Redemption Modal */}
+      <RewardRedemptionModal
+        isOpen={showRewardsModal}
+        onClose={() => setShowRewardsModal(false)}
+        account={loyaltyAccount}
+        rewards={loyaltyRewards}
+        redemptions={loyaltyRedemptions}
+        onRewardRedeemed={(newRed, updatedAcc) => {
+          setLoyaltyAccount(updatedAcc);
+          setLoyaltyRedemptions((prev) => [newRed, ...prev]);
+        }}
+      />
+
+      {/* Order Rating Modal */}
+      <OrderRatingModal
+        isOpen={!!ratingOrder}
+        onClose={() => setRatingOrder(null)}
+        order={ratingOrder}
+        buyerId={effectiveBuyerId}
+        buyerName={currentUser?.fullName || 'Vikram Mehta'}
+        onRatingSuccess={(updatedAcc) => {
+          setLoyaltyAccount(updatedAcc);
+          addToast('Rating Recorded', 'Earned +20 Buyer Loyalty Points for genuine review!', 'success');
+        }}
+      />
     </div>
   );
 };

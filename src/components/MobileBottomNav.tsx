@@ -20,7 +20,8 @@ import {
   Globe,
   Sun,
   Moon,
-  ChevronRight
+  ChevronRight,
+  Gift,
 } from 'lucide-react';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 
@@ -86,6 +87,7 @@ export const MobileBottomNav: React.FC = () => {
   ];
 
   const quickTools = [
+    { id: 'loyalty', label: language === 'hi' ? 'लॉयल्टी रिवार्ड्स' : 'Loyalty Rewards', icon: Gift, color: 'text-amber-700 bg-amber-50' },
     { id: 'smart-irrigation', label: language === 'hi' ? 'स्मार्ट सिंचाई' : 'Smart Irrigation', icon: Droplets, color: 'text-sky-600 bg-sky-50' },
     { id: 'weather', label: language === 'hi' ? 'मौसम राडार' : 'Weather Doppler', icon: CloudSun, color: 'text-blue-600 bg-blue-50' },
     { id: 'group-buying', label: language === 'hi' ? 'सामूहिक खरीद (35% छूट)' : 'Group Buying (35% Off)', icon: ShoppingBag, color: 'text-emerald-700 bg-emerald-50' },

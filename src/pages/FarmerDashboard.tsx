@@ -5,913 +5,746 @@ import { useMarketStore } from '../store/marketStore';
 import {
   Sprout,
   Scan,
-  TrendingUp,
-  CloudSun,
-  Users,
-  Sparkles,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  RefreshCw,
   Droplets,
-  Layers,
-  MapPin,
+  TrendingUp,
+  Sparkles,
+  AlertTriangle,
+  CloudSun,
   ChevronRight,
-  Plus,
+  Calendar,
+  MapPin,
   Send,
+  Mic,
+  Camera,
+  ArrowRight,
+  CheckCircle2,
+  PhoneCall,
+  ShoppingBag,
+  Landmark,
+  Power,
+  RefreshCw,
+  Volume2,
+  VolumeX,
   CheckSquare,
   Square,
-  Building,
-  Store,
+  CloudRain,
   HelpCircle,
+  FileText,
   ShieldCheck,
   Award,
-  AlertTriangle,
-  Tractor,
+  Wallet,
 } from 'lucide-react';
-import farmerImg from '../assets/images/farmer_champion_portrait_1790247882281.jpg';
-import heroAgriImg from '../assets/images/hero_agri_landscape_1790247857958.jpg';
-import { WeatherData } from '../../shared/types';
-import { KishanRewardsCard } from '../components/loyalty/KishanRewardsCard';
-import { RepeatOrderModal } from '../components/loyalty/RepeatOrderModal';
-import { RewardsHistoryModal } from '../components/loyalty/RewardsHistoryModal';
-
-interface FarmTask {
-  id: string;
-  title: string;
-  description: string;
-  time: string;
-  done: boolean;
-  tag: 'urgent' | 'pending' | 'warning';
-}
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
+import { HomeSearchBar } from '../components/HomeSearchBar';
+import { MandiTicker } from '../components/MandiTicker';
+import { LoyaltyCard } from '../components/loyalty/LoyaltyCard';
+import { RewardRedemptionModal } from '../components/loyalty/RewardRedemptionModal';
+import { loyaltyService } from '../services/loyaltyService';
+import { WeatherData, LoyaltyAccount, LoyaltyRewardItem, LoyaltyRewardRedemption } from '../../shared/types';
+import {
+  SUPPORTED_LANGUAGES,
+  getLocalizedSpokenAdvisory,
+  getTranslation,
+} from '../i18n/translations';
+import { speakText, stopSpeech, isSpeechSynthesisSupported } from '../services/webSpeechService';
 
 export const FarmerDashboard: React.FC = () => {
-  const { currentUser } = useUserStore();
-  const {
-    crops,
-    irrigationStatus,
-    alerts,
-    setCurrentView,
-    askAiWithPrompt,
-    addToast,
-    language,
-  } = useApp();
+  const currentUser = useUserStore(state => state.currentUser);
+  const farmerProfile = useUserStore(state => state.farmerProfile);
+  const mandiPrices = useMarketStore(state => state.mandiPrices);
+  const { crops, irrigationStatus, togglePump, soilHealth, alerts, language, setLanguage, t, setCurrentView, askAiWithPrompt, addToast, isDarkMode } = useApp();
 
-  const isHi = language === 'hi';
-
-  // Weather State
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [isRefreshingWeather, setIsRefreshingWeather] = useState(false);
+  const [isPumpLoading, setIsPumpLoading] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [quickQuestionInput, setQuickQuestionInput] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mandi Filter & Refresh State
-  const [selectedRegion, setSelectedRegion] = useState<'All' | 'Gujarat' | 'Madhya Pradesh' | 'Rajasthan' | 'Maharashtra'>('All');
-  const [isRefreshingMandi, setIsRefreshingMandi] = useState(false);
+  // Loyalty Rewards State
+  const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
+  const [loyaltyRewards, setLoyaltyRewards] = useState<LoyaltyRewardItem[]>([]);
+  const [loyaltyRedemptions, setLoyaltyRedemptions] = useState<LoyaltyRewardRedemption[]>([]);
+  const [showRewardsModal, setShowRewardsModal] = useState<boolean>(false);
+  const [loyaltyLoading, setLoyaltyLoading] = useState<boolean>(true);
 
-  // Quick Question Input State for Kishan AI
-  const [aiQuestion, setAiQuestion] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
-  // Kisan Rewards Loyalty Modals State
-  const [showRewardsHistory, setShowRewardsHistory] = useState(false);
-  const [showRepeatOrder, setShowRepeatOrder] = useState(false);
+  useEffect(() => {
+    const effectiveFarmerId = currentUser?.id || 'usr_farmer_ramesh';
+    loyaltyService
+      .getAccount(effectiveFarmerId, 'FARMER')
+      .then((acc) => setLoyaltyAccount(acc))
+      .catch(() => {})
+      .finally(() => setLoyaltyLoading(false));
 
-  // Daily Farm Plan checklist with local persistence
-  const [farmTasks, setFarmTasks] = useState<FarmTask[]>(() => {
+    loyaltyService.getRewards('FARMER').then(setLoyaltyRewards).catch(() => {});
+    loyaltyService.getRedemptions(effectiveFarmerId).then(setLoyaltyRedemptions).catch(() => {});
+  }, [currentUser?.id]);
+
+  // Daily Farm Checklist with Local Storage persistence
+  const [dailyTasks, setDailyTasks] = useState<{ id: string; textHi: string; textEn: string; textGu: string; done: boolean; tag: string }[]>(() => {
     try {
-      const saved = localStorage.getItem('kb_farmer_tasks_v3');
+      const saved = localStorage.getItem('kb_daily_tasks_v2');
       if (saved) return JSON.parse(saved);
     } catch {}
     return [
       {
-        id: 'task-1',
-        title: 'Irrigation Check',
-        description: 'Check soil moisture sensors and irrigate block B if needed.',
-        time: '09:00 AM',
+        id: 't1',
+        textHi: '🌧️ कल बारिश से पहले खेत की जल निकासी नाली साफ करें',
+        textEn: '🌧️ Clear field drainage trenches before tomorrow\'s rain',
+        textGu: '🌧️ આવતીકાલના વરસાદ પહેલા ખેતરમાંથી પાણી નિકાલની નીકો સાફ કરો',
         done: false,
-        tag: 'urgent',
+        tag: 'जरूरी (Urgent)',
       },
       {
-        id: 'task-2',
-        title: 'Pest Inspection',
-        description: 'Inspect cotton leaf under-surface for pink bollworm or whitefly symptoms.',
-        time: '11:00 AM',
+        id: 't2',
+        textHi: '🛑 आज कीटनाशक का छिड़काव न करें (दवा बारिश में धुल जाएगी)',
+        textEn: '🛑 Avoid chemical spraying today (rain will wash it away)',
+        textGu: '🛑 આજે દવાનો છંટકાવ ન કરવો (વરસાદમાં દવા ધોવાઈ જશે)',
         done: true,
-        tag: 'pending',
+        tag: 'सावधानी (Warning)',
       },
       {
-        id: 'task-3',
-        title: 'Weather Alert Review',
-        description: 'Review the evening thunderstorm & rain forecast before pesticide application.',
-        time: '05:00 PM',
+        id: 't3',
+        textHi: '📈 गोंडल मंडी में कपास ₹7,620 पहुंचा — अपनी उपज का भाव देखें',
+        textEn: '📈 Gondal Mandi Cotton reached ₹7,620 — Check your crop rate',
+        textGu: '📈 ગોંડલ માર્કેટ યાર્ડમાં કપાસ ₹7,620 પહોંચ્યો — ભાવ ચકાસો',
         done: false,
-        tag: 'warning',
+        tag: 'मंडी (Mandi)',
       },
     ];
   });
 
-  // Save tasks to Local Storage
   useEffect(() => {
     try {
-      localStorage.setItem('kb_farmer_tasks_v3', JSON.stringify(farmTasks));
+      localStorage.setItem('kb_daily_tasks_v2', JSON.stringify(dailyTasks));
     } catch {}
-  }, [farmTasks]);
-
-  // Fetch real weather data
-  const fetchWeather = () => {
-    setIsRefreshingWeather(true);
-    fetch('/api/weather?location=Anandpur,%20Gujarat')
-      .then((res) => res.json())
-      .then((data) => {
-        setWeather(data);
-        setIsRefreshingWeather(false);
-      })
-      .catch(() => {
-        setIsRefreshingWeather(false);
-      });
-  };
+  }, [dailyTasks]);
 
   useEffect(() => {
-    fetchWeather();
+    fetch('/api/weather?location=Anandpur,%20Gujarat')
+      .then((res) => res.json())
+      .then((data) => setWeather(data))
+      .catch(() => {});
   }, []);
 
-  // Toggle Task Completion
-  const toggleTask = (taskId: string) => {
-    setFarmTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t))
+  const isPumpRunning = irrigationStatus.pumpStatus === 'RUNNING';
+  const moisturePct = irrigationStatus.soilMoisturePct || 42;
+
+  // Active crop info
+  const primaryCrop = crops && crops.length > 0 ? crops[0] : null;
+  const cropDisplayName = primaryCrop?.cropName || 'Cotton (कपास)';
+  const cropHealthScore = primaryCrop?.healthScore || 88;
+
+  // Weather variables
+  const currentTemp = weather?.temperatureC ?? 30;
+  const currentRainProb = weather?.rainfallProbability ?? 70;
+
+  // Handle task toggle
+  const toggleTask = (id: string) => {
+    setDailyTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
     );
   };
 
-  // Add Custom Task
-  const handleAddTask = () => {
-    const title = window.prompt(isHi ? 'नई गतिविधि दर्ज करें:' : 'Enter new farming activity:');
-    if (!title || !title.trim()) return;
+  // Speech synthesis for official advisory in chosen language
+  const handlePlayAdvisoryAudio = () => {
+    if (isPlayingAudio) {
+      stopSpeech();
+      setIsPlayingAudio(false);
+      return;
+    }
 
-    const newTask: FarmTask = {
-      id: `task-${Date.now()}`,
-      title: title.trim(),
-      description: 'Scheduled farm field operation',
-      time: '02:00 PM',
-      done: false,
-      tag: 'pending',
-    };
+    const rainVal = weather?.rainfallProbability ?? 70;
+    const tempVal = weather?.temperatureC ?? 30;
+    const advisory = getLocalizedSpokenAdvisory(language, tempVal, rainVal, moisturePct);
 
-    setFarmTasks((prev) => [...prev, newTask]);
-    addToast('Activity Added', `Added "${title}" to today's farm plan.`, 'success');
+    if (!isSpeechSynthesisSupported()) {
+      addToast('Voice Advisory', advisory.text.slice(0, 100) + '...', 'info');
+      return;
+    }
+
+    setIsPlayingAudio(true);
+    speakText(advisory.text, {
+      lang: advisory.langCode || language,
+      rate: 0.92,
+      onStart: () => setIsPlayingAudio(true),
+      onEnd: () => setIsPlayingAudio(false),
+      onError: (err) => {
+        setIsPlayingAudio(false);
+        console.warn('Voice playback notice:', err);
+      },
+    });
   };
 
-  // Refresh Mandi Feed
-  const handleRefreshMandi = () => {
-    setIsRefreshingMandi(true);
-    setTimeout(() => {
-      setIsRefreshingMandi(false);
-      addToast('Mandi Feed Refreshed', 'Latest APMC modal prices loaded.', 'info');
-    }, 600);
+  // Pump Toggle with feedback
+  const handleTogglePump = async () => {
+    setIsPumpLoading(true);
+    try {
+      await togglePump();
+      addToast(
+        isPumpRunning ? 'पंप बंद हुआ' : 'पंप चालू हुआ',
+        isPumpRunning
+          ? (language === 'hi' ? 'ड्रिप सिंचाई पंप सफलतापूर्वक बंद कर दिया गया।' : 'Irrigation pump stopped.')
+          : (language === 'hi' ? 'ड्रिप सिंचाई पंप चालू हो गया है।' : 'Irrigation pump started.'),
+        isPumpRunning ? 'info' : 'success'
+      );
+    } catch {
+      addToast('त्रुटि', 'पंप नियंत्रक से संपर्क नहीं हो सका', 'error');
+    } finally {
+      setIsPumpLoading(false);
+    }
   };
 
-  // Kishan AI Ask Handler
-  const handleAskAi = (promptText?: string) => {
-    const q = promptText || aiQuestion;
-    if (!q || !q.trim()) return;
-    askAiWithPrompt(q.trim());
-    setCurrentView('ai-assistant');
-  };
-
-  // Farmer Details
-  const farmerName = currentUser?.fullName || 'Ramesh Patel';
-  const farmLocation = currentUser?.village
-    ? `${currentUser.village}, ${currentUser.state}`
-    : 'Anandpur, Rajkot, Gujarat';
-  const farmSizeDisplay = currentUser?.farmSizeAcres
-    ? `${currentUser.farmSizeAcres} Acres (${(currentUser.farmSizeAcres * 0.404).toFixed(1)} Ha)`
-    : '4.2 Hectares (10.4 Acres)';
-  
-  const primaryCrop = crops && crops.length > 0 ? crops[0] : null;
-  const currentCropName = primaryCrop?.cropName || 'BT Cotton (कपास)';
-  const cropHealthPercent = primaryCrop?.healthScore || 92;
-
-  // Weather Values
-  const currentTemp = weather?.temperatureC ?? 31;
-  const weatherCondition = (weather as any)?.conditionText || (weather as any)?.condition || 'Partly Cloudy';
-  const humidity = (weather as any)?.humidityPct || (weather as any)?.humidity || 48;
-  const windSpeed = weather?.windSpeedKmh ?? 14;
-
-  // Mandi Dataset with Multi-Region Filtering
-  const allMandiRates = [
-    {
-      crop: 'Cotton (कपास)',
-      sub: 'Shankar-6 Hybrid',
-      mandi: 'Rajkot APMC',
-      state: 'Gujarat',
-      price: 7420,
-      change: '+₹140',
-      isUp: true,
-      msp: 7020,
-      icon: '🌿',
-    },
-    {
-      crop: 'Wheat (गेहूं)',
-      sub: 'Lokwan Sharbati',
-      mandi: 'Indore APMC',
-      state: 'Madhya Pradesh',
-      price: 2840,
-      change: '+₹35',
-      isUp: true,
-      msp: 2275,
-      icon: '🌾',
-    },
-    {
-      crop: 'Groundnut (मूंगफली)',
-      sub: 'GG-20 Bold',
-      mandi: 'Gondal APMC',
-      state: 'Gujarat',
-      price: 6380,
-      change: '-₹40',
-      isUp: false,
-      msp: 6377,
-      icon: '🥜',
-    },
-    {
-      crop: 'Mustard (सरसों)',
-      sub: 'Pusa Bold 42% Oil',
-      mandi: 'Jaipur APMC',
-      state: 'Rajasthan',
-      price: 5720,
-      change: '+₹90',
-      isUp: true,
-      msp: 5650,
-      icon: '🌼',
-    },
-    {
-      crop: 'Soybean (सोयाबीन)',
-      sub: 'JS-9560 Yellow',
-      mandi: 'Ujjain APMC',
-      state: 'Madhya Pradesh',
-      price: 4890,
-      change: '+₹60',
-      isUp: true,
-      msp: 4600,
-      icon: '🌱',
-    },
-    {
-      crop: 'Gram / Chana (चना)',
-      sub: 'JG-11 Desi',
-      mandi: 'Akola APMC',
-      state: 'Maharashtra',
-      price: 6150,
-      change: '+₹110',
-      isUp: true,
-      msp: 5440,
-      icon: '🫘',
-    },
+  // Quick Questions chips
+  const quickQuestionChips = [
+    { hi: '🌾 कपास में खाद कब डालें?', en: 'When to fertilize cotton?', gu: 'કપાસમાં ખાતર ક્યારે નાખવું?' },
+    { hi: '🐛 पत्ती पीली पड़ रही है क्या करें?', en: 'Leaves turning yellow, what to do?', gu: 'પાંદડા પીળા પડે છે શું કરવું?' },
+    { hi: '🌧️ कल बारिश कितने बजे होगी?', en: 'What time will it rain tomorrow?', gu: 'આવતીકાલે વરસાદ ક્યારે પડશે?' },
+    { hi: '💰 गोंडल मंडी में कपास का आज का भाव?', en: 'Cotton price in Gondal Mandi today?', gu: 'ગોંડલ યાર્ડમાં કપાસનો ભાવ?' },
   ];
 
-  const displayedMandiRates =
-    selectedRegion === 'All'
-      ? allMandiRates
-      : allMandiRates.filter((m) => m.state === selectedRegion);
+  // 5-Day Simple Forecast
+  const simpleForecast = [
+    { dayHi: 'सोमवार (आज)', dayEn: 'Mon (Today)', dayGu: 'સોમવાર (આજે)', icon: '⛅', temp: '30°C', rain: '20%', adviceHi: 'सामान्य धूप • सामान्य काम', adviceEn: 'Sunny • Routine farm work' },
+    { dayHi: 'मंगलवार (कल)', dayEn: 'Tue (Tomorrow)', dayGu: 'મંગળવાર (કાલે)', icon: '🌧️', temp: '27°C', rain: '70%', adviceHi: '⚠️ भारी बारिश • स्प्रे रोकें', adviceEn: '⚠️ Heavy Rain • Hold Spray' },
+    { dayHi: 'बुधवार', dayEn: 'Wed', dayGu: 'બુધવાર', icon: '🌧️', temp: '26°C', rain: '85%', adviceHi: 'पानी निकासी नाली देखें', adviceEn: 'Clear field drainage' },
+    { dayHi: 'गुरुवार', dayEn: 'Thu', dayGu: 'ગુરુવાર', icon: '🌦️', temp: '28°C', rain: '40%', adviceHi: 'हल्की फुहार • कीट जांचें', adviceEn: 'Scout leaves for pests' },
+    { dayHi: 'शुक्रवार', dayEn: 'Fri', dayGu: 'શુક્રવાર', icon: '☀️', temp: '31°C', rain: '10%', adviceHi: 'खिली धूप • दवा स्प्रे सुरक्षित', adviceEn: 'Sunny • Safe for spraying' },
+  ];
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
-    <div className="space-y-6 pb-12 font-sans">
-      {/* ============================================================= */}
-      {/* SECTION 1: PERSONALIZED WELCOME BANNER                       */}
-      {/* ============================================================= */}
-      <section className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#E8F6E9] via-[#f3f9f4] to-[#f9fbf8] border border-[#E5EBE5] shadow-sm p-6 sm:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          
-          {/* Left Greeting & Location Details */}
-          <div className="lg:col-span-7 xl:col-span-8 space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-emerald-200/90 text-xs font-semibold text-[#004D36] shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-[#20A464] animate-pulse"></span>
-              <span>Farm Command Active • {farmLocation}</span>
-            </div>
+    <div id="kisan-simple-home" className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 space-y-5 pb-24 md:pb-12 text-stone-900 dark:text-stone-100">
+      {/* Universal Agri Search & Voice Bar */}
+      <HomeSearchBar />
 
-            <div>
-              <p className="text-sm font-semibold text-[#087443]">Good Morning,</p>
-              <h1 className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-[#14251F] tracking-tight">
-                Welcome, {farmerName} 👋
-              </h1>
-            </div>
+      {/* ========================================================= */}
+      {/* 1. MODERN WARM AGRI GREETING & DAYLIGHT FARM ANCHOR       */}
+      {/* ========================================================= */}
+      <section className="bg-white dark:bg-[#141C18] border border-emerald-900/10 dark:border-stone-800 rounded-3xl p-4 sm:p-6 shadow-sm shadow-emerald-950/5 relative overflow-hidden">
+        {/* Subtle decorative background organic glow */}
+        <div className="absolute -top-16 -right-16 w-48 h-48 bg-emerald-100/40 dark:bg-emerald-900/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-amber-100/40 dark:bg-amber-900/15 rounded-full blur-3xl pointer-events-none" />
 
-            <p className="text-xs sm:text-sm text-[#66756D] max-w-xl leading-relaxed">
-              Keep growing with smart insights, better opportunities, and a stronger farming community.
-            </p>
-
-            {/* Quick Metrics Badges */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-              <div className="px-3 py-1.5 rounded-xl bg-white border border-[#E5EBE5] font-semibold text-[#14251F] flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#087443]" />
-                <span>{farmLocation}</span>
-              </div>
-              <div className="px-3 py-1.5 rounded-xl bg-white border border-[#E5EBE5] font-semibold text-[#14251F] flex items-center gap-1.5">
-                <Sprout className="w-3.5 h-3.5 text-[#087443]" />
-                <span>Crop: {currentCropName}</span>
-              </div>
-              <div className="px-3 py-1.5 rounded-xl bg-white border border-[#E5EBE5] font-semibold text-[#14251F] flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-[#087443]" />
-                <span>Area: {farmSizeDisplay}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Compact Farm Information Panel */}
-          <div className="lg:col-span-5 xl:col-span-4 bg-white/95 backdrop-blur-xs rounded-2xl border border-emerald-200/80 p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#087443] flex items-center gap-1.5">
-                <Sprout className="w-4 h-4 text-[#20A464]" />
-                <span>Active Farm Dossier</span>
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-700/20 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
+                <MapPin className="w-3 h-3 text-emerald-700" />
+                <span>{farmerProfile?.village || 'आनंदपुर'}, {farmerProfile?.district || 'राजकोट'} ({farmerProfile?.state || 'गुजरात'})</span>
               </span>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#E8F6E9] text-[#004D36]">
-                Verified
+              <span className="text-stone-400">·</span>
+              <span className="text-xs text-stone-600 dark:text-stone-400 font-medium">
+                {weather?.condition || 'हल्की धूप व अनुकूल मौसम'}
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="p-2 rounded-xl bg-stone-50 border border-stone-100">
-                <p className="text-[10px] text-[#66756D] font-medium">Crop</p>
-                <p className="text-xs font-bold text-[#14251F] truncate mt-0.5">Cotton</p>
-              </div>
-              <div className="p-2 rounded-xl bg-stone-50 border border-stone-100">
-                <p className="text-[10px] text-[#66756D] font-medium">Size</p>
-                <p className="text-xs font-bold text-[#14251F] truncate mt-0.5">4.2 Ha</p>
-              </div>
-              <div className="p-2 rounded-xl bg-[#E8F6E9] border border-emerald-200">
-                <p className="text-[10px] text-[#087443] font-medium">Health</p>
-                <p className="text-xs font-extrabold text-[#004D36] mt-0.5">{cropHealthPercent}%</p>
-              </div>
-            </div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#144633] dark:text-[#ECFDF5] tracking-tight">
+              {language === 'hi' 
+                ? `राम-राम, ${farmerProfile?.name || 'रमेशभाई'} जी 🌾` 
+                : language === 'gu'
+                ? `રામ-રામ, ${farmerProfile?.name || 'રમેશભાઈ'} જી 🌾`
+                : `Welcome, ${farmerProfile?.name || 'Ramesh Patel'} 🌾`}
+            </h1>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  askAiWithPrompt(`Provide farm advisory for ${currentCropName} with size ${farmSizeDisplay}.`);
-                  setCurrentView('ai-assistant');
-                }}
-                className="py-2.5 px-3 rounded-xl bg-[#004D36] hover:bg-[#087443] text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#FFD84D]" />
-                <span>Farm Advisory</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCurrentView('disease-scanner')}
-                className="py-2.5 px-3 rounded-xl bg-white hover:bg-emerald-50 border border-[#087443] text-[#004D36] font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <Scan className="w-3.5 h-3.5 text-[#087443]" />
-                <span>Scan Leaf</span>
-              </button>
+            {/* Farm stage metadata with zero-pill discipline */}
+            <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-stone-600 dark:text-stone-300">
+              <span className="font-semibold text-emerald-900 dark:text-emerald-200">
+                🌱 {cropDisplayName}
+              </span>
+              <span className="text-stone-300 dark:text-stone-700">·</span>
+              <span>4.2 हेक्टेयर (10.5 बीघा)</span>
+              <span className="text-stone-300 dark:text-stone-700">·</span>
+              <span>फूल व डोडी अवस्था (Flowering)</span>
+              <span className="text-stone-300 dark:text-stone-700">·</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                फसल स्वास्थ्य {cropHealthScore}%
+              </span>
             </div>
           </div>
 
+          {/* Daylight Action Quick Controls (Voice Playback & Fast Diagnosis) */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
+            <button
+              onClick={handlePlayAdvisoryAudio}
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl font-bold text-xs shadow-xs transition-all cursor-pointer ${
+                isPlayingAudio 
+                  ? 'bg-amber-600 text-white animate-pulse' 
+                  : 'bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-[#144633] dark:text-emerald-200 border border-emerald-700/25'
+              }`}
+            >
+              {isPlayingAudio ? (
+                <>
+                  <VolumeX className="w-4 h-4" />
+                  <span>{language === 'hi' ? 'आवाज़ रोकें' : 'Stop Audio'}</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-4 h-4 text-emerald-700" />
+                  <span>{language === 'hi' ? 'दैनिक सलाह सुनें 🎙️' : 'Play Farm Advisory 🎙️'}</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => setCurrentView('disease-scanner')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-700 hover:from-emerald-900 hover:to-emerald-800 text-white font-bold text-xs shadow-md shadow-emerald-950/20 active:scale-95 transition-all cursor-pointer"
+            >
+              <Camera className="w-4 h-4 text-amber-300" />
+              <span>{language === 'hi' ? 'फसल जांचें' : 'Scan Leaf'}</span>
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* ============================================================= */}
-      {/* KISHAN BHAI KISAN REWARDS — LOYALTY & SMART BUYER ACCESS      */}
-      {/* ============================================================= */}
-      <section>
-        <KishanRewardsCard
-          onOpenHistory={() => setShowRewardsHistory(true)}
-          onOpenRepeatOrder={() => setShowRepeatOrder(true)}
+      {/* ========================================================= */}
+      {/* 2. REAL-TIME APMC MANDI TICKER (LIVE COMMODITY SCROLLER)  */}
+      {/* ========================================================= */}
+      <MandiTicker />
+
+      {/* ========================================================= */}
+      {/* 2.1 FARMER LOYALTY REWARDS SYSTEM CARD                    */}
+      {/* ========================================================= */}
+      <section className="space-y-2">
+        <LoyaltyCard
+          account={loyaltyAccount}
+          loading={loyaltyLoading}
+          onViewRewards={() => setShowRewardsModal(true)}
+          onPrimaryAction={() => setCurrentView('marketplace')}
+          onSecondaryAction={() => setCurrentView('loyalty')}
+          onRepeatOrder={() => {
+            addToast('Repeat Order Re-Listing', 'Browsing verified institutional purchase proposals for rapid re-commitment.', 'info');
+            setCurrentView('marketplace');
+          }}
+          primaryActionLabel="Explore Buyer Offers"
+          secondaryActionLabel="All Loyalty Perks"
+          repeatActionLabel="Repeat Order"
         />
       </section>
 
-      {/* ============================================================= */}
-      {/* SECTION 2: FARM INTELLIGENCE CARDS (4 Responsive Cards)       */}
-      {/* ============================================================= */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* Card 1: Farm Health */}
-        <div
-          onClick={() => setCurrentView('my-crops')}
-          className="bg-white rounded-2xl border border-[#E5EBE5] p-5 shadow-2xs hover:shadow-md hover:border-[#20A464]/60 transition-all cursor-pointer group flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-[#E8F6E9] text-[#004D36] flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Sprout className="w-5 h-5 text-[#087443]" />
-            </div>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Optimal Stage
+      {/* ========================================================= */}
+      {/* 3. THE "BIG 4" PRIMARY ACTION TILES (EASY FOR ANY FARMER) */}
+      {/* ========================================================= */}
+      <section id="big-4-action-tiles" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base sm:text-lg font-bold text-[#144633] dark:text-stone-100 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span>
+              {language === 'hi'
+                ? 'त्वरित 4 कृषि क्रियाएं'
+                : language === 'gu'
+                ? 'સૌથી મહત્વપૂર્ણ ૪ સુવિધાઓ'
+                : 'Top 4 Immediate Actions'}
             </span>
-          </div>
-
-          <div className="mt-4">
-            <p className="text-xs font-semibold text-[#66756D]">Farm Health</p>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-extrabold text-[#14251F]">{cropHealthPercent}%</span>
-              <span className="text-xs font-bold text-[#20A464]">+4% this week</span>
-            </div>
-
-            {/* Mini Line Chart SVG */}
-            <div className="mt-3 h-8 w-full">
-              <svg className="w-full h-full overflow-visible" viewBox="0 0 100 24">
-                <path
-                  d="M0 18 Q20 16 35 12 T70 8 T100 4"
-                  fill="none"
-                  stroke="#20A464"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                <circle cx="100" cy="4" r="3" fill="#004D36" />
-              </svg>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs text-[#087443] font-semibold">
-            <span>View Crop Vigor</span>
-            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
+          </h2>
+          <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-700/20 px-2.5 py-0.5 rounded-full">
+            {language === 'hi' ? '1-टैप डायरेक्ट' : 'Instant Direct'}
+          </span>
         </div>
 
-        {/* Card 2: Today's Weather */}
-        <div
-          onClick={() => setCurrentView('weather')}
-          className="bg-white rounded-2xl border border-[#E5EBE5] p-5 shadow-2xs hover:shadow-md hover:border-[#20A464]/60 transition-all cursor-pointer group flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <CloudSun className="w-5 h-5" />
-            </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                fetchWeather();
-              }}
-              className="text-[#66756D] hover:text-[#087443] p-1"
-              title="Refresh Weather"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingWeather ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-
-          <div className="mt-4">
-            <p className="text-xs font-semibold text-[#66756D]">Today's Weather</p>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-extrabold text-[#14251F]">{currentTemp}°C</span>
-              <span className="text-xs font-semibold text-[#66756D] truncate">{weatherCondition}</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-stone-100 text-[11px] text-[#66756D]">
-              <div>Humidity: <span className="font-bold text-[#14251F]">{humidity}%</span></div>
-              <div>Wind: <span className="font-bold text-[#14251F]">{windSpeed} km/h</span></div>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs text-[#087443] font-semibold">
-            <span>7-Day Advisory</span>
-            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
-
-        {/* Card 3: Active Cluster */}
-        <div
-          onClick={() => setCurrentView('clusters')}
-          className="bg-white rounded-2xl border border-[#E5EBE5] p-5 shadow-2xs hover:shadow-md hover:border-[#20A464]/60 transition-all cursor-pointer group flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#087443] flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Users className="w-5 h-5" />
-            </div>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#E8F6E9] text-[#004D36]">
-              24 Members
-            </span>
-          </div>
-
-          <div className="mt-4">
-            <p className="text-xs font-semibold text-[#66756D]">Active Cluster</p>
-            <h4 className="text-sm font-bold text-[#14251F] mt-1 truncate">
-              Anandpur Cluster #12
-            </h4>
-
-            {/* Member Avatars */}
-            <div className="flex items-center gap-1 mt-3">
-              <div className="w-7 h-7 rounded-full bg-[#004D36] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
-                RP
-              </div>
-              <div className="w-7 h-7 rounded-full bg-[#087443] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
-                VJ
-              </div>
-              <div className="w-7 h-7 rounded-full bg-[#20A464] text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
-                SK
-              </div>
-              <div className="w-7 h-7 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
-                MK
-              </div>
-              <div className="w-7 h-7 rounded-full bg-stone-200 text-stone-700 text-[10px] font-bold flex items-center justify-center border-2 border-white">
-                +20
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs text-[#087443] font-semibold">
-            <span>Open Cluster Hub</span>
-            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
-
-        {/* Card 4: Best Mandi Offer */}
-        <div
-          onClick={() => setCurrentView('market-prices')}
-          className="bg-white rounded-2xl border border-[#E5EBE5] p-5 shadow-2xs hover:shadow-md hover:border-[#20A464]/60 transition-all cursor-pointer group flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <TrendingUp className="w-5 h-5 text-[#B45309]" />
-            </div>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-              Verified APMC
-            </span>
-          </div>
-
-          <div className="mt-4">
-            <p className="text-xs font-semibold text-[#66756D]">Best Mandi Offer</p>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-black text-[#14251F]">₹7,620</span>
-              <span className="text-xs text-[#66756D]">/quintal</span>
-            </div>
-            <p className="text-xs font-bold text-[#087443] mt-0.5">
-              Cotton • Gondal APMC, Gujarat
-            </p>
-            <p className="text-[11px] text-[#20A464] font-semibold mt-1">
-              +₹180/q (2.4% Today) vs MSP
-            </p>
-          </div>
-
-          <div className="mt-3 pt-2.5 border-t border-stone-100 flex items-center justify-between text-xs text-[#087443] font-semibold">
-            <span>Explore Mandi Radar</span>
-            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
-
-      </section>
-
-      {/* ============================================================= */}
-      {/* SECTION 3: DAILY MANDI RATES SECTION                          */}
-      {/* ============================================================= */}
-      <section className="bg-white rounded-3xl border border-[#E5EBE5] p-6 sm:p-7 shadow-xs space-y-5">
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#E8F6E9] flex items-center justify-center text-[#087443]">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-[#14251F]">
-                Daily Mandi Rates
-              </h2>
-            </div>
-            <p className="text-xs text-[#66756D] mt-0.5">
-              Verified feed from e-NAM & Agmarknet • Last updated: Today, 10:30 AM
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <button
-              type="button"
-              onClick={handleRefreshMandi}
-              className="p-2 rounded-xl border border-stone-200 text-stone-600 hover:text-[#004D36] hover:bg-stone-50 transition-colors cursor-pointer"
-              title="Refresh Mandi Feed"
-            >
-              <RefreshCw className={`w-4 h-4 ${isRefreshingMandi ? 'animate-spin' : ''}`} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentView('market-prices')}
-              className="py-2 px-3.5 rounded-xl bg-[#E8F6E9] hover:bg-emerald-100 text-[#004D36] text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
-            >
-              <span>View Full Radar</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Functional Region Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {(['All', 'Gujarat', 'Madhya Pradesh', 'Rajasthan', 'Maharashtra'] as const).map((region) => (
-            <button
-              key={region}
-              type="button"
-              onClick={() => setSelectedRegion(region)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                selectedRegion === region
-                  ? 'bg-[#004D36] text-white shadow-xs'
-                  : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
-              }`}
-            >
-              {region === 'All' ? 'All Mandis' : region}
-            </button>
-          ))}
-        </div>
-
-        {/* Responsive Mandi Crop Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-          {displayedMandiRates.map((cropItem) => (
-            <div
-              key={cropItem.crop}
-              onClick={() => setCurrentView('market-prices')}
-              className="p-3.5 rounded-2xl border border-stone-200/90 bg-[#F7F8F2]/60 hover:bg-white hover:border-[#20A464] hover:shadow-md transition-all cursor-pointer space-y-2 group"
-            >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* TILE 1: CROP DOCTOR (SCAN LEAF) */}
+          <div
+            id="action-scan-leaf"
+            onClick={() => setCurrentView('disease-scanner')}
+            className="bg-white dark:bg-[#141C18] rounded-2xl p-4 sm:p-5 border border-emerald-900/10 dark:border-stone-800 hover:border-emerald-600/50 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+          >
+            <div>
               <div className="flex items-center justify-between">
-                <span className="text-xl">{cropItem.icon}</span>
-                <span
-                  className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${
-                    cropItem.isUp
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-rose-100 text-rose-800'
-                  }`}
-                >
-                  {cropItem.change}
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-xl group-hover:scale-105 transition-transform">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                  {language === 'hi' ? 'रोग डॉक्टर' : 'AI Doctor'}
                 </span>
               </div>
 
-              <div>
-                <h4 className="text-xs font-black text-[#14251F] group-hover:text-[#087443] transition-colors truncate">
-                  {cropItem.crop}
-                </h4>
-                <p className="text-[10px] text-[#66756D] truncate">{cropItem.mandi}</p>
-              </div>
-
-              <div className="pt-1 border-t border-stone-200/60">
-                <div className="text-base font-extrabold text-[#14251F]">
-                  ₹{cropItem.price.toLocaleString('en-IN')}
-                  <span className="text-[10px] font-normal text-[#66756D]">/q</span>
-                </div>
-                <div className="text-[10px] text-[#66756D] mt-0.5">
-                  MSP: <span className="font-semibold text-stone-700">₹{cropItem.msp}</span>
-                </div>
-              </div>
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 mt-3 leading-tight group-hover:text-emerald-800 dark:group-hover:text-emerald-400">
+                {language === 'hi' ? 'पत्ती का फोटो लें' : language === 'gu' ? 'પાંદડાનો ફોટો લો' : 'Scan Leaf Photo'}
+              </h3>
+              <p className="text-stone-600 dark:text-stone-400 text-xs mt-1.5 leading-relaxed">
+                {language === 'hi'
+                  ? 'रोग पहचानें व तुरंत सही दवा और जैविक उपचार पाएं'
+                  : 'Instant diagnosis with chemical doses and organic remedies'}
+              </p>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* ============================================================= */}
-      {/* SECTION 4: LOWER DASHBOARD (Farm Plan, AI & Quick Tools)      */}
-      {/* ============================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* =========================================================== */}
-        {/* SECTION 4A: TODAY'S FARM PLAN (Checklist) (7 Cols)          */}
-        {/* =========================================================== */}
-        <section className="lg:col-span-7 bg-white rounded-3xl border border-[#E5EBE5] p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-stone-100">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#087443] flex items-center justify-center">
-                <Calendar className="w-4 h-4" />
+            <button className="mt-4 w-full py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-2xs group-hover:shadow-xs transition-all">
+              <span>{language === 'hi' ? 'कैमरा खोलें' : 'Open Camera'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* TILE 2: VOICE KISAN AI */}
+          <div
+            id="action-voice-ai"
+            onClick={() => setCurrentView('ai-assistant')}
+            className="bg-white dark:bg-[#141C18] rounded-2xl p-4 sm:p-5 border border-amber-900/15 dark:border-stone-800 hover:border-amber-600/50 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="p-2.5 bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300 rounded-xl group-hover:scale-105 transition-transform">
+                  <Mic className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-100/60 dark:bg-amber-950 px-2 py-0.5 rounded-md">
+                  {language === 'hi' ? 'बोलकर पूछें' : 'Voice AI'}
+                </span>
               </div>
-              <div>
-                <h3 className="text-base font-extrabold text-[#14251F]">
-                  Today's Farm Plan
-                </h3>
-                <p className="text-xs text-[#66756D]">
-                  {farmTasks.filter((t) => t.done).length} of {farmTasks.length} operations completed
+
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 mt-3 leading-tight group-hover:text-amber-800 dark:group-hover:text-amber-400">
+                {language === 'hi' ? 'खेती के सवाल पूछें' : language === 'gu' ? 'ખેતીના પ્રશ્નો પૂછો' : 'Ask Kisan AI'}
+              </h3>
+              <p className="text-stone-600 dark:text-stone-400 text-xs mt-1.5 leading-relaxed">
+                {language === 'hi'
+                  ? 'माइक दबाएं और अपनी भाषा में 24/7 विशेषज्ञ सलाह लें'
+                  : 'Speak questions in your regional dialect for 24/7 expert answers'}
+              </p>
+            </div>
+
+            <button className="mt-4 w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-all">
+              <span>{language === 'hi' ? 'माइक चालू करें 🎙️' : 'Start Voice 🎙️'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* TILE 3: TODAY'S IRRIGATION VERDICT & PUMP */}
+          <div
+            id="action-smart-water"
+            className="bg-white dark:bg-[#141C18] rounded-2xl p-4 sm:p-5 border border-sky-900/15 dark:border-stone-800 hover:border-sky-600/50 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="p-2.5 bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 rounded-xl">
+                  <Droplets className="w-5 h-5" />
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase ${
+                    isPumpRunning 
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 animate-pulse' 
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                  }`}
+                >
+                  {isPumpRunning ? '● पंप चालू' : '○ पंप बंद'}
+                </span>
+              </div>
+
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 mt-3 leading-tight">
+                {language === 'hi' ? 'सिंचाई: आज पानी न दें' : 'Hold Water Today'}
+              </h3>
+              <p className="text-stone-600 dark:text-stone-400 text-xs mt-1.5 leading-relaxed">
+                {language === 'hi'
+                  ? `मिट्टी नमी ${moisturePct}% (अनुकूल) · कल 70% बारिश संभव`
+                  : `Soil Moisture ${moisturePct}% (Optimal) · Rain expected tomorrow`}
+              </p>
+            </div>
+
+            <button
+              onClick={handleTogglePump}
+              disabled={isPumpLoading}
+              className={`mt-4 w-full py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all active:scale-98 cursor-pointer ${
+                isPumpRunning
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                  : 'bg-sky-700 hover:bg-sky-800 text-white'
+              }`}
+            >
+              {isPumpLoading ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Power className="w-3.5 h-3.5" />
+              )}
+              <span>
+                {isPumpRunning
+                  ? (language === 'hi' ? 'पंप बंद करें' : 'Stop Pump')
+                  : (language === 'hi' ? 'पंप चालू करें' : 'Start Pump')}
+              </span>
+            </button>
+          </div>
+
+          {/* TILE 4: LIVE MANDI RATE */}
+          <div
+            id="action-mandi-rate"
+            onClick={() => setCurrentView('market-prices')}
+            className="bg-white dark:bg-[#141C18] rounded-2xl p-4 sm:p-5 border border-stone-200 dark:border-stone-800 hover:border-emerald-600/50 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-xl group-hover:scale-105 transition-transform">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold uppercase text-emerald-800 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                  +₹220 उछाल 📈
+                </span>
+              </div>
+
+              <div className="mt-3">
+                <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-tight">
+                  {language === 'hi' ? 'कपास (Bt Cotton)' : 'Cotton Rate'}
+                </span>
+                <div className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100 font-mono tabular-nums mt-0.5">
+                  ₹7,620 <span className="text-xs text-stone-500 font-sans font-normal">/क्विंटल</span>
+                </div>
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold mt-1">
+                  ⭐ गोंडल APMC (Gondal Yard)
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleAddTask}
-                className="py-1.5 px-3 rounded-xl bg-[#E8F6E9] hover:bg-emerald-100 text-[#004D36] text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Task</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrentView('farm-diary')}
-                className="py-1.5 px-3 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-semibold transition-colors cursor-pointer"
-              >
-                Calendar
-              </button>
-            </div>
-          </div>
-
-          {/* Checklist Items */}
-          <div className="space-y-2.5">
-            {farmTasks.map((task) => (
-              <div
-                key={task.id}
-                onClick={() => toggleTask(task.id)}
-                className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
-                  task.done
-                    ? 'bg-stone-50/70 border-stone-200 text-stone-500'
-                    : 'bg-white border-stone-200 hover:border-emerald-300 hover:shadow-2xs text-[#14251F]'
-                }`}
-              >
-                <button
-                  type="button"
-                  className="mt-0.5 text-[#087443] hover:text-[#004D36] cursor-pointer"
-                >
-                  {task.done ? (
-                    <CheckSquare className="w-5 h-5 text-[#20A464]" />
-                  ) : (
-                    <Square className="w-5 h-5 text-stone-400" />
-                  )}
-                </button>
-
-                <div className="flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4
-                      className={`text-xs font-bold ${
-                        task.done ? 'line-through text-stone-400' : 'text-[#14251F]'
-                      }`}
-                    >
-                      {task.title}
-                    </h4>
-                    <span className="text-[11px] font-mono text-[#66756D] flex items-center gap-1 shrink-0">
-                      <Clock className="w-3 h-3 text-stone-400" />
-                      <span>{task.time}</span>
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-[#66756D] mt-0.5 leading-relaxed">
-                    {task.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* =========================================================== */}
-        {/* SECTION 4B: KISHAN AI ASSISTANT CARD (5 Cols)               */}
-        {/* =========================================================== */}
-        <section className="lg:col-span-5 bg-gradient-to-br from-[#004D36] via-[#087443] to-[#003827] rounded-3xl text-white p-6 shadow-md flex flex-col justify-between space-y-4">
-          <div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-[#20A464] text-white flex items-center justify-center shadow-sm">
-                  <Sparkles className="w-5 h-5 text-[#FFD84D]" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-white">Kishan AI</h3>
-                  <p className="text-xs text-[#FFD84D] font-semibold">Your AI Farming Assistant</p>
-                </div>
-              </div>
-
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white">
-                Gemini 2.5 Active
-              </span>
-            </div>
-
-            <p className="text-xs text-emerald-100/90 leading-relaxed mt-3">
-              Ask any agronomic question regarding crop protection, fertilizers, local weather warnings, or government subsidies in your language.
-            </p>
-
-            {/* Suggested Clickable Questions */}
-            <div className="space-y-1.5 mt-3.5">
-              <p className="text-[10px] uppercase font-bold tracking-wider text-emerald-200">
-                Suggested Questions:
-              </p>
-              {[
-                'What should I do for my cotton crop today?',
-                'What is the latest mandi price for cotton?',
-                'How can I identify bollworm symptoms?',
-              ].map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => handleAskAi(q)}
-                  className="w-full text-left p-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs text-emerald-50 transition-colors flex items-center justify-between group cursor-pointer"
-                >
-                  <span className="truncate pr-2">"{q}"</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#FFD84D] group-hover:translate-x-1 transition-transform shrink-0" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Input Bar */}
-          <div className="pt-2">
-            <div className="relative flex items-center">
-              <input
-                type="text"
-                value={aiQuestion}
-                onChange={(e) => setAiQuestion(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAskAi();
-                }}
-                placeholder="Ask Kishan AI anything..."
-                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-white text-stone-900 placeholder:text-stone-400 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#FFD84D]"
-              />
-              <button
-                type="button"
-                onClick={() => handleAskAi()}
-                className="absolute right-1.5 p-1.5 rounded-lg bg-[#004D36] text-[#FFD84D] hover:bg-[#087443] transition-colors cursor-pointer"
-                title="Send Prompt"
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </section>
-
-      </div>
-
-      {/* ============================================================= */}
-      {/* SECTION 5: QUICK TOOLS SECTION                                */}
-      {/* ============================================================= */}
-      <section className="bg-white rounded-3xl border border-[#E5EBE5] p-6 sm:p-7 shadow-xs space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base sm:text-lg font-extrabold text-[#14251F]">
-              Quick Tools
-            </h3>
-            <p className="text-xs text-[#66756D]">
-              Direct access to essential agronomic and community applications
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {/* Tool 1: Crop Doctor */}
-          <div
-            onClick={() => setCurrentView('disease-scanner')}
-            className="p-4 rounded-2xl border border-stone-200/90 hover:border-[#20A464] hover:bg-[#E8F6E9]/40 hover:shadow-sm transition-all cursor-pointer group flex items-start gap-3.5"
-          >
-            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Scan className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-[#14251F] group-hover:text-[#004D36]">
-                Crop Doctor
-              </h4>
-              <p className="text-[11px] text-[#66756D] mt-0.5 leading-snug">
-                Identify possible crop problems with leaf scan.
-              </p>
-            </div>
-          </div>
-
-          {/* Tool 2: Mandi Radar */}
-          <div
-            onClick={() => setCurrentView('market-prices')}
-            className="p-4 rounded-2xl border border-stone-200/90 hover:border-[#20A464] hover:bg-[#E8F6E9]/40 hover:shadow-sm transition-all cursor-pointer group flex items-start gap-3.5"
-          >
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-[#14251F] group-hover:text-[#004D36]">
-                Mandi Radar
-              </h4>
-              <p className="text-[11px] text-[#66756D] mt-0.5 leading-snug">
-                Explore real-time APMC agricultural market rates.
-              </p>
-            </div>
-          </div>
-
-          {/* Tool 3: Marketplace */}
-          <div
-            onClick={() => setCurrentView('marketplace')}
-            className="p-4 rounded-2xl border border-stone-200/90 hover:border-[#20A464] hover:bg-[#E8F6E9]/40 hover:shadow-sm transition-all cursor-pointer group flex items-start gap-3.5"
-          >
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Store className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-[#14251F] group-hover:text-[#004D36]">
-                Marketplace
-              </h4>
-              <p className="text-[11px] text-[#66756D] mt-0.5 leading-snug">
-                Buy inputs & sell crops directly to verified buyers.
-              </p>
-            </div>
-          </div>
-
-          {/* Tool 4: Clusters */}
-          <div
-            onClick={() => setCurrentView('clusters')}
-            className="p-4 rounded-2xl border border-stone-200/90 hover:border-[#20A464] hover:bg-[#E8F6E9]/40 hover:shadow-sm transition-all cursor-pointer group flex items-start gap-3.5"
-          >
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#087443] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-[#14251F] group-hover:text-[#004D36]">
-                Clusters
-              </h4>
-              <p className="text-[11px] text-[#66756D] mt-0.5 leading-snug">
-                Join farmer groups for bulk discounts & pooling.
-              </p>
-            </div>
+            <button className="mt-4 w-full py-2 bg-stone-900 dark:bg-stone-800 hover:bg-stone-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-all">
+              <span>{language === 'hi' ? 'सभी मंडियां देखें' : 'View Mandis'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </section>
 
-      {/* Kisan Rewards Modals */}
-      <RepeatOrderModal
-        isOpen={showRepeatOrder}
-        onClose={() => setShowRepeatOrder(false)}
-      />
+      {/* ========================================================= */}
+      {/* ALL-IN-ONE COMPACT SUPER HUB (ALL TABS IN ONE PAGE)        */}
+      {/* ========================================================= */}
+      <section id="all-in-one-compact-hub" className="bg-stone-50 dark:bg-stone-900 border-2 border-stone-200 dark:border-stone-800 rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200 dark:border-stone-800 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-2xl">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100">
+                {language === 'hi' ? '⚡ सभी टैब और सुविधाएँ एक नज़र में (Compact Super Hub)' : '⚡ All-in-One Super Hub (All Tabs in One View)'}
+              </h2>
+              <p className="text-xs text-stone-500">
+                {language === 'hi' ? 'बिना पेज बदले या भटके, सभी 14 कृषि मॉड्यूल यहाँ छोटे कार्ड में उपलब्ध हैं' : 'All 14 agriculture modules compactly accessible in one view'}
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 px-3 py-1 rounded-full self-start sm:self-center">
+            {language === 'hi' ? '1-क्लिक एक्सेस' : 'Instant Access'}
+          </span>
+        </div>
 
-      <RewardsHistoryModal
-        isOpen={showRewardsHistory}
-        onClose={() => setShowRewardsHistory(false)}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+          {[
+            { id: 'group-buying', labelHi: 'सामूहिक खरीद', labelEn: 'Group Buy', icon: ShoppingBag, color: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-700' },
+            { id: 'crop-recommendation', labelHi: 'फसल सलाहकार', labelEn: 'Crop Advisor', icon: Sprout, color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' },
+            { id: 'disease-scanner', labelHi: 'रोग डॉक्टर', labelEn: 'Disease Scanner', icon: Camera, color: 'bg-green-50 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800' },
+            { id: 'smart-irrigation', labelHi: 'स्मार्ट सिंचाई', labelEn: 'Smart Irrigation', icon: Droplets, color: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800' },
+            { id: 'market-prices', labelHi: 'मंडी भाव', labelEn: 'Mandi Rates', icon: TrendingUp, color: 'bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800' },
+            { id: 'soil-health', labelHi: 'मिट्टी जांच', labelEn: 'Soil Health', icon: ShieldCheck, color: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' },
+            { id: 'profit-calculator', labelHi: 'मुनाफा कैलकुलेटर', labelEn: 'Profit Calc', icon: Award, color: 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800' },
+            { id: 'government-schemes', labelHi: 'सरकारी योजनाएं', labelEn: 'Govt Schemes', icon: Landmark, color: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800' },
+            { id: 'talk-to-expert', labelHi: 'विशेषज्ञ से बात', labelEn: 'Talk to Expert', icon: PhoneCall, color: 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800' },
+            { id: 'farm-diary', labelHi: 'फार्म डायरी', labelEn: 'Farm Diary', icon: Calendar, color: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800' },
+            { id: 'my-crops', labelHi: 'फसलें व उपज', labelEn: 'My Products', icon: ShoppingBag, color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' },
+            { id: 'virtual-farm-clusters', labelHi: 'वर्चुअल क्लस्टर', labelEn: 'Farm Clusters', icon: MapPin, color: 'bg-orange-50 text-orange-800 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800' },
+            { id: 'community', labelHi: 'किसान समुदाय', labelEn: 'Community', icon: FileText, color: 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800' },
+            { id: 'transactions', labelHi: 'खाता बही/लेनदेन', labelEn: 'Ledger', icon: Wallet, color: 'bg-stone-100 text-stone-800 border-stone-300 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-700' },
+            { id: 'weather', labelHi: 'विस्तृत मौसम', labelEn: 'Weather Hub', icon: CloudSun, color: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800' },
+          ].map((mod) => {
+            const ModIcon = mod.icon;
+            return (
+              <button
+                key={mod.id}
+                onClick={() => setCurrentView(mod.id)}
+                className={`p-2.5 rounded-2xl border text-center transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center justify-center gap-1 shadow-xs ${mod.color}`}
+              >
+                <ModIcon className="w-5 h-5" />
+                <span className="text-[11px] font-black truncate w-full">
+                  {language === 'hi' ? mod.labelHi : mod.labelEn}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+
+
+
+
+      {/* ========================================================= */}
+      {/* 6. 5-DAY SIMPLE WEATHER (EASY WORDS, NO CONFUSION)        */}
+      {/* ========================================================= */}
+      <section
+        id="simple-weather-forecast"
+        className="bg-white dark:bg-[#161c14] border-2 border-stone-200 dark:border-stone-800 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 dark:border-stone-800 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2.5 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 rounded-2xl">
+              <CloudSun className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-100">
+                {language === 'hi'
+                  ? 'मौसम का आसान अनुमान (अगले 5 दिन)'
+                  : language === 'gu'
+                  ? 'આગામી ૫ દિવસનું હવામાન'
+                  : '5-Day Simple Weather Guide'}
+              </h2>
+              <p className="text-xs text-stone-500">
+                {language === 'hi' ? 'आनंदपुर, राजकोट • मौसम विभाग (IMD) द्वारा सत्यापित' : 'Anandpur, Rajkot • IMD Verified'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setCurrentView('weather')}
+            className="text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:underline flex items-center gap-1 self-start sm:self-center"
+          >
+            <span>{language === 'hi' ? 'पूरा मौसम देखें' : 'View Full Forecast'}</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {simpleForecast.map((fc, idx) => (
+            <div
+              key={idx}
+              className={`p-3.5 rounded-2xl border-2 text-center flex flex-col justify-between ${
+                idx === 1
+                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 dark:border-amber-700'
+                  : 'bg-stone-50 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800'
+              }`}
+            >
+              <div>
+                <span className="text-xs font-bold text-stone-600 dark:text-stone-400">
+                  {language === 'hi' ? fc.dayHi : language === 'gu' ? fc.dayGu : fc.dayEn}
+                </span>
+                <div className="text-3xl my-2">{fc.icon}</div>
+                <div className="text-lg font-black text-stone-900 dark:text-stone-100">{fc.temp}</div>
+                <div className="text-xs font-bold text-blue-700 dark:text-blue-400">🌧️ {fc.rain} बारिश</div>
+              </div>
+
+              <div className="mt-2 pt-2 border-t border-stone-200/80 dark:border-stone-800 text-[11px] font-black text-stone-800 dark:text-stone-200">
+                {language === 'hi' ? fc.adviceHi : fc.adviceEn}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* 7. ASK KISAN AI - 1-TAP COMMON QUESTIONS                  */}
+      {/* ========================================================= */}
+      <section
+        id="ask-ai-chips-section"
+        className="bg-gradient-to-br from-[#183d12] via-[#214e1a] to-[#163610] text-white rounded-2xl p-4 sm:p-6 shadow-lg border-2 border-emerald-700"
+      >
+        <div className="max-w-3xl mx-auto text-center space-y-3">
+          <div className="inline-flex items-center gap-1.5 bg-emerald-900/80 border border-emerald-600/50 px-3 py-1 rounded-full text-xs font-bold text-emerald-300">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>24/7 AI कृषि वैज्ञानिक</span>
+          </div>
+
+          <h2 className="text-xl sm:text-2xl font-black text-white">
+            {language === 'hi'
+              ? 'खेती से जुड़ा कोई भी सवाल पूछें'
+              : 'Ask Any Farm Question'}
+          </h2>
+
+          <p className="text-emerald-100 text-xs sm:text-sm">
+            {language === 'hi'
+              ? 'नीचे दिए गए किसी भी सवाल पर क्लिक करें या अपना सवाल बोलें:'
+              : 'Tap any common question below or type your query:'}
+          </p>
+
+          {/* Quick chips */}
+          <div className="flex flex-wrap justify-center gap-2 pt-2">
+            {quickQuestionChips.map((q, i) => (
+              <button
+                key={i}
+                onClick={() => askAiWithPrompt(q.hi)}
+                className="bg-white/15 hover:bg-white/25 active:scale-95 border border-emerald-400/40 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-2xl transition-all cursor-pointer"
+              >
+                {language === 'hi' ? q.hi : language === 'gu' ? q.gu : q.en}
+              </button>
+            ))}
+          </div>
+
+          {/* Input box */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!quickQuestionInput.trim()) return;
+              askAiWithPrompt(quickQuestionInput.trim());
+            }}
+            className="pt-3 max-w-xl mx-auto"
+          >
+            <div className="flex items-center bg-white rounded-2xl p-1.5 shadow-md">
+              <input
+                type="text"
+                value={quickQuestionInput}
+                onChange={(e) => setQuickQuestionInput(e.target.value)}
+                placeholder={
+                  language === 'hi'
+                    ? 'यहाँ अपना सवाल लिखें या बोलें...'
+                    : 'Type your farming question here...'
+                }
+                className="w-full px-3 py-2 text-stone-900 placeholder:text-stone-400 text-sm font-medium focus:outline-none bg-transparent"
+              />
+              <button
+                type="button"
+                onClick={() => setCurrentView('ai-assistant')}
+                className="p-2 text-emerald-800 hover:bg-emerald-50 rounded-xl transition-colors shrink-0"
+                title="Voice Query"
+              >
+                <Mic className="w-5 h-5" />
+              </button>
+              <button
+                type="submit"
+                disabled={!quickQuestionInput.trim()}
+                className="p-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl transition-colors disabled:opacity-40 shrink-0"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* 8. SIMPLE FOOTER & HELPLINE NOTICE                        */}
+      {/* ========================================================= */}
+      <footer className="bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-4 text-xs text-stone-600 dark:text-stone-400 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🌾</span>
+          <span>
+            {language === 'hi'
+              ? 'किसान भाई • भारतीय किसानों के लिए सरल, सीधा और भरोसेमंद डिजिटल साथी'
+              : 'Kishan Bhai • Simple, trusted digital agriculture platform for farmers'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3 font-bold">
+          <a href="tel:18001801551" className="text-emerald-800 dark:text-emerald-400 hover:underline">
+            हेल्पलाइन: 1800-180-1551
+          </a>
+          <span>•</span>
+          <button
+            onClick={() => setCurrentView('talk-to-expert')}
+            className="text-stone-800 dark:text-stone-200 hover:underline"
+          >
+            विशेषज्ञ से बात करें
+          </button>
+        </div>
+      </footer>
+
+      {/* Rewards Redemption Modal */}
+      <RewardRedemptionModal
+        isOpen={showRewardsModal}
+        onClose={() => setShowRewardsModal(false)}
+        account={loyaltyAccount}
+        rewards={loyaltyRewards}
+        redemptions={loyaltyRedemptions}
+        onRewardRedeemed={(newRed, updatedAcc) => {
+          setLoyaltyAccount(updatedAcc);
+          setLoyaltyRedemptions((prev) => [newRed, ...prev]);
+        }}
       />
     </div>
   );

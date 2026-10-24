@@ -28,6 +28,7 @@ import {
   ShoppingBag,
   Clock,
   Database,
+  Gift,
 } from 'lucide-react';
 import { UserRole } from '../../shared/types';
 import { NotificationCenter } from './NotificationCenter';
@@ -128,10 +129,16 @@ export const Navbar: React.FC = () => {
       label: language === 'hi' ? 'फार्म क्लस्टर' : 'Clusters',
       icon: Users,
     },
+    {
+      id: 'loyalty',
+      label: language === 'hi' ? 'रिवार्ड्स' : 'Rewards',
+      icon: Gift,
+    },
   ];
 
   // Secondary Tools App Drawer items
   const secondaryTools = [
+    { id: 'loyalty', label: language === 'hi' ? 'रिवार्ड्स व लॉयल्टी' : 'Loyalty Rewards', icon: Gift, desc: 'Two-sided farmer & buyer loyalty points & vouchers' },
     { id: 'group-buying', label: language === 'hi' ? 'सामूहिक खरीद' : 'Group Buying', icon: ShoppingBag, desc: 'Connect in groups & buy anything at 35% discount' },
     { id: 'smart-irrigation', label: language === 'hi' ? 'स्मार्ट सिंचाई' : 'Smart Irrigation', icon: Droplets, desc: 'Evapotranspiration pump controls' },
     { id: 'weather', label: language === 'hi' ? 'मौसम पूर्वानुमान' : 'Weather Radar', icon: CloudSun, desc: 'Hyperlocal Doppler alerts' },
