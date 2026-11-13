@@ -22,6 +22,7 @@ import {
   Moon,
   ChevronRight,
   Gift,
+  Package,
 } from 'lucide-react';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 
@@ -50,7 +51,46 @@ export const MobileBottomNav: React.FC = () => {
 
   const dashboardId = getDashboardId();
 
-  const navItems = [
+  const isBuyerSection = userRole === 'BUYER' || currentView === 'buyer-dashboard' || currentView === 'marketplace';
+
+  const buyerNavItems = [
+    {
+      id: 'buyer-dashboard',
+      label: language === 'hi' ? 'होम' : 'Home',
+      icon: Home,
+      isActive: currentView === 'buyer-dashboard',
+    },
+    {
+      id: 'clusters',
+      label: language === 'hi' ? 'क्लस्टर' : 'Clusters',
+      icon: Users,
+      isActive: currentView === 'clusters',
+    },
+    // Center Primary Action: Browse Produce Lots
+    {
+      id: 'buyer-browse-catalog',
+      targetView: 'marketplace',
+      label: language === 'hi' ? 'उत्पाद' : 'Catalog',
+      icon: Package,
+      isPrimaryAction: true,
+      isActive: currentView === 'marketplace',
+    },
+    {
+      id: 'loyalty',
+      label: language === 'hi' ? 'रिवार्ड्स' : 'Perks',
+      icon: Award,
+      isActive: currentView === 'loyalty' || currentView === 'rewards',
+    },
+    {
+      id: 'hub-drawer',
+      label: language === 'hi' ? 'मेनू' : 'Menu',
+      icon: Grid,
+      isDrawerTrigger: true,
+      isActive: isHubOpen || currentView === 'settings',
+    },
+  ];
+
+  const farmerNavItems = [
     {
       id: dashboardId,
       label: language === 'hi' ? 'होम' : 'Home',
@@ -75,7 +115,7 @@ export const MobileBottomNav: React.FC = () => {
       id: 'market-prices',
       label: language === 'hi' ? 'मंडी भाव' : 'Mandi',
       icon: TrendingUp,
-      isActive: currentView === 'market-prices' || currentView === 'harvest' || currentView === 'marketplace',
+      isActive: currentView === 'market-prices' || currentView === 'harvest',
     },
     {
       id: 'hub-drawer',
@@ -86,7 +126,17 @@ export const MobileBottomNav: React.FC = () => {
     },
   ];
 
-  const quickTools = [
+  const navItems = isBuyerSection ? buyerNavItems : farmerNavItems;
+
+  const buyerQuickTools = [
+    { id: 'marketplace', label: language === 'hi' ? 'उपलब्ध कृषि उत्पाद' : 'Browse Product Catalog', icon: Package, color: 'text-emerald-700 bg-emerald-50' },
+    { id: 'buyer-dashboard', label: language === 'hi' ? 'सक्रिय खरीद प्रस्ताव' : 'Proposals & Contracts', icon: ShoppingBag, color: 'text-amber-700 bg-amber-50' },
+    { id: 'clusters', label: language === 'hi' ? 'उत्पादक फार्म क्लस्टर' : 'Producer Farm Clusters', icon: Users, color: 'text-blue-700 bg-blue-50' },
+    { id: 'loyalty', label: language === 'hi' ? 'खरीदार लॉयल्टी पर्क' : 'Buyer Loyalty Perks', icon: Award, color: 'text-amber-700 bg-amber-50' },
+    { id: 'settings', label: language === 'hi' ? 'कंपनी सेटिंग्स व प्रोफाइल' : 'Company Settings', icon: Settings, color: 'text-stone-700 bg-stone-100' },
+  ];
+
+  const farmerQuickTools = [
     { id: 'loyalty', label: language === 'hi' ? 'लॉयल्टी रिवार्ड्स' : 'Loyalty Rewards', icon: Gift, color: 'text-amber-700 bg-amber-50' },
     { id: 'smart-irrigation', label: language === 'hi' ? 'स्मार्ट सिंचाई' : 'Smart Irrigation', icon: Droplets, color: 'text-sky-600 bg-sky-50' },
     { id: 'weather', label: language === 'hi' ? 'मौसम राडार' : 'Weather Doppler', icon: CloudSun, color: 'text-blue-600 bg-blue-50' },
@@ -94,9 +144,10 @@ export const MobileBottomNav: React.FC = () => {
     { id: 'government-schemes', label: language === 'hi' ? 'सरकारी योजनाएं' : 'Govt Schemes', icon: Award, color: 'text-amber-700 bg-amber-50' },
     { id: 'community', label: language === 'hi' ? 'किसान चौपाल' : 'Kisan Chaupal', icon: Users, color: 'text-emerald-800 bg-emerald-100/60' },
     { id: 'profit-calculator', label: language === 'hi' ? 'मुनाफ़ा कैलकुलेटर' : 'Yield Calculator', icon: Calculator, color: 'text-indigo-600 bg-indigo-50' },
-    { id: 'farm-diary', label: language === 'hi' ? 'कृषि डायरी' : 'Farm Journal', icon: BookOpen, color: 'text-stone-700 bg-stone-100' },
     { id: 'settings', label: language === 'hi' ? 'सेटिंग्स व प्रोफाइल' : 'Settings & Profile', icon: Settings, color: 'text-stone-700 bg-stone-100' },
   ];
+
+  const quickTools = isBuyerSection ? buyerQuickTools : farmerQuickTools;
 
   return (
     <>
@@ -118,10 +169,14 @@ export const MobileBottomNav: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm">
-                    {language === 'hi' ? 'कृषि हब व त्वरित टूल्स' : 'Kishan Agri Hub & Tools'}
+                    {isBuyerSection
+                      ? (language === 'hi' ? 'खरीदार प्रोक्योरमेंट मेनू' : 'Buyer Procurement Menu')
+                      : (language === 'hi' ? 'कृषि हब व त्वरित टूल्स' : 'Kishan Agri Hub & Tools')}
                   </h3>
                   <p className="text-[11px] text-stone-500">
-                    {language === 'hi' ? 'सभी 14 आधुनिक कृषि सुविधाएं' : 'All farm operating modules'}
+                    {isBuyerSection
+                      ? (language === 'hi' ? 'उपलब्ध उत्पाद व अनुबंध टूल्स' : 'Produce procurement & order tools')
+                      : (language === 'hi' ? 'सभी आधुनिक कृषि सुविधाएं' : 'All farm operating modules')}
                   </p>
                 </div>
               </div>
@@ -158,13 +213,13 @@ export const MobileBottomNav: React.FC = () => {
               </div>
             </div>
 
-            {/* 8-Grid of Agritech Tools */}
+            {/* Grid of Tools */}
             <div className="grid grid-cols-2 gap-2.5 pt-1">
               {quickTools.map((tool) => {
                 const Icon = tool.icon;
                 return (
                   <button
-                    key={tool.id}
+                    key={`quick-${tool.id}`}
                     onClick={() => {
                       setCurrentView(tool.id);
                       setIsHubOpen(false);
@@ -184,18 +239,27 @@ export const MobileBottomNav: React.FC = () => {
               })}
             </div>
 
-            {/* Bottom AI Trigger */}
+            {/* Bottom Action Trigger */}
             <div className="mt-4 pt-3 border-t border-stone-200 dark:border-stone-800">
               <button
                 onClick={() => {
-                  setCurrentView('ai-assistant');
+                  setCurrentView(isBuyerSection ? 'marketplace' : 'ai-assistant');
                   setIsHubOpen(false);
                 }}
                 className="w-full py-3 px-4 bg-gradient-to-r from-emerald-800 via-emerald-700 to-amber-700 text-white font-bold text-xs rounded-2xl flex items-center justify-between shadow-md active:scale-98 cursor-pointer"
               >
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>{language === 'hi' ? 'किसान AI वॉइस असिस्टेंट से पूछें' : 'Ask 24/7 Kisan AI Voice Expert'}</span>
+                  {isBuyerSection ? (
+                    <>
+                      <Package className="w-4 h-4 text-amber-300" />
+                      <span>{language === 'hi' ? 'सभी उपलब्ध कृषि उत्पाद देखें' : 'Browse All Clustered Produce Lots'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>{language === 'hi' ? 'किसान AI वॉइस असिस्टेंट से पूछें' : 'Ask 24/7 Kisan AI Voice Expert'}</span>
+                    </>
+                  )}
                 </div>
                 <ChevronRight className="w-4 h-4 text-emerald-200" />
               </button>
@@ -214,18 +278,18 @@ export const MobileBottomNav: React.FC = () => {
           {navItems.map((item) => {
             const Icon = item.icon;
 
-            // Distinctive Floating Center Primary Action: Scan Disease
+            // Distinctive Floating Center Primary Action
             if (item.isPrimaryAction) {
               return (
                 <button
-                  key={item.id}
+                  key={`nav-${item.id}`}
                   id={`nav-btn-${item.id}`}
-                  onClick={() => setCurrentView(item.id)}
+                  onClick={() => setCurrentView((item as any).targetView || item.id)}
                   aria-label={item.label}
                   className="relative -top-4 flex flex-col items-center justify-center cursor-pointer group"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-800 via-emerald-700 to-amber-600 text-white flex items-center justify-center shadow-lg shadow-emerald-900/30 group-active:scale-95 group-hover:shadow-emerald-900/50 transition-all border-2 border-white dark:border-stone-900">
-                    <Scan className="w-6 h-6 text-amber-300 group-hover:scale-110 transition-transform" />
+                    <Icon className="w-6 h-6 text-amber-300 group-hover:scale-110 transition-transform" />
                   </div>
                   <span className="text-[10px] font-bold text-emerald-900 dark:text-emerald-300 tracking-tight mt-0.5">
                     {item.label}
@@ -236,7 +300,7 @@ export const MobileBottomNav: React.FC = () => {
 
             return (
               <button
-                key={item.id}
+                key={`nav-${item.id}`}
                 id={`nav-btn-${item.id}`}
                 onClick={() => {
                   if (item.isDrawerTrigger) {
@@ -258,7 +322,7 @@ export const MobileBottomNav: React.FC = () => {
                       : 'hover:bg-stone-200/50 dark:hover:bg-stone-800/50'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-4 h-4" />
                 </div>
                 <span className={`text-[10px] leading-tight mt-0.5 ${item.isActive ? 'font-bold text-emerald-900 dark:text-emerald-300' : 'text-stone-500 dark:text-stone-400'}`}>
                   {item.label}

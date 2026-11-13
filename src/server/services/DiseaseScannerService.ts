@@ -92,7 +92,7 @@ Respond in STRICT JSON format:
 `;
 
         const response = await client.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model: 'gemini-1.5-flash',
           contents: [
             {
               role: 'user',

@@ -139,10 +139,11 @@ export const BuyerOffersPage: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-amber-400 text-stone-950 text-xs px-3 py-0.5 rounded-full font-black uppercase shadow-xs">
+              <span className="text-amber-400 text-xs font-black uppercase tracking-tight">
                 Verified Buyer Hub
               </span>
-              <span className="text-[11px] font-mono text-emerald-300 bg-white/10 px-2 py-0.5 rounded-full border border-white/10">
+              <span aria-hidden="true" className="text-emerald-500/50">·</span>
+              <span className="text-[11px] font-mono text-emerald-300 uppercase tracking-tight">
                 Your Tier: {farmerLevel} FARMER
               </span>
             </div>
@@ -156,20 +157,20 @@ export const BuyerOffersPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Quick Mandi Radar Switcher */}
+          {/* Quality & Escrow Guarantee Box */}
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 text-left shrink-0 max-w-xs space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-              <TrendingUp className="w-4 h-4" />
-              <span>Indicative Mandi Rates vs Offers</span>
+              <ShieldCheck className="w-4 h-4" />
+              <span>Escrow Protected Purchase</span>
             </div>
             <p className="text-[11px] text-stone-200 leading-snug">
-              Compare mandi benchmarks with actual binding purchase contracts.
+              100% smallholder harvest origin tracking, lab moisture assay, and direct settlement.
             </p>
             <button
-              onClick={() => setCurrentView('market-prices')}
+              onClick={() => setCurrentView('marketplace')}
               className="text-xs text-white font-bold underline hover:text-amber-200 transition-colors flex items-center gap-1 cursor-pointer"
             >
-              <span>View Mandi Benchmark Radar</span>
+              <span>Browse Certified Produce Lots</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -281,8 +282,8 @@ export const BuyerOffersPage: React.FC = () => {
                         <span className="font-bold text-stone-900 text-sm sm:text-base">
                           {offer.buyerName}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                          <ShieldCheck className="w-3 h-3 text-emerald-700" />
+                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-bold uppercase tracking-tight">
+                          <ShieldCheck className="w-3 h-3" />
                           {offer.verificationStatus}
                         </span>
                       </div>
@@ -294,13 +295,13 @@ export const BuyerOffersPage: React.FC = () => {
                     {/* Level Requirement Pill */}
                     <div className="shrink-0 text-right">
                       {isEligible ? (
-                        <span className="text-[10px] font-bold bg-[#E8F6E9] text-[#087443] border border-green-200 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-[#087443] uppercase tracking-tight inline-flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" />
                           {isHi ? 'आप पात्र हैं' : 'Eligible for You'}
                         </span>
                       ) : (
-                        <span className="text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
-                          <Lock className="w-3 h-3 text-amber-700" />
+                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-tight inline-flex items-center gap-1">
+                          <Lock className="w-3 h-3" />
                           {offer.requiredLoyaltyLevel} Tier
                         </span>
                       )}

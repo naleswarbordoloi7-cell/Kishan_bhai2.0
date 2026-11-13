@@ -38,15 +38,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSidebar }) => {
 
   const unreadCount = alerts ? alerts.filter((a) => !a.isRead).length : 0;
 
+  const isBuyerSection = userRole === 'BUYER' || currentView === 'buyer-dashboard' || currentView === 'marketplace';
+
   // Actual authenticated user info with friendly fallback
-  const farmerName = currentUser?.fullName || 'Ramesh Patel';
+  const farmerName = currentUser?.fullName || (isBuyerSection ? 'Vikram Mehta' : 'Ramesh Patel');
   const roleLabel =
-    userRole === 'FARMER'
+    isBuyerSection
+      ? 'Institutional Buyer'
+      : userRole === 'FARMER'
       ? 'Farmer'
       : userRole === 'CHAMPION'
       ? 'Village Champion'
-      : userRole === 'BUYER'
-      ? 'APMC Buyer'
       : 'Admin';
 
   const avatarInitial = farmerName.charAt(0).toUpperCase();
@@ -84,7 +86,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSidebar }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-md border-b border-[#E5EBE5] px-3 sm:px-6 py-2.5 shadow-2xs">
+    <header className="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-md border-b border-[#E5EBE5] px-2.5 sm:px-6 py-2 shadow-2xs">
       <div className="flex items-center justify-between gap-3 max-w-full">
         {/* Left: Hamburger Button (Mobile) + Quick Brand Indicator */}
         <div className="flex items-center gap-2 lg:hidden">
@@ -97,7 +99,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSidebar }) => {
             <Menu className="w-5 h-5" />
           </button>
           <div
-            onClick={() => setCurrentView('farmer-dashboard')}
+            onClick={() => setCurrentView(isBuyerSection ? 'buyer-dashboard' : 'farmer-dashboard')}
             className="flex items-center gap-1.5 cursor-pointer"
           >
             <div className="w-8 h-8 rounded-xl bg-[#004D36] flex items-center justify-center text-white">
@@ -143,7 +145,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSidebar }) => {
                 </div>
                 <div className="text-[10px] font-semibold text-[#087443] flex items-center gap-1">
                   <span>{roleLabel}</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#20A464]"></span>
                 </div>
               </div>
 

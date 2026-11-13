@@ -390,8 +390,16 @@ export function speakText(
     // ignore
   }
 
-  // Strip Markdown markers, emojis, web URLs and brackets for clear speech output
+  // Smooth out structured markers into natural conversational audio delivery
   const clean = text
+    .replace(/^🌱\s*\*\*Recommendation:\s*/gim, '')
+    .replace(/\*\*Recommendation:\s*/gim, '')
+    .replace(/\*\*Why\?\s*\([^)]*\):\s*/gim, '')
+    .replace(/\*\*Why\?\s*:\s*/gim, '')
+    .replace(/\*\*What to do\s*\([^)]*\):\s*/gim, '')
+    .replace(/\*\*What to do\s*:\s*/gim, '')
+    .replace(/⚠️\s*\*\*Important Warning\s*\([^)]*\):\s*/gim, '')
+    .replace(/⚠️\s*\*\*Important Warning\s*:\s*/gim, '')
     .replace(/[*_#`[\]()~]/g, ' ')
     .replace(/http\S+/g, '')
     .replace(/[🌱🌾💰🛡️⚠️✅⚡👉🎙️🤖📦📊🏷️🔗🛒💡]/g, '')

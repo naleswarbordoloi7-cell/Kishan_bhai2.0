@@ -22,7 +22,6 @@ import { CropRecommendationCard } from '../components/cropRec/CropRecommendation
 import { CropRecommendationSkeleton } from '../components/cropRec/CropRecommendationSkeleton';
 import { CropComparisonModal } from '../components/cropRec/CropComparisonModal';
 import { CropDetailModal } from '../components/cropRec/CropDetailModal';
-import { SoilReportModal } from '../components/soil/SoilReportModal';
 import { CropRecommendationInput, CropRecommendationResultItem } from '../../shared/types';
 
 export const CropRecommendationPage: React.FC = () => {
@@ -299,12 +298,6 @@ export const CropRecommendationPage: React.FC = () => {
         isOpen={Boolean(selectedCropDetailId)}
         onClose={() => setSelectedCropDetailId(null)}
         crop={selectedCropForDetail}
-      />
-
-      {/* Soil Report Modal Shortcut */}
-      <SoilReportModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUserStore } from '../store/userStore';
 import {
   Search,
   Mic,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   Tag,
   Users,
+  Package,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -35,7 +37,8 @@ interface SearchResultItem {
 }
 
 export const HomeSearchBar: React.FC = () => {
-  const { language, setCurrentView } = useApp();
+  const { currentView, language, setCurrentView } = useApp();
+  const { userRole } = useUserStore();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -44,9 +47,145 @@ export const HomeSearchBar: React.FC = () => {
 
   const isHi = language === 'hi';
   const isGu = language === 'gu';
+  const isBuyerSection = userRole === 'BUYER' || currentView === 'buyer-dashboard' || currentView === 'marketplace';
 
-  // Comprehensive Search Database
-  const searchItems: SearchResultItem[] = useMemo(
+  // Buyer Search Catalog (Only purchasable products & procurement tools, NO crop prices or weather/disease)
+  const buyerSearchItems: SearchResultItem[] = useMemo(
+    () => [
+      {
+        id: 'buyer_lot_wheat',
+        title: 'Sharbati Wheat (C-306 Golden Amber)',
+        hindiTitle: 'शरबती गेहूं (62 टन उपलब्ध)',
+        gujaratiTitle: 'શરબતી ઘઉં',
+        subtitle: 'Available: 62 Metric Tons • Grade A Premium • Min Target: ₹28.5/Kg • Anandpur Mesh',
+        category: 'crop',
+        categoryLabel: isHi ? 'उत्पाद' : 'Produce',
+        icon: Package,
+        viewTarget: 'marketplace',
+        badge: '62 Tons',
+        price: '₹28.5/Kg',
+      },
+      {
+        id: 'buyer_lot_cotton',
+        title: 'Cotton (Bt Shankar-6 Extra Long 32mm)',
+        hindiTitle: 'शंकर-6 कपास (45 टन उपलब्ध)',
+        gujaratiTitle: 'શંકર-6 કપાસ',
+        subtitle: 'Available: 45 Metric Tons • A+ Export Grade • Min Target: ₹78/Kg • Anandpur Mesh',
+        category: 'crop',
+        categoryLabel: isHi ? 'उत्पाद' : 'Produce',
+        icon: Package,
+        viewTarget: 'marketplace',
+        badge: '45 Tons',
+        price: '₹78/Kg',
+      },
+      {
+        id: 'buyer_lot_mustard',
+        title: 'Yellow Mustard (Pusa-31 High Oil 42%)',
+        hindiTitle: 'पीली सरसों / राई (40 टन उपलब्ध)',
+        gujaratiTitle: 'પીળી સરસવ',
+        subtitle: 'Available: 40 Metric Tons • Grade A Premium • Min Target: ₹55/Kg • Sikar Federation',
+        category: 'crop',
+        categoryLabel: isHi ? 'उत्पाद' : 'Produce',
+        icon: Package,
+        viewTarget: 'marketplace',
+        badge: '40 Tons',
+        price: '₹55/Kg',
+      },
+      {
+        id: 'buyer_lot_groundnut',
+        title: 'Groundnut (TAG-24 Bold Kernels)',
+        hindiTitle: 'मूंगफली दाना (35 टन उपलब्ध)',
+        gujaratiTitle: 'મગફળી',
+        subtitle: 'Available: 35 Metric Tons • Grade A Premium • Min Target: ₹64/Kg • Anandpur Mesh',
+        category: 'crop',
+        categoryLabel: isHi ? 'उत्पाद' : 'Produce',
+        icon: Package,
+        viewTarget: 'marketplace',
+        badge: '35 Tons',
+        price: '₹64/Kg',
+      },
+      {
+        id: 'buyer_lot_soybean',
+        title: 'Organic Soybean (JS-335 Non-GMO)',
+        hindiTitle: 'जैविक सोयाबीन (60 टन उपलब्ध)',
+        gujaratiTitle: 'ઓર્ગેનિક સોયાબીન',
+        subtitle: 'Available: 60 Metric Tons • A+ Export Grade • Min Target: ₹48/Kg • Malwa Organic',
+        category: 'crop',
+        categoryLabel: isHi ? 'उत्पाद' : 'Produce',
+        icon: Package,
+        viewTarget: 'marketplace',
+        badge: '60 Tons',
+        price: '₹48/Kg',
+      },
+      {
+        id: 'buyer_lot_cumin',
+        title: 'Export Cumin / Jeera (GC-4 Machine Cleaned)',
+        hindiTitle: 'निर्यात जीरा (18 टन उपलब्ध)',
+        gujaratiTitle: 'એક્સપોર્ટ જીરું',
+        subtitle: 'Available: 18 Metric Tons • A+ Export Grade • Min Target: ₹195/Kg • Unjha Consortium',
+        category: 'crop',
+        categoryLabel: isHi ? 'उत्पाद' : 'Produce',
+        icon: Package,
+        viewTarget: 'marketplace',
+        badge: '18 Tons',
+        price: '₹195/Kg',
+      },
+      {
+        id: 'buyer_lot_basmati',
+        title: 'Basmati Paddy / Rice (1121 Extra Long)',
+        hindiTitle: 'बासमती धान 1121 (75 टन उपलब्ध)',
+        gujaratiTitle: 'બાસમતી ડાંગર',
+        subtitle: 'Available: 75 Metric Tons • A+ Export Grade • Min Target: ₹39/Kg • Karnal Co-op',
+        category: 'crop',
+        categoryLabel: isHi ? 'उत्पाद' : 'Produce',
+        icon: Package,
+        viewTarget: 'marketplace',
+        badge: '75 Tons',
+        price: '₹39/Kg',
+      },
+      {
+        id: 'buyer_lot_chana',
+        title: 'Chickpea / Desi Chana (JG-11 Bold Grain)',
+        hindiTitle: 'चना / देशी चना (50 टन उपलब्ध)',
+        gujaratiTitle: 'દેશી ચણા',
+        subtitle: 'Available: 50 Metric Tons • Grade A Premium • Min Target: ₹54/Kg • Bikaner Collective',
+        category: 'crop',
+        categoryLabel: isHi ? 'उत्पाद' : 'Produce',
+        icon: Package,
+        viewTarget: 'marketplace',
+        badge: '50 Tons',
+        price: '₹54/Kg',
+      },
+      {
+        id: 'buyer_catalog',
+        title: 'Browse Complete Product Procurement Catalog',
+        hindiTitle: 'संपूर्ण उत्पाद कैटलॉग देखें',
+        gujaratiTitle: 'પ્રોડક્ટ કેટલોગ',
+        subtitle: 'All available standardized farm-gate lots with lab reports and escrow settlement',
+        category: 'tool',
+        categoryLabel: isHi ? 'कैटलॉग' : 'Catalog',
+        icon: Package,
+        viewTarget: 'marketplace',
+        badge: 'All Lots',
+      },
+      {
+        id: 'buyer_proposals',
+        title: 'Active Purchase Proposals & Contract Orders',
+        hindiTitle: 'खरीद प्रस्ताव व सक्रिय ऑर्डर',
+        gujaratiTitle: 'ખરીદ દરખાસ્તો',
+        subtitle: 'Track status of bids submitted to cluster leaders and confirm delivery receipts',
+        category: 'tool',
+        categoryLabel: isHi ? 'ऑर्डर' : 'Orders',
+        icon: Building2,
+        viewTarget: 'buyer-dashboard',
+        badge: 'Orders',
+      },
+    ],
+    [isHi, isGu]
+  );
+
+  // Farmer Search Database
+  const farmerSearchItems: SearchResultItem[] = useMemo(
     () => [
       // Primary Tools
       {
@@ -109,17 +248,6 @@ export const HomeSearchBar: React.FC = () => {
         viewTarget: 'smart-irrigation',
       },
       {
-        id: 'tool_soil_health',
-        title: 'Soil Health Card & NPK Fertilizer',
-        hindiTitle: 'मृदा स्वास्थ्य कार्ड व खाद गणना (NPK)',
-        gujaratiTitle: 'જમીન આરોગ્ય કાર્ડ',
-        subtitle: 'Digital soil test analysis, organic carbon, and precise fertilizer doses',
-        category: 'tool',
-        categoryLabel: isHi ? 'मृदा' : 'Soil',
-        icon: Sprout,
-        viewTarget: 'soil-health',
-      },
-      {
         id: 'tool_schemes',
         title: 'Government Agriculture Schemes',
         hindiTitle: 'सरकारी कृषि योजनाएं व सब्सिडी (PM-Kisan)',
@@ -132,17 +260,6 @@ export const HomeSearchBar: React.FC = () => {
         badge: 'Govt',
       },
       {
-        id: 'tool_diary',
-        title: 'Farm Accounting Diary & Expenses',
-        hindiTitle: 'किसान बही-खाता (खर्च और कमाई)',
-        gujaratiTitle: 'ખેતી રોજમેળ અને હિસાબ',
-        subtitle: 'Track seeds, fertilizer bills, labor payments, and harvest profit',
-        category: 'tool',
-        categoryLabel: isHi ? 'खाता' : 'Finance',
-        icon: BookOpen,
-        viewTarget: 'farm-diary',
-      },
-      {
         id: 'tool_calculator',
         title: 'Crop Profit & ROI Calculator',
         hindiTitle: 'फसल लागत व मुनाफा कैलकुलेटर',
@@ -152,17 +269,6 @@ export const HomeSearchBar: React.FC = () => {
         categoryLabel: isHi ? 'कैलकुलेटर' : 'Calculator',
         icon: Calculator,
         viewTarget: 'profit-calculator',
-      },
-      {
-        id: 'tool_expert',
-        title: 'Talk to Agronomy Expert / KVK',
-        hindiTitle: 'कृषि विशेषज्ञ / केवीके वैज्ञानिक से बात करें',
-        gujaratiTitle: 'કૃષિ નિષ્ણાત સાથે વાત કરો',
-        subtitle: 'Direct consultation with ICAR scientists and local Kisan Call Center (1800-180-1551)',
-        category: 'tool',
-        categoryLabel: isHi ? 'सलाह' : 'Expert',
-        icon: PhoneCall,
-        viewTarget: 'talk-to-expert',
       },
       {
         id: 'tool_community_app',
@@ -318,6 +424,8 @@ export const HomeSearchBar: React.FC = () => {
     [isHi, isGu]
   );
 
+  const searchItems = isBuyerSection ? buyerSearchItems : farmerSearchItems;
+
   // Filtered Results
   const filteredResults = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
@@ -391,7 +499,25 @@ export const HomeSearchBar: React.FC = () => {
     }
   };
 
-  const quickPills = isHi
+  const buyerQuickPills = isHi
+    ? [
+        { label: '🌾 शरबती गेहूं (62T)', term: 'गेहूं' },
+        { label: '🌱 शंकर-6 कपास (45T)', term: 'कपास' },
+        { label: '🌼 पीली सरसों (40T)', term: 'सरसों' },
+        { label: '🥜 मूंगफली दाना (35T)', term: 'मूंगफली' },
+        { label: '🌾 बासमती धान (75T)', term: 'बासमती' },
+        { label: '🌿 निर्यात जीरा (18T)', term: 'जीरा' },
+      ]
+    : [
+        { label: '🌾 Sharbati Wheat (62T)', term: 'Wheat' },
+        { label: '🌱 Bt Cotton (45T)', term: 'Cotton' },
+        { label: '🌼 Yellow Mustard (40T)', term: 'Mustard' },
+        { label: '🥜 Groundnut (35T)', term: 'Groundnut' },
+        { label: '🌾 Basmati Rice (75T)', term: 'Basmati' },
+        { label: '🌿 Export Cumin (18T)', term: 'Cumin' },
+      ];
+
+  const farmerQuickPills = isHi
     ? [
         { label: '🌾 गेहूं भाव', term: 'गेहूं' },
         { label: '🩺 रोग पहचानें', term: 'रोग' },
@@ -406,6 +532,18 @@ export const HomeSearchBar: React.FC = () => {
         { label: '🏛️ PM-Kisan', term: 'Kisan' },
         { label: '💧 Smart Drip', term: 'Irrigation' },
       ];
+
+  const quickPills = isBuyerSection ? buyerQuickPills : farmerQuickPills;
+
+  const searchPlaceholder = isBuyerSection
+    ? (isHi
+        ? 'उपलब्ध कृषि उत्पाद, ग्रेड या क्लस्टर खोजें... (जैसे: गेहूं, कपास, सरसों, जीरा)'
+        : 'Search available crops, harvest lots, grades, or farm clusters (e.g. Wheat, Cotton, Mustard)...')
+    : (isHi
+        ? 'फसल, मंडी भाव, रोग, योजना या सलाह खोजें... (जैसे: गेहूं, कपास, खाद)'
+        : isGu
+        ? 'પાક, માર્કેટ યાર્ડ ભાવ, રોગ અથવા યોજના શોધો...'
+        : 'Search crops, live mandi rates, diseases, schemes, or tools...');
 
   return (
     <div
@@ -431,13 +569,7 @@ export const HomeSearchBar: React.FC = () => {
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
-            placeholder={
-              isHi
-                ? 'फसल, मंडी भाव, रोग, योजना या सलाह खोजें... (जैसे: गेहूं, कपास, खाद)'
-                : isGu
-                ? 'પાક, માર્કેટ યાર્ડ ભાવ, રોગ અથવા યોજના શોધો...'
-                : 'Search crops, live mandi rates, diseases, schemes, or tools...'
-            }
+            placeholder={searchPlaceholder}
             className="w-full bg-transparent text-sm sm:text-base text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:outline-hidden py-2"
           />
 

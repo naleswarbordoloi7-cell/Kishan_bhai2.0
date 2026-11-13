@@ -170,6 +170,7 @@ export const DiseaseScannerPage: React.FC = () => {
       const base64Data = event.target?.result as string;
       setSelectedImage(base64Data);
       setQualityStatus(null);
+      setIsDemoMode(false); // Automatically switch to Live Mode on real upload/capture
     };
     reader.readAsDataURL(file);
 

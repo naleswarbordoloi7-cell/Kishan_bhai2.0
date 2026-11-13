@@ -98,6 +98,7 @@ const INITIAL_VOICE_NOTES: VoiceNoteItem[] = [
 
 export const CommunityPage: React.FC = () => {
   const farmerProfile = useUserStore((state) => state.farmerProfile);
+  const currentUser = useUserStore((state) => state.currentUser);
   const {
     communityPosts,
     addCommunityPost,
@@ -243,6 +244,7 @@ export const CommunityPage: React.FC = () => {
   }) => {
     addCommunityPost({
       title: postData.title,
+      authorId: currentUser?.id || 'usr_farmer_1',
       authorName: farmerProfile.name || 'Ramesh Patel',
       authorVillage: farmerProfile.village || 'Rajkot',
       authorDistrict: farmerProfile.district || 'Rajkot',
@@ -252,8 +254,11 @@ export const CommunityPage: React.FC = () => {
       category: postData.category,
       cropTag: postData.cropTag,
       content: postData.content,
+      postType: 'DISCUSSION',
       imageUrl: postData.imageUrl,
       tags: postData.tags,
+      likedUserIds: [],
+      savedUserIds: [],
     });
 
     if (postData.isVoicePost) {

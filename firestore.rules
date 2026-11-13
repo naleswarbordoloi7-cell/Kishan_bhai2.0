@@ -90,78 +90,110 @@ service cloud.firestore {
         data.ph is number && data.ph >= 0 && data.ph <= 14;
     }
 
+    function isValidSharedCart(data) {
+      return data.keys().hasAll(['id', 'clusterId', 'status', 'title']) &&
+        data.id is string && isValidId(data.id) &&
+        data.clusterId is string && isValidId(data.clusterId) &&
+        data.title is string && data.title.size() <= 150 &&
+        data.status in ['OPEN', 'LOCKED', 'ORDER_PLACED', 'DELIVERED'];
+    }
+
     // 1. Users collection - PII protection
     match /users/{userId} {
-      allow get: if isSignedIn() && (isCurrentUser(userId) || isAdmin());
+      allow get: if isSignedIn() && isValidId(userId) && (isCurrentUser(userId) || isAdmin());
       allow list: if isAdmin();
-      allow create: if (isCurrentUser(userId) || isAdmin()) && isValidUser(incoming()) && (incoming().role != 'ADMIN' || isAdmin());
-      allow update: if (
+      allow create: if isValidId(userId) && (isCurrentUser(userId) || isAdmin()) && isValidUser(incoming()) && incoming().id == userId && (incoming().role != 'ADMIN' || isAdmin());
+      allow update: if isValidId(userId) && (
         (isCurrentUser(userId) || isAdmin()) &&
         isValidUser(incoming()) &&
         incoming().id == existing().id &&
         (isAdmin() || incoming().role == existing().role)
       );
-      allow delete: if isAdmin();
+      allow delete: if isValidId(userId) && isAdmin();
     }
 
     // 2. Virtual Clusters
     match /clusters/{clusterId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidCluster(incoming()) && (incoming().championId == request.auth.uid || isAdmin());
-      allow update: if isSignedIn() && isValidCluster(incoming()) && (existing().championId == request.auth.uid || isAdmin());
-      allow delete: if isAdmin();
+      allow get: if isSignedIn() && isValidId(clusterId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(clusterId) && isValidCluster(incoming()) && (incoming().championId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && isValidId(clusterId) && isValidCluster(incoming()) && incoming().id == existing().id && (
+        isAdmin() ||
+        (existing().championId == request.auth.uid && incoming().championId == existing().championId)
+      );
+      allow delete: if isValidId(clusterId) && isAdmin();
     }
 
     // 3. Bulk Order Requirements
     match /bulkRequirements/{reqId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidBulkRequirement(incoming());
-      allow update: if isSignedIn() && isValidBulkRequirement(incoming()) && (
+      allow get: if isSignedIn() && isValidId(reqId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(reqId) && isValidBulkRequirement(incoming());
+      allow update: if isSignedIn() && isValidId(reqId) && isValidBulkRequirement(incoming()) && incoming().id == existing().id && (
         isAdmin() ||
-        incoming().diff(existing()).affectedKeys().hasAny(['currentQuantity', 'farmerPledges', 'status'])
+        (
+          existing().status != 'DISTRIBUTED' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['currentQuantity', 'farmerPledges', 'status'])
+        )
       );
-      allow delete: if isAdmin();
+      allow delete: if isValidId(reqId) && isAdmin();
     }
 
     // 4. Machinery Items
     match /machinery/{machineryId} {
-      allow read: if true;
-      allow create: if isSignedIn() && isValidMachinery(incoming());
-      allow update: if isSignedIn() && isValidMachinery(incoming());
-      allow delete: if isAdmin();
+      allow get: if isValidId(machineryId);
+      allow list: if true;
+      allow create: if isSignedIn() && isValidId(machineryId) && isValidMachinery(incoming());
+      allow update: if isSignedIn() && isValidId(machineryId) && isValidMachinery(incoming()) && incoming().id == existing().id && (
+        isAdmin() ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['available', 'currentLocationVillage'])
+      );
+      allow delete: if isValidId(machineryId) && isAdmin();
     }
 
     // 5. Harvest Pool Lots
     match /harvestLots/{lotId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidHarvestLot(incoming()) && (incoming().farmerId == request.auth.uid || isAdmin());
-      allow update: if isSignedIn() && isValidHarvestLot(incoming()) && (existing().farmerId == request.auth.uid || isAdmin());
-      allow delete: if isSignedIn() && (existing().farmerId == request.auth.uid || isAdmin());
+      allow get: if isSignedIn() && isValidId(lotId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(lotId) && isValidHarvestLot(incoming()) && (incoming().farmerId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && isValidId(lotId) && isValidHarvestLot(incoming()) && incoming().id == existing().id && (
+        isAdmin() ||
+        (existing().farmerId == request.auth.uid && incoming().farmerId == existing().farmerId && existing().status != 'HARVESTED_SOLD')
+      );
+      allow delete: if isSignedIn() && isValidId(lotId) && (existing().farmerId == request.auth.uid || isAdmin());
     }
 
     // 6. Transactions
     match /transactions/{txId} {
-      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow get: if isSignedIn() && isValidId(txId) && (existing().userId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && isValidTransaction(incoming()) && (incoming().userId == request.auth.uid || isAdmin());
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow create: if isSignedIn() && isValidId(txId) && isValidTransaction(incoming()) && (incoming().userId == request.auth.uid || isAdmin());
+      allow update: if isValidId(txId) && isAdmin() && isValidTransaction(incoming());
+      allow delete: if isValidId(txId) && isAdmin();
     }
 
     // 7. Soil Records
     match /soilRecords/{recordId} {
-      allow get: if isSignedIn() && (existing().farmerId == request.auth.uid || isAdmin());
+      allow get: if isSignedIn() && isValidId(recordId) && (existing().farmerId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (resource.data.farmerId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && isValidSoilRecord(incoming()) && (incoming().farmerId == request.auth.uid || isAdmin());
-      allow update: if isSignedIn() && isValidSoilRecord(incoming()) && (existing().farmerId == request.auth.uid || isAdmin());
-      allow delete: if isAdmin();
+      allow create: if isSignedIn() && isValidId(recordId) && isValidSoilRecord(incoming()) && (incoming().farmerId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && isValidId(recordId) && isValidSoilRecord(incoming()) && incoming().id == existing().id && (
+        isAdmin() ||
+        (existing().farmerId == request.auth.uid && incoming().farmerId == existing().farmerId)
+      );
+      allow delete: if isValidId(recordId) && isAdmin();
     }
 
     // 8. Shared Cluster Carts
     match /sharedCarts/{cartId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn();
-      allow delete: if isAdmin();
+      allow get: if isSignedIn() && isValidId(cartId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(cartId) && isValidSharedCart(incoming());
+      allow update: if isSignedIn() && isValidId(cartId) && isValidSharedCart(incoming()) && incoming().id == existing().id && (
+        isAdmin() ||
+        existing().status != 'DELIVERED'
+      );
+      allow delete: if isValidId(cartId) && isAdmin();
     }
 
     // Admin whitelist collection

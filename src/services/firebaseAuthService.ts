@@ -18,6 +18,12 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { UserProfile, UserRole } from '../../shared/types';
 
+function cleanFirestoreData<T extends Record<string, any>>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined)
+  ) as Partial<T>;
+}
+
 export interface SignUpParams {
   email: string;
   password: string;
@@ -117,7 +123,7 @@ export async function signUpWithFirebaseEmail(params: SignUpParams): Promise<Use
   }
 
   const isAdminEmail = email.trim().toLowerCase() === 'naleswarbordoloi7@gmail.com';
-  const effectiveRole: UserRole = role === 'ADMIN' && !isAdminEmail ? 'FARMER' : (role || 'FARMER');
+  const effectiveRole: UserRole = (isAdminEmail && fbUser.emailVerified) ? 'ADMIN' : (role === 'ADMIN' ? 'FARMER' : (role || 'FARMER'));
 
   // 3. Construct clean UserProfile matching schema
   const userProfile: UserProfile = {
@@ -140,10 +146,10 @@ export async function signUpWithFirebaseEmail(params: SignUpParams): Promise<Use
     createdAt: new Date().toISOString(),
   };
 
-  // 4. Save to Cloud Firestore
+  // 4. Save to Cloud Firestore (strip undefined fields which Firestore rejects)
   try {
     const userDocRef = doc(db, 'users', fbUser.uid);
-    await setDoc(userDocRef, userProfile);
+    await setDoc(userDocRef, cleanFirestoreData(userProfile));
   } catch (err: any) {
     console.warn('[Firebase Auth] Could not write user doc to Firestore:', err?.message || err);
   }
@@ -209,7 +215,7 @@ export async function signInWithFirebaseEmail(email: string, password: string): 
 
     try {
       const userDocRef = doc(db, 'users', fbUser.uid);
-      await setDoc(userDocRef, profile, { merge: true });
+      await setDoc(userDocRef, cleanFirestoreData(profile), { merge: true });
     } catch (err: any) {
       console.warn('[Firebase Auth] Could not bootstrap initial Firestore user profile:', err?.message || err);
     }
@@ -291,7 +297,7 @@ export async function signInWithFirebaseGoogle(
 
     try {
       const userDocRef = doc(db, 'users', fbUser.uid);
-      await setDoc(userDocRef, profile, { merge: true });
+      await setDoc(userDocRef, cleanFirestoreData(profile), { merge: true });
     } catch (err: any) {
       console.warn('[Firebase Auth] Could not bootstrap Firestore user profile for Google user:', err?.message || err);
     }

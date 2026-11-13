@@ -94,14 +94,14 @@ export const AIQuickPrompts: React.FC<Props> = ({ onSelectPrompt, language }) =>
   return (
     <div className="space-y-3">
       {/* Category Pills Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full text-xs font-medium scrollbar-none">
+      <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800/60 pb-2 mb-2">
+        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar max-w-full text-xs font-semibold">
           <button
             onClick={() => setActiveCategory('ALL')}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap ${
+            className={`pb-2 transition-all cursor-pointer whitespace-nowrap border-b-2 ${
               activeCategory === 'ALL'
-                ? 'bg-green-700 text-white font-bold shadow-2xs'
-                : 'bg-white/80 text-stone-600 hover:bg-stone-200 border border-stone-200'
+                ? 'border-emerald-600 text-emerald-900 dark:text-emerald-400'
+                : 'border-transparent text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
             }`}
           >
             {language === 'hi' ? 'सभी प्रश्न' : 'All Topics'}
@@ -109,49 +109,49 @@ export const AIQuickPrompts: React.FC<Props> = ({ onSelectPrompt, language }) =>
 
           <button
             onClick={() => setActiveCategory('IRRIGATION')}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+            className={`pb-2 transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-1.5 ${
               activeCategory === 'IRRIGATION'
-                ? 'bg-blue-700 text-white font-bold shadow-2xs'
-                : 'bg-white/80 text-stone-600 hover:bg-stone-200 border border-stone-200'
+                ? 'border-emerald-600 text-emerald-900 dark:text-emerald-400'
+                : 'border-transparent text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
             }`}
           >
-            <Droplets className="w-3 h-3 text-blue-500" />
+            <Droplets className="w-3 h-3" />
             <span>{language === 'hi' ? 'सिंचाई सलाह' : 'Irrigation'}</span>
           </button>
 
           <button
             onClick={() => setActiveCategory('DISEASE')}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+            className={`pb-2 transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-1.5 ${
               activeCategory === 'DISEASE'
-                ? 'bg-rose-700 text-white font-bold shadow-2xs'
-                : 'bg-white/80 text-stone-600 hover:bg-stone-200 border border-stone-200'
+                ? 'border-emerald-600 text-emerald-900 dark:text-emerald-400'
+                : 'border-transparent text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
             }`}
           >
-            <Bug className="w-3 h-3 text-rose-500" />
+            <Bug className="w-3 h-3" />
             <span>{language === 'hi' ? 'रोग व कीट' : 'Disease & Pest'}</span>
           </button>
 
           <button
             onClick={() => setActiveCategory('MARKET')}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+            className={`pb-2 transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-1.5 ${
               activeCategory === 'MARKET'
-                ? 'bg-emerald-700 text-white font-bold shadow-2xs'
-                : 'bg-white/80 text-stone-600 hover:bg-stone-200 border border-stone-200'
+                ? 'border-emerald-600 text-emerald-900 dark:text-emerald-400'
+                : 'border-transparent text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
             }`}
           >
-            <TrendingUp className="w-3 h-3 text-emerald-500" />
+            <TrendingUp className="w-3 h-3" />
             <span>{language === 'hi' ? 'मंडी भाव' : 'Mandi Rates'}</span>
           </button>
 
           <button
             onClick={() => setActiveCategory('COMMERCE')}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+            className={`pb-2 transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-1.5 ${
               activeCategory === 'COMMERCE'
-                ? 'bg-purple-700 text-white font-bold shadow-2xs'
-                : 'bg-white/80 text-stone-600 hover:bg-stone-200 border border-stone-200'
+                ? 'border-emerald-600 text-emerald-900 dark:text-emerald-400'
+                : 'border-transparent text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
             }`}
           >
-            <Package className="w-3 h-3 text-purple-500" />
+            <Package className="w-3 h-3" />
             <span>{language === 'hi' ? 'खाद व योजनाएं' : 'Inputs & Schemes'}</span>
           </button>
         </div>
@@ -168,7 +168,7 @@ export const AIQuickPrompts: React.FC<Props> = ({ onSelectPrompt, language }) =>
               className="text-left bg-white/80 hover:bg-white p-3 rounded-2xl border border-stone-200/80 shadow-2xs hover:shadow-xs transition-all hover:border-emerald-500/50 cursor-pointer active:scale-[0.99] flex items-start gap-3 group"
             >
               <div className={`w-8 h-8 rounded-xl ${p.bgColor} ${p.iconColor} flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform`}>
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-xs text-stone-900 group-hover:text-green-700 transition-colors truncate">

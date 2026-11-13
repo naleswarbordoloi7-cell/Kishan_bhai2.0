@@ -33,12 +33,14 @@ import {
   ShieldCheck,
   Award,
   Wallet,
+  Bot,
 } from 'lucide-react';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { HomeSearchBar } from '../components/HomeSearchBar';
 import { MandiTicker } from '../components/MandiTicker';
 import { LoyaltyCard } from '../components/loyalty/LoyaltyCard';
 import { RewardRedemptionModal } from '../components/loyalty/RewardRedemptionModal';
+import { FarmerDashboardWeatherVoiceHero } from '../components/dashboard/FarmerDashboardWeatherVoiceHero';
 import { loyaltyService } from '../services/loyaltyService';
 import { WeatherData, LoyaltyAccount, LoyaltyRewardItem, LoyaltyRewardRedemption } from '../../shared/types';
 import {
@@ -46,19 +48,58 @@ import {
   getLocalizedSpokenAdvisory,
   getTranslation,
 } from '../i18n/translations';
-import { speakText, stopSpeech, isSpeechSynthesisSupported } from '../services/webSpeechService';
+import { speakText, stopSpeech, isSpeechSynthesisSupported, INDIAN_SPEECH_LANGUAGES } from '../services/webSpeechService';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 export const FarmerDashboard: React.FC = () => {
   const currentUser = useUserStore(state => state.currentUser);
   const farmerProfile = useUserStore(state => state.farmerProfile);
   const mandiPrices = useMarketStore(state => state.mandiPrices);
-  const { crops, irrigationStatus, togglePump, soilHealth, alerts, language, setLanguage, t, setCurrentView, askAiWithPrompt, addToast, isDarkMode } = useApp();
+  const { crops, irrigationStatus, togglePump, soilHealth, alerts, language, setLanguage, t, setCurrentView, askAiWithPrompt, addToast, isDarkMode, addAlert } = useApp();
 
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [isPumpLoading, setIsPumpLoading] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [quickQuestionInput, setQuickQuestionInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [briefingText, setBriefingText] = useState<string>('');
+  const [isBriefingLoading, setIsBriefingLoading] = useState(false);
+  const [interimDashboardSpeech, setInterimDashboardSpeech] = useState('');
+
+  // Voice Input for Dashboard
+  const {
+    isSupported: isVoiceSupported,
+    isListening: isDashboardListening,
+    startListening: startDashboardListening,
+    stopListening: stopDashboardListening,
+    resetTranscript: resetDashboardTranscript,
+  } = useSpeechRecognition({
+    lang: language === 'hi' ? 'hi-IN' : language === 'gu' ? 'gu-IN' : 'en-IN',
+    continuous: false,
+    interimResults: true,
+    onResult: (text, isFinal) => {
+      if (isFinal && text.trim()) {
+        setQuickQuestionInput((prev) => (prev ? `${prev} ${text.trim()}` : text.trim()));
+        setInterimDashboardSpeech('');
+      } else {
+        setInterimDashboardSpeech(text);
+      }
+    },
+  });
+
+  const toggleDashboardVoice = () => {
+    if (!isVoiceSupported) {
+      addToast('Voice Not Supported', 'Your browser does not support speech recognition.', 'error');
+      return;
+    }
+
+    if (isDashboardListening) {
+      stopDashboardListening();
+    } else {
+      resetDashboardTranscript();
+      startDashboardListening();
+    }
+  };
 
   // Loyalty Rewards State
   const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
@@ -131,6 +172,57 @@ export const FarmerDashboard: React.FC = () => {
       .catch(() => {});
   }, []);
 
+  // Fetch Dynamic AI Briefing
+  useEffect(() => {
+    if (isLoading) return;
+    
+    const fetchBriefing = async () => {
+      setIsBriefingLoading(true);
+      try {
+        const res = await fetch('/api/ai/briefing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: currentUser?.id,
+            language,
+            farmContext: {
+              soilMoisture: irrigationStatus.soilMoisturePct,
+              weather: weather
+            }
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setBriefingText(data.briefing);
+          
+          // If the briefing contains rain warning, push to alerts
+          const lowBriefing = data.briefing.toLowerCase();
+          if (lowBriefing.includes('rain') || lowBriefing.includes('बारिश') || lowBriefing.includes('વરસાદ')) {
+            const hasRainAlert = alerts.some(a => a.category === 'WEATHER' && !a.isRead && (a.title.includes('Rain') || a.title.includes('बारिश') || a.title.includes('વરસાદ')));
+            if (!hasRainAlert) {
+              addAlert({
+                category: 'WEATHER',
+                title: language === 'hi' ? 'भारी बारिश की चेतावनी' : language === 'gu' ? 'ભારે વરસાદની ચેતવણી' : 'Heavy Rain Forecast',
+                description: data.briefing,
+                severity: 'WARNING',
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                actionLabel: language === 'hi' ? 'सिंचाई प्रबंधित करें' : 'Manage Irrigation',
+                actionUrl: 'smart-irrigation'
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Briefing fetch error:', err);
+      } finally {
+        setIsBriefingLoading(false);
+      }
+    };
+
+    fetchBriefing();
+  }, [isLoading, language, currentUser?.id]);
+
+
   const isPumpRunning = irrigationStatus.pumpStatus === 'RUNNING';
   const moisturePct = irrigationStatus.soilMoisturePct || 42;
 
@@ -201,29 +293,93 @@ export const FarmerDashboard: React.FC = () => {
 
   // Quick Questions chips
   const quickQuestionChips = [
-    { hi: '🌾 कपास में खाद कब डालें?', en: 'When to fertilize cotton?', gu: 'કપાસમાં ખાતર ક્યારે નાખવું?' },
+    { hi: '🌱 फसल स्वास्थ्य जांचें', en: 'Check crop health', gu: 'પાક આરોગ્ય તપાસો' },
+    { hi: '📈 आज के मंडी भाव', en: 'Market prices today', gu: 'આજના બજાર ભાવ' },
+    { hi: '💧 सिंचाई में सहायता', en: 'Help with irrigation', gu: 'સિંચાઈ સહાય' },
     { hi: '🐛 पत्ती पीली पड़ रही है क्या करें?', en: 'Leaves turning yellow, what to do?', gu: 'પાંદડા પીળા પડે છે શું કરવું?' },
     { hi: '🌧️ कल बारिश कितने बजे होगी?', en: 'What time will it rain tomorrow?', gu: 'આવતીકાલે વરસાદ ક્યારે પડશે?' },
-    { hi: '💰 गोंडल मंडी में कपास का आज का भाव?', en: 'Cotton price in Gondal Mandi today?', gu: 'ગોંડલ યાર્ડમાં કપાસનો ભાવ?' },
   ];
 
-  // 5-Day Simple Forecast
-  const simpleForecast = [
-    { dayHi: 'सोमवार (आज)', dayEn: 'Mon (Today)', dayGu: 'સોમવાર (આજે)', icon: '⛅', temp: '30°C', rain: '20%', adviceHi: 'सामान्य धूप • सामान्य काम', adviceEn: 'Sunny • Routine farm work' },
-    { dayHi: 'मंगलवार (कल)', dayEn: 'Tue (Tomorrow)', dayGu: 'મંગળવાર (કાલે)', icon: '🌧️', temp: '27°C', rain: '70%', adviceHi: '⚠️ भारी बारिश • स्प्रे रोकें', adviceEn: '⚠️ Heavy Rain • Hold Spray' },
-    { dayHi: 'बुधवार', dayEn: 'Wed', dayGu: 'બુધવાર', icon: '🌧️', temp: '26°C', rain: '85%', adviceHi: 'पानी निकासी नाली देखें', adviceEn: 'Clear field drainage' },
-    { dayHi: 'गुरुवार', dayEn: 'Thu', dayGu: 'ગુરુવાર', icon: '🌦️', temp: '28°C', rain: '40%', adviceHi: 'हल्की फुहार • कीट जांचें', adviceEn: 'Scout leaves for pests' },
-    { dayHi: 'शुक्रवार', dayEn: 'Fri', dayGu: 'શુક્રવાર', icon: '☀️', temp: '31°C', rain: '10%', adviceHi: 'खिली धूप • दवा स्प्रे सुरक्षित', adviceEn: 'Sunny • Safe for spraying' },
-  ];
 
   if (isLoading) {
     return <DashboardSkeleton />;
   }
 
   return (
-    <div id="kisan-simple-home" className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 space-y-5 pb-24 md:pb-12 text-stone-900 dark:text-stone-100">
+    <div id="kisan-simple-home" className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-2.5 sm:py-5 space-y-4 sm:space-y-5 pb-24 md:pb-12 text-stone-900 dark:text-stone-100">
       {/* Universal Agri Search & Voice Bar */}
       <HomeSearchBar />
+
+      {/* ========================================================= */}
+      {/* 0. PERSONAL AGENT BRIEFING - PROACTIVE MANAGEMENT         */}
+      {/* ========================================================= */}
+      <section className="bg-gradient-to-br from-[#0A1A0F] to-[#144633] text-white rounded-3xl p-4 sm:p-5 shadow-lg border border-white/5 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-3 opacity-10">
+          <Sparkles className="w-12 h-12" />
+        </div>
+        <div className="flex items-start gap-4 relative z-10">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 flex items-center justify-center shrink-0">
+            <Bot className="w-4 h-4" />
+          </div>
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-400">Personal Agent Briefing</h2>
+              <span className="text-[10px] font-bold text-white/40">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <p className="text-sm leading-relaxed font-medium">
+              {isBriefingLoading ? (
+                <span className="flex items-center gap-2">
+                  <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
+                  <span className="opacity-50 italic">Generating your personal farm briefing...</span>
+                </span>
+              ) : (
+                briefingText || (language === 'hi' 
+                  ? `नमस्ते ${farmerProfile?.name || 'रमेशभाई'}! कल आपके खेत में भारी बारिश (70%) संभव है। मैंने सिंचाई रोक दी है और आपके लिए गोंडल मंडी में ₹140 प्रीमियम भाव ट्रैक किया है।`
+                  : `Hello ${farmerProfile?.name || 'Ramesh Patel'}! I've analyzed your telemetry: heavy rain (70%) is expected tomorrow. I've flagged a "Hold Irrigation" status and found a ₹140 premium price for your crop at Gondal.`)
+              )}
+            </p>
+            <button 
+              onClick={() => setCurrentView('ai-assistant')}
+              className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
+            >
+              <span>Manage Farm Operations with Agent</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* 0.5 ANIMETIC WEATHER ALERT & VOICE CROP LISTING HERO      */}
+      {/* ========================================================= */}
+      <FarmerDashboardWeatherVoiceHero
+        farmerName={farmerProfile?.name || currentUser?.fullName || 'Ramesh Patel'}
+        villageName={currentUser?.village || 'Anandpur'}
+        districtName={currentUser?.district || 'Rajkot'}
+        language={language}
+        onExploreClusters={() => setCurrentView('community')}
+        onCropListed={async (crop) => {
+          try {
+            await fetch('/api/harvest/add', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                crop: crop.cropName,
+                quantityKg: crop.volumeQuintals * 100,
+                qualityGrade: crop.qualityGrade,
+                expectedHarvestDate: crop.harvestDate,
+                farmerId: currentUser?.id || 'usr_farmer_ramesh',
+                farmerName: currentUser?.fullName || 'Ramesh Patel',
+                village: currentUser?.village || 'Anandpur',
+                notes: `Voice listed: "${crop.rawVoiceTranscript}"`,
+              }),
+            });
+            addToast('फसल क्लस्टर में दर्ज', `${crop.volumeQuintals} क्विंटल ${crop.cropName} सफलतापूर्वक क्लस्टर में जोड़ दी गई!`, 'success');
+          } catch {
+            addToast('फसल दर्ज', `${crop.volumeQuintals} क्विंटल ${crop.cropName} दर्ज!`, 'success');
+          }
+        }}
+      />
 
       {/* ========================================================= */}
       {/* 1. MODERN WARM AGRI GREETING & DAYLIGHT FARM ANCHOR       */}
@@ -236,8 +392,8 @@ export const FarmerDashboard: React.FC = () => {
         <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1.5">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-700/20 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
-                <MapPin className="w-3 h-3 text-emerald-700" />
+              <span className="inline-flex items-center gap-1.5 text-stone-500 dark:text-stone-400 text-xs font-medium">
+                <MapPin className="w-3 h-3" />
                 <span>{farmerProfile?.village || 'आनंदपुर'}, {farmerProfile?.district || 'राजकोट'} ({farmerProfile?.state || 'गुजरात'})</span>
               </span>
               <span className="text-stone-400">·</span>
@@ -344,7 +500,7 @@ export const FarmerDashboard: React.FC = () => {
                 : 'Top 4 Immediate Actions'}
             </span>
           </h2>
-          <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-700/20 px-2.5 py-0.5 rounded-full">
+          <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-tight">
             {language === 'hi' ? '1-टैप डायरेक्ट' : 'Instant Direct'}
           </span>
         </div>
@@ -359,9 +515,9 @@ export const FarmerDashboard: React.FC = () => {
             <div>
               <div className="flex items-center justify-between">
                 <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-xl group-hover:scale-105 transition-transform">
-                  <Camera className="w-5 h-5" />
+                  <Camera className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-bold uppercase tracking-tight text-emerald-700 dark:text-emerald-400">
                   {language === 'hi' ? 'रोग डॉक्टर' : 'AI Doctor'}
                 </span>
               </div>
@@ -391,9 +547,9 @@ export const FarmerDashboard: React.FC = () => {
             <div>
               <div className="flex items-center justify-between">
                 <div className="p-2.5 bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300 rounded-xl group-hover:scale-105 transition-transform">
-                  <Mic className="w-5 h-5" />
+                  <Mic className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-100/60 dark:bg-amber-950 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-bold uppercase tracking-tight text-amber-700 dark:text-amber-400">
                   {language === 'hi' ? 'बोलकर पूछें' : 'Voice AI'}
                 </span>
               </div>
@@ -422,13 +578,13 @@ export const FarmerDashboard: React.FC = () => {
             <div>
               <div className="flex items-center justify-between">
                 <div className="p-2.5 bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 rounded-xl">
-                  <Droplets className="w-5 h-5" />
+                  <Droplets className="w-4 h-4" />
                 </div>
                 <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase ${
+                  className={`text-[10px] font-bold uppercase tracking-tight ${
                     isPumpRunning 
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 animate-pulse' 
-                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                      ? 'text-emerald-600 dark:text-emerald-400' 
+                      : 'text-stone-500 dark:text-stone-400'
                   }`}
                 >
                   {isPumpRunning ? '● पंप चालू' : '○ पंप बंद'}
@@ -476,9 +632,9 @@ export const FarmerDashboard: React.FC = () => {
             <div>
               <div className="flex items-center justify-between">
                 <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-xl group-hover:scale-105 transition-transform">
-                  <TrendingUp className="w-5 h-5" />
+                  <TrendingUp className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-bold uppercase text-emerald-800 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-bold uppercase text-emerald-700 dark:text-emerald-400 tracking-tight">
                   +₹220 उछाल 📈
                 </span>
               </div>
@@ -522,7 +678,7 @@ export const FarmerDashboard: React.FC = () => {
               </p>
             </div>
           </div>
-          <span className="text-xs font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 px-3 py-1 rounded-full self-start sm:self-center">
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 px-3 py-1 rounded-xl self-start sm:self-center border border-emerald-200 dark:border-emerald-800">
             {language === 'hi' ? '1-क्लिक एक्सेस' : 'Instant Access'}
           </span>
         </div>
@@ -534,15 +690,11 @@ export const FarmerDashboard: React.FC = () => {
             { id: 'disease-scanner', labelHi: 'रोग डॉक्टर', labelEn: 'Disease Scanner', icon: Camera, color: 'bg-green-50 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800' },
             { id: 'smart-irrigation', labelHi: 'स्मार्ट सिंचाई', labelEn: 'Smart Irrigation', icon: Droplets, color: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800' },
             { id: 'market-prices', labelHi: 'मंडी भाव', labelEn: 'Mandi Rates', icon: TrendingUp, color: 'bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800' },
-            { id: 'soil-health', labelHi: 'मिट्टी जांच', labelEn: 'Soil Health', icon: ShieldCheck, color: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' },
             { id: 'profit-calculator', labelHi: 'मुनाफा कैलकुलेटर', labelEn: 'Profit Calc', icon: Award, color: 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800' },
             { id: 'government-schemes', labelHi: 'सरकारी योजनाएं', labelEn: 'Govt Schemes', icon: Landmark, color: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800' },
-            { id: 'talk-to-expert', labelHi: 'विशेषज्ञ से बात', labelEn: 'Talk to Expert', icon: PhoneCall, color: 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800' },
-            { id: 'farm-diary', labelHi: 'फार्म डायरी', labelEn: 'Farm Diary', icon: Calendar, color: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800' },
             { id: 'my-crops', labelHi: 'फसलें व उपज', labelEn: 'My Products', icon: ShoppingBag, color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' },
             { id: 'virtual-farm-clusters', labelHi: 'वर्चुअल क्लस्टर', labelEn: 'Farm Clusters', icon: MapPin, color: 'bg-orange-50 text-orange-800 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800' },
             { id: 'community', labelHi: 'किसान समुदाय', labelEn: 'Community', icon: FileText, color: 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800' },
-            { id: 'transactions', labelHi: 'खाता बही/लेनदेन', labelEn: 'Ledger', icon: Wallet, color: 'bg-stone-100 text-stone-800 border-stone-300 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-700' },
             { id: 'weather', labelHi: 'विस्तृत मौसम', labelEn: 'Weather Hub', icon: CloudSun, color: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800' },
           ].map((mod) => {
             const ModIcon = mod.icon;
@@ -552,7 +704,7 @@ export const FarmerDashboard: React.FC = () => {
                 onClick={() => setCurrentView(mod.id)}
                 className={`p-2.5 rounded-2xl border text-center transition-all hover:scale-105 active:scale-95 cursor-pointer flex flex-col items-center justify-center gap-1 shadow-xs ${mod.color}`}
               >
-                <ModIcon className="w-5 h-5" />
+                <ModIcon className="w-4 h-4" />
                 <span className="text-[11px] font-black truncate w-full">
                   {language === 'hi' ? mod.labelHi : mod.labelEn}
                 </span>
@@ -566,67 +718,6 @@ export const FarmerDashboard: React.FC = () => {
 
 
 
-      {/* ========================================================= */}
-      {/* 6. 5-DAY SIMPLE WEATHER (EASY WORDS, NO CONFUSION)        */}
-      {/* ========================================================= */}
-      <section
-        id="simple-weather-forecast"
-        className="bg-white dark:bg-[#161c14] border-2 border-stone-200 dark:border-stone-800 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 dark:border-stone-800 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="p-2.5 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 rounded-2xl">
-              <CloudSun className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-100">
-                {language === 'hi'
-                  ? 'मौसम का आसान अनुमान (अगले 5 दिन)'
-                  : language === 'gu'
-                  ? 'આગામી ૫ દિવસનું હવામાન'
-                  : '5-Day Simple Weather Guide'}
-              </h2>
-              <p className="text-xs text-stone-500">
-                {language === 'hi' ? 'आनंदपुर, राजकोट • मौसम विभाग (IMD) द्वारा सत्यापित' : 'Anandpur, Rajkot • IMD Verified'}
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setCurrentView('weather')}
-            className="text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:underline flex items-center gap-1 self-start sm:self-center"
-          >
-            <span>{language === 'hi' ? 'पूरा मौसम देखें' : 'View Full Forecast'}</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {simpleForecast.map((fc, idx) => (
-            <div
-              key={idx}
-              className={`p-3.5 rounded-2xl border-2 text-center flex flex-col justify-between ${
-                idx === 1
-                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 dark:border-amber-700'
-                  : 'bg-stone-50 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800'
-              }`}
-            >
-              <div>
-                <span className="text-xs font-bold text-stone-600 dark:text-stone-400">
-                  {language === 'hi' ? fc.dayHi : language === 'gu' ? fc.dayGu : fc.dayEn}
-                </span>
-                <div className="text-3xl my-2">{fc.icon}</div>
-                <div className="text-lg font-black text-stone-900 dark:text-stone-100">{fc.temp}</div>
-                <div className="text-xs font-bold text-blue-700 dark:text-blue-400">🌧️ {fc.rain} बारिश</div>
-              </div>
-
-              <div className="mt-2 pt-2 border-t border-stone-200/80 dark:border-stone-800 text-[11px] font-black text-stone-800 dark:text-stone-200">
-                {language === 'hi' ? fc.adviceHi : fc.adviceEn}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* ========================================================= */}
       {/* 7. ASK KISAN AI - 1-TAP COMMON QUESTIONS                  */}
@@ -636,7 +727,7 @@ export const FarmerDashboard: React.FC = () => {
         className="bg-gradient-to-br from-[#183d12] via-[#214e1a] to-[#163610] text-white rounded-2xl p-4 sm:p-6 shadow-lg border-2 border-emerald-700"
       >
         <div className="max-w-3xl mx-auto text-center space-y-3">
-          <div className="inline-flex items-center gap-1.5 bg-emerald-900/80 border border-emerald-600/50 px-3 py-1 rounded-full text-xs font-bold text-emerald-300">
+          <div className="inline-flex items-center gap-1.5 bg-emerald-900/80 border border-emerald-600/50 px-3 py-1 rounded-xl text-xs font-bold text-emerald-300">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>24/7 AI कृषि वैज्ञानिक</span>
           </div>
@@ -658,8 +749,8 @@ export const FarmerDashboard: React.FC = () => {
             {quickQuestionChips.map((q, i) => (
               <button
                 key={i}
-                onClick={() => askAiWithPrompt(q.hi)}
-                className="bg-white/15 hover:bg-white/25 active:scale-95 border border-emerald-400/40 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-2xl transition-all cursor-pointer"
+                onClick={() => askAiWithPrompt(language === 'hi' ? q.hi : language === 'gu' ? q.gu : q.en)}
+                className="bg-white/15 hover:bg-white/25 active:scale-95 border border-emerald-400/40 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all cursor-pointer"
               >
                 {language === 'hi' ? q.hi : language === 'gu' ? q.gu : q.en}
               </button>
@@ -678,7 +769,7 @@ export const FarmerDashboard: React.FC = () => {
             <div className="flex items-center bg-white rounded-2xl p-1.5 shadow-md">
               <input
                 type="text"
-                value={quickQuestionInput}
+                value={interimDashboardSpeech || quickQuestionInput}
                 onChange={(e) => setQuickQuestionInput(e.target.value)}
                 placeholder={
                   language === 'hi'
@@ -689,11 +780,15 @@ export const FarmerDashboard: React.FC = () => {
               />
               <button
                 type="button"
-                onClick={() => setCurrentView('ai-assistant')}
-                className="p-2 text-emerald-800 hover:bg-emerald-50 rounded-xl transition-colors shrink-0"
+                onClick={toggleDashboardVoice}
+                className={`p-2 rounded-xl transition-all shrink-0 ${
+                  isDashboardListening 
+                    ? 'bg-rose-100 text-rose-600 animate-pulse' 
+                    : 'text-emerald-800 hover:bg-emerald-50'
+                }`}
                 title="Voice Query"
               >
-                <Mic className="w-5 h-5" />
+                <Mic className={`w-5 h-5 ${isDashboardListening ? 'scale-110' : ''}`} />
               </button>
               <button
                 type="submit"

@@ -21,6 +21,7 @@ import {
   Bug,
   TrendingUp,
   FileCheck,
+  Sprout,
 } from 'lucide-react';
 import { AIChatMessage, FarmingActionCard, DiseaseAnalysisResult } from '../../../shared/types';
 import { speakText, stopSpeech, isSpeechSynthesisSupported } from '../../services/webSpeechService';
@@ -95,24 +96,23 @@ export const AIChatMessageItem: React.FC<Props> = ({
             return (
               <div
                 key={idx}
-                className="bg-emerald-500/10 border-l-4 border-emerald-600 p-3.5 rounded-r-xl text-emerald-950 font-medium text-sm sm:text-base mb-3 shadow-2xs"
+                className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-900/10 dark:border-emerald-800/30 p-3 sm:p-4 rounded-xl text-stone-900 dark:text-stone-100 font-medium text-sm sm:text-base mb-3 shadow-xs"
               >
-                <div className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <div className="text-[10px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-tight mb-1 flex items-center gap-1.5">
+                  <Sprout className="w-3 h-3" />
                   <span>{language === 'hi' ? 'मुख्य सिफारिश' : 'Key Recommendation'}</span>
                 </div>
-                <div>{cleanText}</div>
+                <div className="text-wrap: balance">{cleanText}</div>
               </div>
             );
           }
 
           // Section Subheadings: Why? or What to do:
           if (trimmed.startsWith('**Why?') || trimmed.startsWith('**कारण:') || trimmed.startsWith('**What to do:') || trimmed.startsWith('**क्या करें:')) {
-            const isWhy = trimmed.includes('Why') || trimmed.includes('कारण');
             return (
-              <div key={idx} className="font-bold text-stone-900 text-xs sm:text-sm pt-2 flex items-center gap-1.5 border-t border-stone-200/60 mt-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                <span>{trimmed.replace(/\*\*/g, '')}</span>
+              <div key={idx} className="font-bold text-stone-900 text-xs sm:text-sm pt-2 flex items-center gap-2 border-t border-stone-200/60 mt-2">
+                <div className="w-1.5 h-1.5 rounded-sm bg-emerald-600"></div>
+                <span className="uppercase tracking-tight text-[10px] sm:text-[11px] text-stone-500">{trimmed.replace(/\*\*/g, '')}</span>
               </div>
             );
           }
@@ -123,14 +123,14 @@ export const AIChatMessageItem: React.FC<Props> = ({
             return (
               <div
                 key={idx}
-                className="bg-amber-500/10 border border-amber-400/40 rounded-xl p-3 text-amber-950 text-xs mt-3 flex items-start gap-2.5 shadow-2xs"
+                className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3 sm:p-4 text-stone-900 dark:text-stone-100 text-xs mt-3 flex items-start gap-3 shadow-xs"
               >
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-bold text-amber-900 text-[11px] uppercase tracking-wider mb-0.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-bold text-amber-900 dark:text-amber-400 text-[10px] uppercase tracking-tight">
                     {language === 'hi' ? 'महत्वपूर्ण चेतावनी' : 'Important Farming Caution'}
                   </div>
-                  <div className="text-stone-800">{cleanWarning}</div>
+                  <div className="text-stone-800 dark:text-stone-300 leading-relaxed">{cleanWarning}</div>
                 </div>
               </div>
             );
@@ -154,8 +154,8 @@ export const AIChatMessageItem: React.FC<Props> = ({
               const num = match[1];
               const stepText = match[2];
               return (
-                <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-stone-800 pl-1 bg-stone-50/80 p-2 rounded-lg border border-stone-200/50">
-                  <span className="w-5 h-5 rounded-full bg-green-700 text-white font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-stone-800 pl-1 bg-stone-50/80 p-1.5 sm:p-2 rounded-xl border border-stone-200/50">
+                  <span className="w-5 h-5 rounded-lg bg-emerald-800 text-white font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                     {num}
                   </span>
                   <span className="flex-1" dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(stepText) }} />
@@ -191,16 +191,15 @@ export const AIChatMessageItem: React.FC<Props> = ({
     <div className={`flex gap-3.5 ${isAssistant ? 'justify-start' : 'justify-end'} group`}>
       {/* Assistant Avatar */}
       {isAssistant && (
-        <div className="w-9 h-9 rounded-2xl bg-green-700 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm border border-emerald-700/30 relative">
-          <Bot className="w-5 h-5 text-emerald-200" />
-          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white"></span>
+        <div className="w-9 h-9 rounded-xl bg-emerald-800 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm border border-emerald-700/30">
+          <Bot className="w-4 h-4 text-emerald-200" />
         </div>
       )}
 
       <div className={`max-w-[88%] sm:max-w-[80%] space-y-2.5`}>
         {/* User / Bot Message Bubble */}
         <div
-          className={`rounded-2xl p-4 sm:p-4 text-xs sm:text-sm shadow-xs transition-all ${
+          className={`rounded-2xl p-3 sm:p-4 text-xs sm:text-sm shadow-xs transition-all ${
             isAssistant
               ? 'bg-white/95 backdrop-blur-md border border-stone-200/90 text-stone-900 rounded-tl-xs'
               : 'bg-green-700 text-white rounded-tr-xs border border-white/10'
@@ -226,14 +225,14 @@ export const AIChatMessageItem: React.FC<Props> = ({
 
           {/* Interactive Action Card (e.g. Irrigation / Disease / Mandi / Schemes) */}
           {message.farmingActionCard && (
-            <div className="mt-4 bg-stone-50/95 border border-stone-200 rounded-xl p-4 space-y-2.5 shadow-2xs">
+            <div className="mt-3 sm:mt-4 bg-stone-50/95 border border-stone-200 rounded-xl p-3 sm:p-4 space-y-2.5 shadow-2xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-emerald-100 text-green-700 flex items-center justify-center font-bold text-xs">
-                    {message.farmingActionCard.actionType === 'IRRIGATION' && <Droplets className="w-4 h-4 text-blue-600" />}
-                    {message.farmingActionCard.actionType === 'DISEASE_SPRAY' && <Bug className="w-4 h-4 text-rose-600" />}
-                    {message.farmingActionCard.actionType === 'MARKET_SELL' && <TrendingUp className="w-4 h-4 text-emerald-600" />}
-                    {message.farmingActionCard.actionType === 'GENERAL' && <FileCheck className="w-4 h-4 text-purple-600" />}
+                    {message.farmingActionCard.actionType === 'IRRIGATION' && <Droplets className="w-3.5 h-3.5 text-blue-600" />}
+                    {message.farmingActionCard.actionType === 'DISEASE_SPRAY' && <Bug className="w-3.5 h-3.5 text-rose-600" />}
+                    {message.farmingActionCard.actionType === 'MARKET_SELL' && <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />}
+                    {message.farmingActionCard.actionType === 'GENERAL' && <FileCheck className="w-3.5 h-3.5 text-purple-600" />}
                   </div>
                   <div>
                     <h4 className="font-bold text-stone-900 text-xs sm:text-sm">
@@ -246,13 +245,13 @@ export const AIChatMessageItem: React.FC<Props> = ({
                 </div>
 
                 {message.farmingActionCard.badge && (
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full border border-emerald-200">
+                  <span className="text-[10px] text-emerald-800 dark:text-emerald-400 font-bold uppercase tracking-tight">
                     {message.farmingActionCard.badge}
                   </span>
                 )}
               </div>
 
-              <p className="text-xs text-stone-700 bg-white p-2.5 rounded-lg border border-stone-200/60">
+              <p className="text-xs text-stone-700 bg-white p-2 sm:p-2.5 rounded-lg border border-stone-200/60">
                 {message.farmingActionCard.reason}
               </p>
 
@@ -270,13 +269,13 @@ export const AIChatMessageItem: React.FC<Props> = ({
 
           {/* Autonomous App State Modification Notice */}
           {message.executedAction && (
-            <div className="mt-3 bg-emerald-50 border border-emerald-300/80 rounded-xl p-3.5 space-y-2 text-stone-800 shadow-2xs">
+            <div className="mt-3 bg-emerald-50 border border-emerald-300/80 rounded-xl p-3 sm:p-3.5 space-y-2 text-stone-800 shadow-2xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-emerald-950 font-bold text-xs">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>{message.executedAction.actionTitle}</span>
                 </div>
-                <span className="text-[10px] bg-emerald-200/60 text-emerald-900 px-2 py-0.5 rounded-full font-mono font-medium">
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-tight">
                   State Updated
                 </span>
               </div>
@@ -295,20 +294,20 @@ export const AIChatMessageItem: React.FC<Props> = ({
 
           {/* Disease Vision Diagnostic Card */}
           {message.diseaseAnalysis && (
-            <div className="mt-3 bg-rose-50/70 border border-rose-200 rounded-xl p-3.5 space-y-2 text-stone-900 shadow-2xs">
+            <div className="mt-3 bg-rose-50/70 border border-rose-200 rounded-xl p-3 space-y-2 text-stone-900 shadow-2xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-bold text-rose-950 text-xs">
-                  <Bug className="w-4 h-4 text-rose-600" />
+                  <Bug className="w-3.5 h-3.5 text-rose-600" />
                   <span>{message.diseaseAnalysis.possibleDisease}</span>
                 </div>
-                <span className="text-[10px] bg-rose-200/70 text-rose-900 font-bold px-2 py-0.5 rounded-full">
+                <span className="text-[10px] text-rose-700 dark:text-rose-400 font-bold uppercase tracking-tight">
                   Confidence: {message.diseaseAnalysis.confidence}%
                 </span>
               </div>
               <p className="text-xs text-stone-700">
                 <strong className="text-stone-900">Symptoms:</strong> {message.diseaseAnalysis.symptoms}
               </p>
-              <div className="bg-white p-2.5 rounded-lg border border-rose-200/60 text-xs text-stone-800">
+              <div className="bg-white p-2 rounded-lg border border-rose-200/60 text-xs text-stone-800">
                 <strong className="text-emerald-800">Treatment:</strong> {message.diseaseAnalysis.recommendedAction}
               </div>
               <p className="text-[10px] text-stone-500 italic">
@@ -324,7 +323,7 @@ export const AIChatMessageItem: React.FC<Props> = ({
                 onClick={() => setShowSources(!showSources)}
                 className="flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-medium cursor-pointer"
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-3 h-3" />
                 <span>{showSources ? 'Hide Verified Data Sources' : `Verified by ${message.sources.length} Agronomic Sources`}</span>
               </button>
 
@@ -408,8 +407,8 @@ export const AIChatMessageItem: React.FC<Props> = ({
 
       {/* User Avatar */}
       {!isAssistant && (
-        <div className="w-9 h-9 rounded-2xl bg-stone-200 text-stone-700 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs border border-stone-300">
-          <User className="w-5 h-5 text-stone-700" />
+        <div className="w-9 h-9 rounded-xl bg-stone-200 text-stone-700 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs border border-stone-300">
+          <User className="w-4 h-4 text-stone-700" />
         </div>
       )}
     </div>

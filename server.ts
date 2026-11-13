@@ -15,7 +15,7 @@ import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import { db } from './src/server/db.js';
 import { algorandService } from './src/server/algorand.js';
-import { askKishanAI, generatePaidCropAnalysis, analyzeCropDiseaseImage } from './src/server/gemini.js';
+import { askKishanAI, generatePaidCropAnalysis, analyzeCropDiseaseImage, generatePersonalBriefing, aggregateVirtualCluster, askKishanMitra } from './src/server/gemini.js';
 import { analyzeCropDisease, validateCropImage } from './src/server/diseaseScanner.js';
 import { getWeatherData } from './src/server/weather.js';
 import {
@@ -61,6 +61,7 @@ import { diseaseScannerService } from './src/server/services/DiseaseScannerServi
 import { auditService } from './src/server/services/AuditService.js';
 import { schemeService } from './src/server/services/SchemeService.js';
 import { loyaltyService } from './src/server/services/LoyaltyService.js';
+import ttsRouter from './src/server/routes/ttsRoutes.js';
 import { sendSuccess, sendError, AppError } from './src/server/core/errors.js';
 import { config } from './src/server/core/config.js';
 import {
@@ -82,8 +83,17 @@ const serverSupabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_
 const serverSupabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_eEBFN75JQVyYkZ-8kXT5nw_PZCbgS31';
 const serverSupabase = createClient(serverSupabaseUrl, serverSupabaseKey);
 
+// Process safety handlers to prevent dev server crash
+process.on('uncaughtException', (err) => {
+  console.error('[Process] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[Process] Unhandled Rejection:', reason);
+});
+
 const app = express();
-const PORT = Number(process.env.PORT) || 3001;
+// Environment constraint: Dev server must always run on port 3000 (ignore Cloud Run default 8080)
+const PORT = 3000;
 
 // Security & Observability Middlewares
 app.use(securityHeaders);
@@ -98,6 +108,10 @@ const aiLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 25, pref
 const generalLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 150, prefix: 'api' });
 
 app.use('/api', generalLimiter);
+app.use('/api/ai', aiLimiter);
+app.use('/api', ttsRouter);
+app.use('/api/tts', ttsRouter);
+app.use('/api/speech', ttsRouter);
 
 // 0. HEALTH & READINESS PROBES
 app.get('/health', (req, res) => {
@@ -193,8 +207,7 @@ function recordLoginEvent(info: {
     inMemoryRecentLogins.pop();
   }
   try {
-    (serverSupabase.from('user_logins') as any)
-      .insert([fullRecord])
+    Promise.resolve((serverSupabase.from('user_logins') as any).insert([fullRecord]))
       .then(() => {})
       .catch((err: any) => console.warn('[Supabase Login Insert Note]:', err?.message));
   } catch {}
@@ -2124,6 +2137,7 @@ app.post('/api/harvest/add', (req, res) => {
     status: 'AVAILABLE' as const,
     moisturePercentage: 8.2,
     notes: notes || 'Harvest pooled with cluster lot.',
+    createdAt: new Date().toISOString(),
   };
 
   db.harvestLots.set(newLot.id, newLot);
@@ -2143,9 +2157,28 @@ app.post('/api/admin/clear-all-data', (req, res) => {
 
 // 7. BUYER MARKETPLACE
 app.get('/api/marketplace', (req, res) => {
+  const buyerId = req.headers['x-user-id'] as string;
+  const buyer = buyerId ? db.users.get(buyerId) : null;
+  const loyalty = buyerId ? db.loyaltyAccounts.get(buyerId) : null;
+  const tier = loyalty?.tier || 'SILVER';
+
+  const allLots = Array.from(db.harvestLots.values());
+  
+  // Logic for premium/priority suggestions based on Tier
+  const suggestions = allLots.filter(lot => {
+    if (tier === 'DIAMOND' || tier === 'PLATINUM') {
+      return lot.qualityGrade === 'A+ Export' || lot.qualityGrade === 'Organic Certified' || (Date.now() - new Date(lot.createdAt).getTime() < 86400000);
+    }
+    if (tier === 'GOLD') {
+      return lot.qualityGrade === 'Grade A Premium' || lot.qualityGrade === 'A+ Export';
+    }
+    return false; // Silver buyers see general catalog but few specific 'Importance' suggestions
+  }).slice(0, 5);
+
   res.json({
-    lots: Array.from(db.harvestLots.values()),
+    lots: allLots,
     purchaseRequests: Array.from(db.purchaseRequests.values()),
+    suggestions: suggestions
   });
 });
 
@@ -2174,6 +2207,212 @@ app.post('/api/marketplace/request', (req, res) => {
 
   db.purchaseRequests.set(newRequest.id, newRequest);
   res.json({ success: true, request: newRequest });
+});
+
+// 7.05 KISHAN BHAI SUPPLY CHAIN AGGREGATOR - VIRTUAL CLUSTER BUILDER
+app.post('/api/supply-chain/aggregate-cluster', async (req, res) => {
+  try {
+    const buyerRequest = req.body.buyerRequest || req.body.request || "Needs 100 quintals of Grade A Wheat in Punjab";
+    const maxRadiusKm = Number(req.body.maxRadiusKm) || 50;
+    const availableSupply = Array.isArray(req.body.availableLocalSupply) && req.body.availableLocalSupply.length > 0
+      ? req.body.availableLocalSupply
+      : Array.from(db.harvestLots.values());
+
+    const result = await aggregateVirtualCluster(buyerRequest, availableSupply, maxRadiusKm);
+
+    // Look up full details for selected farmer lots
+    const matchedLots = availableSupply.filter((lot: any) => 
+      result.selected_farmer_ids.includes(lot.farmerId) || result.selected_farmer_ids.includes(lot.id)
+    );
+
+    res.json({
+      ...result,
+      matched_lots: matchedLots.length > 0 ? matchedLots : result.matched_lots || [],
+      buyer_request: buyerRequest,
+      required_transportation_radius_km: maxRadiusKm,
+    });
+  } catch (err: any) {
+    console.error('[SupplyChainAggregator] Error:', err);
+    res.status(500).json({
+      cluster_formed: false,
+      selected_farmer_ids: [],
+      total_aggregated_volume: 0,
+      shortfall_volume: 100,
+      smart_contract_ready: false,
+      error: err.message,
+    });
+  }
+});
+
+// 7.06 KISHAN BHAI SMART CONTRACT ORACLE - ESCROW PAYOUT CALCULATOR
+app.post('/api/smart-contract/oracle-payouts', (req, res) => {
+  try {
+    const { totalVolumeQuintals = 100, pricePerQuintalInr = 3100, farmerContributions, executionTrigger = 'on_delivery_confirmation' } = req.body;
+
+    const escrow_total_inr = Number(totalVolumeQuintals) * Number(pricePerQuintalInr);
+    const platform_fee_inr = Math.round(escrow_total_inr * 0.015 * 100) / 100; // 1.5% platform fee
+    const net_payout_inr = escrow_total_inr - platform_fee_inr;
+
+    const farmers = Array.isArray(farmerContributions) && farmerContributions.length > 0
+      ? farmerContributions
+      : [
+          { wallet_address: 'ALGO_HARPREET_MOGA_7894321', volume_contributed: 40 },
+          { wallet_address: 'ALGO_GURINDER_KHANNA_5641238', volume_contributed: 35 },
+          { wallet_address: 'ALGO_MANJIT_LDH_9876543', volume_contributed: 25 },
+        ];
+
+    const totalContrib = farmers.reduce((acc: number, f: any) => acc + (Number(f.volume_contributed) || 0), 0) || 100;
+
+    const farmer_payouts = farmers.map((f: any) => {
+      const share = (Number(f.volume_contributed) || 0) / totalContrib;
+      return {
+        wallet_address: f.wallet_address || 'ALGO_FARMER_ESCROW_RECIPIENT',
+        payout_amount_inr: Math.round(net_payout_inr * share * 100) / 100,
+        volume_contributed: Number(f.volume_contributed) || 0,
+      };
+    });
+
+    res.json({
+      escrow_total_inr,
+      platform_fee_inr,
+      farmer_payouts,
+      execution_trigger: executionTrigger,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7.07 KISHAN BHAI MARKET ARBITRAGE ANALYST
+app.post('/api/market/arbitrage-analysis', (req, res) => {
+  try {
+    const analysis = marketService.calculateArbitrage(req.body);
+    res.json(analysis);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7.08 KISHAN BHAI BACKEND DATA SANITIZER
+app.post('/api/sanitize/agricultural-input', (req, res) => {
+  try {
+    const inputStr = (req.body.rawInput || req.body.input || "I have 2 tractors full of desi chana harvested yesterday").toLowerCase();
+    
+    // Crop extraction
+    let normalizedCrop = 'Chickpea (Desi Chana)';
+    if (inputStr.includes('wheat') || inputStr.includes('gehun')) normalizedCrop = 'Wheat';
+    else if (inputStr.includes('cotton') || inputStr.includes('kapas')) normalizedCrop = 'Cotton';
+    else if (inputStr.includes('mustard') || inputStr.includes('sarson')) normalizedCrop = 'Mustard';
+    else if (inputStr.includes('soybean')) normalizedCrop = 'Soybean';
+    else if (inputStr.includes('chana') || inputStr.includes('chickpea')) normalizedCrop = 'Chickpea (Desi Chana)';
+    else if (inputStr.includes('tomato')) normalizedCrop = 'Tomato';
+
+    // Volume extraction (1 tractor trolley = 30 quintals)
+    let volumeQuintals = 30;
+    const tractorMatch = inputStr.match(/(\d+)\s*(tractor|tractors|trolley|trollies|trolleys)/i);
+    if (tractorMatch) {
+      volumeQuintals = parseInt(tractorMatch[1], 10) * 30;
+    } else {
+      const qtlMatch = inputStr.match(/(\d+)\s*(quintal|quintals|qtl|qtls)/i);
+      if (qtlMatch) {
+        volumeQuintals = parseInt(qtlMatch[1], 10);
+      } else {
+        const kgMatch = inputStr.match(/(\d+)\s*(kg|kilos|kilogram|kilograms)/i);
+        if (kgMatch) {
+          volumeQuintals = Math.round((parseInt(kgMatch[1], 10) / 100) * 10) / 10;
+        }
+      }
+    }
+
+    // Date extraction
+    let harvestDate = new Date();
+    if (inputStr.includes('yesterday') || inputStr.includes('kal')) {
+      harvestDate.setDate(harvestDate.getDate() - 1);
+    } else if (inputStr.includes('today') || inputStr.includes('aaj')) {
+      // today
+    }
+    const harvest_date_iso = harvestDate.toISOString().split('T')[0];
+
+    // Anomaly detection
+    const isAnomalous = volumeQuintals > 10000;
+    const anomalyReason = isAnomalous
+      ? 'Volume exceeds physical production capacity of 10,000 quintals for single smallholder farm lot.'
+      : null;
+
+    res.json({
+      is_valid: true,
+      normalized_crop_name: normalizedCrop,
+      normalized_volume_quintals: volumeQuintals,
+      harvest_date_iso,
+      anomaly_flag: isAnomalous,
+      anomaly_reason: anomalyReason,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7.09 KISHAN BHAI SECURITY & FRAUD ANALYST
+app.post('/api/security/fraud-analysis', (req, res) => {
+  try {
+    const { buyerHistory, pendingTransaction, marketBaselinePrice } = req.body;
+
+    const accountAgeDays = Number(buyerHistory?.accountAgeDays ?? 120);
+    const disputeRate = Number(buyerHistory?.disputeRatePct ?? 0);
+    const totalVolume = Number(pendingTransaction?.volumeQuintals ?? 100);
+    const offeredPrice = Number(pendingTransaction?.agreedPricePerKg ?? 31);
+    const baselinePrice = Number(marketBaselinePrice ?? 30);
+
+    const riskFactors: string[] = [];
+    let riskScore = 15; // Baseline low risk
+
+    // 1. Off-market irrational pricing check
+    if (baselinePrice > 0 && offeredPrice > baselinePrice * 1.35) {
+      riskScore += 35;
+      riskFactors.push('Irrational above-market premium offer (>35% above mandi average rate)');
+    }
+
+    // 2. High historical dispute rate check
+    if (disputeRate > 15) {
+      riskScore += 40;
+      riskFactors.push(`High historical trade dispute rate (${disputeRate}%)`);
+    }
+
+    // 3. New unseasoned account attempting massive volume
+    if (accountAgeDays < 7 && totalVolume > 80) {
+      riskScore += 35;
+      riskFactors.push('Unseasoned account (<7 days) attempting large-volume procurement');
+    }
+
+    riskScore = Math.min(100, riskScore);
+
+    let recommendation = 'none';
+    if (riskScore > 75) {
+      recommendation = totalVolume > 50 ? 'limit_volume_to_50_quintals' : 'require_escrow_prefund';
+    } else if (riskScore > 40) {
+      recommendation = 'require_escrow_prefund';
+    }
+
+    res.json({
+      risk_score: riskScore,
+      risk_factors: riskFactors,
+      auto_approve_smart_contract: riskScore <= 75,
+      buyer_restriction_recommendation: recommendation,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7.10 KISHAN MITRA - VOICE ASSISTANT & DIGITAL ONBOARDING AGENT
+app.post('/api/ai/kishan-mitra', aiLimiter, async (req, res) => {
+  try {
+    const { query = 'How do I sell my wheat on this app?', language = 'hi', role = 'FARMER' } = req.body;
+    const response = await askKishanMitra(query, language, role);
+    res.json(response);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 7.1 MARKETPLACE STATUS UPDATE & LOYALTY MILESTONE TRIGGER
@@ -3095,11 +3334,63 @@ app.post('/api/sensors/simulate', (req, res) => {
 });
 
 // 9. AI FARMING ASSISTANT (KISHAN BHAI AI FLAGSHIP ENGINE)
+app.post('/api/ai/briefing', async (req, res) => {
+  try {
+    const { userId, language, farmContext } = req.body;
+    const user = userId ? db.users.get(userId) : Array.from(db.users.values())[0];
+    
+    // Assemble context for the briefing
+    const context = {
+      farmerName: user?.fullName || farmContext?.farmerName,
+      village: user?.village || farmContext?.village,
+      state: user?.state || farmContext?.state,
+      crops: user?.crops || farmContext?.crops,
+      farmSizeAcres: user?.farmSizeAcres || farmContext?.farmSizeAcres,
+      ...farmContext
+    };
+
+    const briefing = await generatePersonalBriefing(context, language || user?.preferredLanguage || 'en');
+    res.json({ success: true, briefing });
+  } catch (err: any) {
+    console.error('[API Briefing] Error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/ai/chat', async (req, res) => {
-  const { prompt, message, userRole, cropContext, imageBase64, userId, modelName, language, farmContext, conversationId } = req.body;
+  const {
+    prompt,
+    message,
+    userRole,
+    cropContext,
+    imageBase64,
+    userId,
+    modelName,
+    language,
+    farmContext,
+    conversationId,
+    history,
+  } = req.body;
   const effectivePrompt = prompt || message;
   if (!effectivePrompt && !imageBase64) {
     return res.status(400).json({ error: 'Prompt or image is required.' });
+  }
+
+  const sessId = conversationId || `conv_${Date.now()}`;
+  let session = db.conversations.get(sessId);
+  const now = new Date().toISOString();
+
+  // Retrieve farmer long-term memory
+  const farmerMemoryRecord = userId ? db.farmerMemory.get(userId) : undefined;
+  const memoryData = farmerMemoryRecord?.preferences || {};
+
+  // Build or use multi-turn conversation history
+  let conversationHistory = history;
+  if (!conversationHistory && session && session.messages && session.messages.length > 0) {
+    conversationHistory = session.messages.slice(-8).map((m) => ({
+      role: m.role as any,
+      content: m.content,
+    }));
   }
 
   const result = await askKishanAI(
@@ -3111,14 +3402,12 @@ app.post('/api/ai/chat', async (req, res) => {
     userId,
     modelName || 'gemini-2.5-flash',
     language || 'en',
-    farmContext
+    farmContext,
+    conversationHistory,
+    memoryData
   );
 
   // If conversationId is provided or if creating new, update session in DB
-  const sessId = conversationId || `conv_${Date.now()}`;
-  let session = db.conversations.get(sessId);
-  const now = new Date().toISOString();
-
   if (!session) {
     session = {
       id: sessId,
@@ -3156,11 +3445,50 @@ app.post('/api/ai/chat', async (req, res) => {
   session.updatedAt = now;
   db.conversations.set(sessId, session);
 
+  // Auto-record useful recurring agricultural details into farmer memory
+  if (userId) {
+    const existing = db.farmerMemory.get(userId) || { preferences: {}, notes: [], updatedAt: now };
+    if (farmContext?.crops) existing.preferences.crops = farmContext.crops;
+    if (farmContext?.village) existing.preferences.village = farmContext.village;
+    if (farmContext?.soilType) existing.preferences.soilType = farmContext.soilType;
+    if (language) existing.preferences.language = language;
+    existing.updatedAt = now;
+    db.farmerMemory.set(userId, existing);
+  }
+
   res.json({
     ...result,
     conversationId: sessId,
     session,
   });
+});
+
+// Long-Term Farm Memory Endpoints
+app.get('/api/ai/memory/:userId', (req, res) => {
+  const { userId } = req.params;
+  const memory = db.farmerMemory.get(userId) || { preferences: {}, notes: [], updatedAt: new Date().toISOString() };
+  res.json({ success: true, memory });
+});
+
+app.post('/api/ai/memory/:userId', (req, res) => {
+  const { userId } = req.params;
+  const { preferences, note } = req.body;
+  const existing = db.farmerMemory.get(userId) || { preferences: {}, notes: [], updatedAt: new Date().toISOString() };
+  if (preferences) {
+    existing.preferences = { ...existing.preferences, ...preferences };
+  }
+  if (note && typeof note === 'string') {
+    existing.notes.push(note);
+  }
+  existing.updatedAt = new Date().toISOString();
+  db.farmerMemory.set(userId, existing);
+  res.json({ success: true, memory: existing });
+});
+
+app.delete('/api/ai/memory/:userId', (req, res) => {
+  const { userId } = req.params;
+  db.farmerMemory.delete(userId);
+  res.json({ success: true, message: 'Farm memory cleared.' });
 });
 
 // 10. AI CROP DISEASE SCANNER (COMPUTER VISION PIPELINE)
@@ -3835,10 +4163,14 @@ function setupClusterChatWebSocket(server: http.Server) {
 
 // VITE MIDDLEWARE SETUP FOR DEV & PRODUCTION
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    (typeof __filename !== 'undefined' && __filename.endsWith('server.cjs'));
+
+  if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -3861,6 +4193,10 @@ async function startServer() {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*all', (req, res) => {
+      const url = req.originalUrl;
+      if (url.startsWith('/api') || url.startsWith('/health') || url.startsWith('/ready') || url.startsWith('/ws')) {
+        return res.status(404).json({ error: 'API route not found', path: url });
+      }
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
@@ -3882,6 +4218,8 @@ async function startServer() {
         } else {
           console.log(`🔥 [Firebase] Backend ready with local sync.`);
         }
+      }).catch((err) => {
+        console.warn('Firebase test connection note:', err?.message);
       });
     } catch (e: any) {
       console.warn('Firebase init note:', e.message);

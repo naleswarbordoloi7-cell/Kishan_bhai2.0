@@ -211,7 +211,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   // C. HTML NAVIGATION REQUESTS (SPA fallback for seamless offline navigation)
-  if (request.mode === 'navigate') {
+  if (
+    request.mode === 'navigate' &&
+    !url.pathname.startsWith('/api') &&
+    !url.pathname.startsWith('/health') &&
+    !url.pathname.startsWith('/ready') &&
+    !url.pathname.startsWith('/ws')
+  ) {
     event.respondWith(
       fetch(request)
         .then((networkResponse) => {

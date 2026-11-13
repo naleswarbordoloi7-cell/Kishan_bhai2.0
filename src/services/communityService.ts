@@ -81,6 +81,7 @@ const SEED_GROUPS: FarmerCommunityGroup[] = [
     moderatorIds: ['usr_champion_1'],
     memberIds: ['usr_champion_1', 'usr_farmer_1'],
     memberCount: 88,
+    pinnedPostIds: [],
     resources: [
       {
         id: 'res_org_1',
@@ -106,6 +107,7 @@ const SEED_GROUPS: FarmerCommunityGroup[] = [
     moderatorIds: ['usr_farmer_2'],
     memberIds: ['usr_farmer_2', 'usr_farmer_3'],
     memberCount: 215,
+    pinnedPostIds: [],
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
   },
   {
@@ -128,6 +130,7 @@ const SEED_GROUPS: FarmerCommunityGroup[] = [
     memberIds: ['usr_farmer_3'],
     pendingRequestIds: ['usr_farmer_1'],
     memberCount: 46,
+    pinnedPostIds: [],
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
   },
   {
@@ -145,6 +148,7 @@ const SEED_GROUPS: FarmerCommunityGroup[] = [
     moderatorIds: ['usr_champion_1'],
     memberIds: ['usr_champion_1', 'usr_farmer_1', 'usr_farmer_2'],
     memberCount: 167,
+    pinnedPostIds: [],
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
   },
 ];
@@ -156,6 +160,7 @@ const SEED_POSTS: CommunityPost[] = [
     authorName: 'Ramesh Patel',
     authorRole: 'Cotton Smallholder',
     authorVillage: 'Anandpur, Gujarat',
+    authorState: 'Gujarat',
     authorAvatar: 'RP',
     groupId: 'grp_cotton_vidarbha',
     groupName: 'Cotton Farming Group',
@@ -178,7 +183,9 @@ const SEED_POSTS: CommunityPost[] = [
         postId: 'post_demo_ramesh',
         authorId: 'usr_farmer_2',
         authorName: 'Balwinder Singh',
+        authorRole: 'Wheat Grower',
         authorVillage: 'Mandi Gobindgarh',
+        authorAvatar: 'BS',
         content: 'Ramesh ji, on black soil we shifted drip operation to 3:30 AM before sunrise for 1.5 hours instead of afternoon. Leaf drop reduced by nearly 25% and soil holds moisture until sunset.',
         likesCount: 9,
         likedUserIds: ['usr_farmer_1'],
@@ -191,7 +198,9 @@ const SEED_POSTS: CommunityPost[] = [
             parentId: 'comm_1',
             authorId: 'usr_farmer_1',
             authorName: 'Ramesh Patel',
+            authorRole: 'Cotton Smallholder',
             authorVillage: 'Anandpur, Gujarat',
+            authorAvatar: 'RP',
             content: 'Thank you Balwinder bhai! Are you using inline drip with 2 litre/hour drippers or higher discharge?',
             likesCount: 3,
             likedUserIds: ['usr_farmer_2'],
@@ -204,7 +213,9 @@ const SEED_POSTS: CommunityPost[] = [
         postId: 'post_demo_ramesh',
         authorId: 'usr_champion_1',
         authorName: 'Anita Devi',
+        authorRole: 'Village Champion',
         authorVillage: 'Anandpur',
+        authorAvatar: 'AD',
         content: 'Also remember to apply straw or sugarcane bagasse mulch along the ridge. It cuts evaporative loss dramatically during April-May peak heat.',
         likesCount: 5,
         likedUserIds: ['usr_farmer_1'],
@@ -229,6 +240,7 @@ const SEED_POSTS: CommunityPost[] = [
       id: 'poll_1',
       question: 'Highest ROI farm technology this season:',
       totalVotes: 84,
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(),
       options: [
         { id: 'opt_1', text: 'Solar Drip with Automated Line Timer', votes: 41, votedUserIds: ['usr_farmer_1'] },
         { id: 'opt_2', text: 'Zero-Till Super Seeder / Happy Seeder', votes: 26, votedUserIds: [] },
@@ -240,6 +252,7 @@ const SEED_POSTS: CommunityPost[] = [
     likedUserIds: ['usr_farmer_1', 'usr_farmer_3'],
     commentsCount: 2,
     savedUserIds: [],
+    authorState: 'Gujarat',
     createdAt: new Date(Date.now() - 1000 * 60 * 360).toISOString(), // 6 hours ago
     comments: [
       {
@@ -247,6 +260,9 @@ const SEED_POSTS: CommunityPost[] = [
         postId: 'post_poll_tech',
         authorId: 'usr_farmer_3',
         authorName: 'Pravin Jadhav',
+        authorRole: 'Vegetable Farmer',
+        authorVillage: 'Nashik, Maharashtra',
+        authorAvatar: 'PJ',
         content: 'Solar pump timer saved us Rs 12,000 in diesel generator backup during erratic village grid cuts. Payback in just one harvest.',
         likesCount: 4,
         likedUserIds: ['usr_champion_1'],
@@ -279,7 +295,9 @@ const SEED_POSTS: CommunityPost[] = [
         postId: 'post_chili_yellow',
         authorId: 'usr_expert_1',
         authorName: 'Dr. Vinod Sharma (Agronomist)',
+        authorRole: 'KVK expert',
         authorVillage: 'Krishi Vigyan Kendra',
+        authorAvatar: 'VS',
         content: 'Inspect the underside of young leaves with a magnifying glass for yellow mite or thrip activity. Also, post heavy rain in black soil, roots suffer temporary hypoxia (oxygen starvation). Drain standing water immediately and drench with Trichoderma harzianum or spray 19:19:19 at 5g/L once soil aerates.',
         likesCount: 16,
         likedUserIds: ['usr_farmer_4', 'usr_farmer_1'],
@@ -287,6 +305,7 @@ const SEED_POSTS: CommunityPost[] = [
         createdAt: new Date(Date.now() - 1000 * 60 * 60 * 14).toISOString(),
       },
     ],
+    authorState: 'Maharashtra',
   },
   {
     id: 'post_wheat_tip',
@@ -311,12 +330,16 @@ const SEED_POSTS: CommunityPost[] = [
         postId: 'post_wheat_tip',
         authorId: 'usr_farmer_1',
         authorName: 'Ramesh Patel',
+        authorRole: 'Cotton Smallholder',
+        authorVillage: 'Anandpur, Gujarat',
+        authorAvatar: 'RP',
         content: 'Very timely reminder Balwinder ji. We check wind forecast on Kishan Bhai app before starting tubewell now.',
         likesCount: 7,
         likedUserIds: ['usr_farmer_2'],
         createdAt: new Date(Date.now() - 1000 * 60 * 60 * 28).toISOString(),
       },
     ],
+    authorState: 'Punjab',
   },
   {
     id: 'post_announcement_1',
@@ -333,7 +356,9 @@ const SEED_POSTS: CommunityPost[] = [
     commentsCount: 0,
     savedUserIds: ['usr_farmer_1', 'usr_champion_1'],
     isPinned: true,
+    authorState: 'National',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+    comments: [],
   },
 ];
 
@@ -409,6 +434,7 @@ class CommunityService {
       moderatorIds: [groupData.ownerId || 'usr_farmer_1'],
       memberIds: [groupData.ownerId || 'usr_farmer_1'],
       memberCount: 1,
+      pinnedPostIds: [],
       createdAt: new Date().toISOString(),
     };
 
@@ -580,6 +606,7 @@ class CommunityService {
       commentsCount: 0,
       comments: [],
       savedUserIds: [],
+      authorState: postData.authorState || 'Gujarat',
       createdAt: new Date().toISOString(),
     };
 
@@ -673,6 +700,7 @@ class CommunityService {
       postId,
       authorId: commentData.authorId || 'usr_farmer_1',
       authorName: commentData.authorName || 'Ramesh Patel',
+      authorRole: commentData.authorRole || 'Farmer',
       authorVillage: commentData.authorVillage || 'Anandpur, Gujarat',
       authorAvatar: commentData.authorAvatar || 'RP',
       content: commentData.content || '',
@@ -704,6 +732,7 @@ class CommunityService {
       parentId: parentCommentId,
       authorId: replyData.authorId || 'usr_farmer_1',
       authorName: replyData.authorName || 'Ramesh Patel',
+      authorRole: replyData.authorRole || 'Farmer',
       authorVillage: replyData.authorVillage || 'Anandpur, Gujarat',
       authorAvatar: replyData.authorAvatar || 'RP',
       content: replyData.content || '',

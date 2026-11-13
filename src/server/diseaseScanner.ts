@@ -15,7 +15,7 @@ import {
   DoctorReportCard,
 } from '../../shared/types.js';
 import { db } from './db.js';
-import { generateWithModelFallback } from './gemini.js';
+import { generateWithModelFallback, hasValidGeminiApiKey } from './gemini.js';
 
 let aiInstance: GoogleGenAI | null = null;
 
@@ -1128,8 +1128,8 @@ export async function analyzeCropDisease(
     'North Field - Patch A'
   );
 
-  // If Demo Mode or missing Gemini Key, immediately return calibrated knowledge base model
-  if (isDemo || !process.env.GEMINI_API_KEY) {
+  // If Demo Mode or missing/invalid Gemini Key, immediately return calibrated knowledge base model
+  if (isDemo || !hasValidGeminiApiKey()) {
     const result: DiseaseScanResult = {
       id: scanId,
       cropName: baseTemplate.cropName,
@@ -1198,80 +1198,75 @@ Provide a structured JSON output matching this schema:
   "pathogen": "Scientific name and full disease designation",
   "hindiName": "Disease name in Hindi Devanagari script",
   "confidenceScore": 91,
-  "confidenceExplanation": "The AI is reasonably confident based on the visible symptoms, but this is not a laboratory diagnosis.",
+  "confidenceExplanation": "Clinical reasoning for this diagnosis based on visual markers.",
   "severity": "LOW | MODERATE | HIGH | CRITICAL",
-  "symptoms": ["Orange-brown spots", "Discoloration", "Small lesions", "Affected leaf area ~18%"],
-  "causes": ["Fungal infection", "High humidity", "Excess moisture", "Poor airflow", "Weather conditions"],
+  "symptoms": ["Specific visual markers like concentric rings, pustules, chlorotic halos"],
+  "causes": ["Pathogen name, environmental triggers like high humidity or dew"],
   "recommendedAction": [
-    "Inspect nearby plants for similar symptoms.",
-    "Remove severely affected plant material where appropriate.",
-    "Improve field airflow/drainage if relevant.",
-    "Avoid unnecessary irrigation.",
-    "Consult a local agriculture expert before applying treatment."
+    "Immediate field interventions.",
+    "Removal of infected debris.",
+    "Airflow/drainage adjustments."
   ],
   "chemicalTreatments": [
     {
-      "name": "Propiconazole 25% EC (Tilt)",
-      "activeIngredient": "Propiconazole",
-      "dosage": "1 ml / Liter water (15 ml per 15L sprayer; 200 ml/acre)",
-      "sprayGuidelines": "Uniform foliar spray covering upper and lower leaf canopy",
-      "waitingPeriodDays": "30 days before harvest (PHI)",
-      "safetyPrecautions": "Wear mask and gloves; avoid spraying against wind direction",
-      "estimatedCost": "₹320 - ₹380 / acre"
+      "name": "Commercial brand or common name",
+      "activeIngredient": "Chemical formulation (e.g., Mancozeb 75% WP)",
+      "dosage": "Precise dosage per liter of water",
+      "sprayGuidelines": "Nozzle type and coverage instructions",
+      "waitingPeriodDays": "Pre-Harvest Interval (PHI)",
+      "safetyPrecautions": "PPE and environmental warnings",
+      "estimatedCost": "Approximate cost in INR per acre"
     }
   ],
   "organicTreatments": [
     {
-      "name": "Fermented Sour Buttermilk (Khatti Chaas) in Copper Vessel",
-      "bioAgentOrBotanical": "Lactic acid culture & copper ions",
-      "dosage": "50 ml / Liter water (5L fermented buttermilk in 100L water/acre)",
-      "preparationMethod": "Store 5L sour buttermilk in a copper vessel for 6-8 days until greenish; filter through fine cloth",
-      "soilOrFoliar": "Foliar Spray",
-      "ecoBenefit": "100% safe for honeybees and soil worms; zero chemical residue",
-      "estimatedCost": "₹40 - ₹60 / acre"
+      "name": "Organic formulation name",
+      "bioAgentOrBotanical": "Active biological agent (e.g., Trichoderma)",
+      "dosage": "Application rate",
+      "preparationMethod": "Step-by-step recipe for farm preparation",
+      "soilOrFoliar": "Mode of application",
+      "ecoBenefit": "Safety for pollinators and soil health",
+      "estimatedCost": "Cost or DIY note"
     }
   ],
   "applicationTiming": {
-    "bestTimeOfDay": "Early Morning (6:00 AM - 8:30 AM) or Late Afternoon (4:30 PM - 6:30 PM)",
-    "timingReason": "Avoids rapid UV evaporation, leaf sun-scorch, and protects foraging honeybees",
-    "growthStage": "At initial spotting stage; vegetative to early tillering phase",
+    "bestTimeOfDay": "Specific hours for maximum uptake and safety",
+    "timingReason": "Scientific rationale for the chosen timing",
+    "growthStage": "Optimal crop stage for treatment",
     "weatherConditions": {
-      "temperatureRange": "18°C - 26°C",
-      "windSpeedLimit": "< 8 km/h",
-      "rainfastnessHours": "4 to 6 hours dry window required",
-      "humidityWindow": "65% - 85%"
+      "temperatureRange": "Safe temperature window",
+      "windSpeedLimit": "Drift prevention limit",
+      "rainfastnessHours": "Dry window required after spray",
+      "humidityWindow": "Target humidity range"
     },
-    "sprayIntervalDays": "Repeat organic spray after 5-7 days; chemical spray 10-14 days if needed",
+    "sprayIntervalDays": "Number of days before repeating",
     "expectedRecoveryTimeline": {
-      "day1to2": "Spore sporulation arrested; active lesions stop expanding",
-      "day4to5": "Lesions dry into crisp dark margins with no new spore fuzz",
-      "day7to10": "Vigorous fresh green leaves emerge from shoot meristem"
+      "day1to2": "Immediate visual changes expected",
+      "day4to5": "Mid-term stabilization markers",
+      "day7to10": "Recovery signs and new growth"
     }
   },
   "preventionSteps": [
-    "Maintain proper spacing",
-    "Avoid unnecessary water on leaves",
-    "Monitor humidity",
-    "Remove infected plant debris",
-    "Use appropriate disease-resistant varieties where available"
+    "Cultural practices to prevent recurrence.",
+    "Resistant variety recommendations.",
+    "Sanitation steps."
   ],
   "differentialPossibilities": [
-    {"issue": "Primary Disease Name", "probabilityPct": 72, "isPrimary": true, "category": "Fungal"},
-    {"issue": "Secondary Possible Issue / Deficiency", "probabilityPct": 18, "category": "Nutrient"},
+    {"issue": "Secondary Possible Issue / Deficiency", "probabilityPct": 18, "category": "Nutrient | Abiotic | Bacterial"},
     {"issue": "Other Abiotic Leaf Damage", "probabilityPct": 10, "category": "Abiotic"}
   ],
-  "clusterAdvisory": "Regional village cluster advisory note"
+  "clusterAdvisory": "Contextual advice for neighboring farmers in the same village."
 }
-Important: Use safe, practical, non-hazardous steps. Output pure JSON without markdown ticks.`,
+Important: Use ICAR (Indian Council of Agricultural Research) and KVK (Krishi Vigyan Kendra) agronomic guidelines. Use safe, practical, non-hazardous steps. Output pure JSON without markdown ticks.`,
       },
     ];
 
     const { response } = await generateWithModelFallback(
       ai,
-      'gemini-3.8-flash',
+      'gemini-1.5-flash',
       (m) => ({
         model: m,
-        contents: { parts: contents },
+        contents: [{ role: 'user', parts: contents }],
         config: {
           responseMimeType: 'application/json',
           temperature: 0.2,

@@ -245,6 +245,66 @@ export class MarketService {
       source: 'Agmarknet Directorate of Economics & Statistics, Ministry of Agriculture',
     };
   }
+
+  /**
+   * Kishan Bhai Market Arbitrage Analyst
+   * Compares local mandi price against neighboring markets and triggers an alert if net gain >= 10%.
+   */
+  public calculateArbitrage(params: {
+    localPrice?: number;
+    surroundingPrices?: { mandi: string; price: number; distanceKm?: number }[];
+    transportCostPerQuintal?: number;
+    crop?: string;
+  }): {
+    arbitrage_found: boolean;
+    recommended_market: string | null;
+    estimated_net_profit_increase_percentage: number | null;
+    farmer_alert_message: string;
+  } {
+    const localPrice = Number(params.localPrice) || 1800;
+    const transportCost = Number(params.transportCostPerQuintal) || 100;
+    const cropName = params.crop || 'tomatoes';
+
+    const surrounding = Array.isArray(params.surroundingPrices) && params.surroundingPrices.length > 0
+      ? params.surroundingPrices
+      : [
+          { mandi: 'Ludhiana Mandi', price: 2150, distanceKm: 42 },
+          { mandi: 'Jalandhar APMC', price: 1980, distanceKm: 65 },
+          { mandi: 'Khanna Market', price: 1910, distanceKm: 38 },
+        ];
+
+    let bestMarket: string | null = null;
+    let maxPctGain = 0;
+
+    for (const item of surrounding) {
+      const netNeighbor = item.price - transportCost;
+      const pctGain = ((netNeighbor - localPrice) / localPrice) * 100;
+      if (pctGain > maxPctGain) {
+        maxPctGain = pctGain;
+        bestMarket = item.mandi;
+      }
+    }
+
+    if (maxPctGain >= 10 && bestMarket) {
+      const roundedPct = Math.round(maxPctGain * 10) / 10;
+      const cleanMarketName = bestMarket.replace(/ (Mandi|APMC|Market).*$/i, '');
+      const alert = `Kishan Bhai Alert: Selling your ${cropName} in ${cleanMarketName} today nets ${Math.round(roundedPct)}% higher profit after transport. Reply YES to arrange transport.`;
+
+      return {
+        arbitrage_found: true,
+        recommended_market: cleanMarketName,
+        estimated_net_profit_increase_percentage: roundedPct,
+        farmer_alert_message: alert.length <= 160 ? alert : alert.slice(0, 157) + '...',
+      };
+    }
+
+    return {
+      arbitrage_found: false,
+      recommended_market: null,
+      estimated_net_profit_increase_percentage: null,
+      farmer_alert_message: `Kishan Bhai Alert: Local mandi price for ${cropName} is optimal today. No arbitrage margin exceeding 10% after transport costs.`,
+    };
+  }
 }
 
 export const marketService = new MarketService();

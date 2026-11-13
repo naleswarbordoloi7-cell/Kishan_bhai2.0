@@ -74,7 +74,7 @@ const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' })
   </svg>
 );
 
-export const LoginPage: React.FC = () => {
+export const LoginPage: React.FC<{ initialMode?: string }> = ({ initialMode }) => {
   const { setCurrentUser, setUserRole } = useUserStore();
   const { setCurrentView, addToast, language, setIsLogoSplashOpen } = useApp();
 
@@ -90,6 +90,18 @@ export const LoginPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (initialMode) {
+      if (initialMode === 'otp-login') {
+        setLoginMethod('phone');
+        setIsOtpSent(true);
+        setMainTab('login');
+      } else if (['login', 'register', 'champion-register', 'forgot-password'].includes(initialMode)) {
+        setMainTab(initialMode as any);
+      }
+    }
+  }, [initialMode]);
 
   // Registration Form States
   const [regFullName, setRegFullName] = useState('');
@@ -698,7 +710,7 @@ export const LoginPage: React.FC = () => {
         {/* NON-LOGIN VIEWS: REGISTRATION & CHAMPIONS                 */}
         {/* ========================================================= */}
         {mainTab !== 'login' && (
-          <div className="w-full bg-white rounded-3xl border border-[#E5E7EB] shadow-xl p-6 sm:p-7 space-y-5">
+          <div className="w-full bg-white rounded-3xl border border-[#E5E7EB] shadow-xl p-4 sm:p-7 space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
               <div>
                 <h2 className="text-xl font-bold font-serif-display text-[#1F2937]">

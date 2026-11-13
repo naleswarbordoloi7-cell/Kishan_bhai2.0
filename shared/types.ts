@@ -213,6 +213,7 @@ export interface HarvestPoolLot {
   status: 'AVAILABLE' | 'COMMITTED_TO_BUYER' | 'HARVESTED_SOLD';
   moisturePercentage?: number;
   notes?: string;
+  createdAt: string;
 }
 
 export interface BuyerPurchaseRequest {
@@ -421,6 +422,13 @@ export interface CropLifecycleItem {
   pestWatchlist: string[];
   recentAction: string;
   imageUrl: string;
+  observations?: {
+    id: string;
+    date: string;
+    text: string;
+    category?: string;
+    audioUrl?: string; // Future proofing
+  }[];
   harvestReminder?: {
     enabled: boolean;
     reminderDaysBefore: number[]; // e.g. [7, 3, 1]
@@ -1150,15 +1158,26 @@ export type FarmDiaryRecord = FarmDiaryEntry;
 // 10. Community Module
 export interface CommunityComment {
   id: string;
+  postId: string;
+  parentId?: string;
+  authorId: string;
   authorName: string;
   authorRole: string;
-  village: string;
+  authorVillage: string;
+  authorAvatar: string;
   content: string;
+  likesCount: number;
+  likedUserIds: string[];
+  isHelpful?: boolean;
+  replies?: CommunityComment[];
   createdAt: string;
 }
 
+export type CommunityPostType = 'DISCUSSION' | 'QUESTION' | 'TIP' | 'ANNOUNCEMENT' | string;
+
 export interface CommunityPost {
   id: string;
+  authorId: string;
   authorName: string;
   authorVillage: string;
   authorDistrict?: string;
@@ -1166,19 +1185,84 @@ export interface CommunityPost {
   authorRole: 'Farmer' | 'Village Champion' | 'KVK Agronomist' | string;
   authorAvatar?: string;
   authorBadge?: string;
-  title: string;
+  groupId?: string;
+  groupName?: string;
+  title?: string;
   content: string;
   category: 'Crop Advice' | 'Pest Outbreak' | 'Machinery Sharing' | 'Market Trends' | 'Success Story' | string;
+  postType: CommunityPostType;
   cropTag?: string;
   tags?: string[];
   imageUrl?: string;
+  images?: string[];
+  poll?: {
+    id: string;
+    question: string;
+    options: {
+      id: string;
+      text: string;
+      votes: number;
+      votedUserIds: string[];
+    }[];
+    totalVotes: number;
+    expiresAt: string;
+  };
   likesCount: number;
+  likedUserIds: string[];
   commentsCount: number;
   repliesCount?: number;
   comments: CommunityComment[];
   isLiked?: boolean;
   isBookmarked?: boolean;
+  isPinned?: boolean;
+  isHelpfulAnswered?: boolean;
+  savedUserIds: string[];
   createdAt: string;
+}
+
+export type CommunityGroupCategory =
+  | 'Rice Farming'
+  | 'Wheat Farming'
+  | 'Cotton Farming'
+  | 'Vegetable Farming'
+  | 'Organic Farming'
+  | 'Dairy Farming'
+  | 'Modern Farming Technology'
+  | 'Agricultural Business'
+  | 'Irrigation and Water Management'
+  | 'Pest and Disease Management'
+  | 'General Farmer Discussion'
+  | string;
+
+export interface FarmerCommunityGroup {
+  id: string;
+  name: string;
+  description: string;
+  category: CommunityGroupCategory;
+  location: string;
+  cropInterest?: string;
+  imageUrl?: string;
+  isPrivate: boolean;
+  rules: string[];
+  ownerId: string;
+  ownerName: string;
+  moderatorIds: string[];
+  memberIds: string[];
+  memberCount: number;
+  pendingRequestIds?: string[];
+  pinnedPostIds: string[];
+  resources?: { id?: string; title: string; type: 'PDF' | 'VIDEO' | 'LINK' | 'GUIDE'; url?: string; description?: string }[];
+  createdAt: string;
+}
+
+export interface ContentReport {
+  id?: string;
+  targetId: string;
+  targetType: 'POST' | 'COMMENT';
+  reporterId: string;
+  reason: 'SPAM' | 'HARASSMENT' | 'MISINFORMATION' | 'INAPPROPRIATE' | 'OTHER';
+  details?: string;
+  createdAt?: string;
 }
 export type CommunityPostItem = CommunityPost;
 

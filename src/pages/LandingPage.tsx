@@ -108,8 +108,7 @@ export const LandingPage: React.FC = () => {
       {/* 1. TOP LIVE MANDI TICKER - Tabular, High-Density Agricultural Marquee */}
       <aside aria-label="Live Mandi Price Feeds" className="w-full bg-stone-900 text-stone-300 text-xs py-2 px-4 border-b border-stone-800 shrink-0">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 shrink-0 text-emerald-400 font-semibold tracking-wide uppercase text-[11px]">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="flex items-center gap-2 shrink-0 text-emerald-500 font-medium tracking-tight uppercase text-[10px]">
             <span>Mandi Live Pulse</span>
           </div>
 
@@ -155,9 +154,8 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
             {/* Left Content Column */}
             <div className="lg:col-span-7 space-y-6">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-semibold text-stone-900 dark:text-stone-50 tracking-tight leading-[1.08] text-balance">
-                Small Farms. <br />
-                <span className="text-emerald-800 dark:text-emerald-400 italic font-normal">One Powerful</span> Collective.
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-semibold text-stone-900 dark:text-stone-50 tracking-tight leading-[1.08] text-wrap: balance">
+                Small Farms. <span className="text-emerald-800 dark:text-emerald-400 italic font-normal">One Powerful</span> Collective.
               </h1>
 
               <p className="text-lg sm:text-xl text-stone-700 dark:text-stone-300 leading-relaxed max-w-2xl">
@@ -240,7 +238,6 @@ export const LandingPage: React.FC = () => {
                 <div className="absolute bottom-4 left-4 right-4 p-4 rounded-xl bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border border-stone-200/80 dark:border-stone-800 shadow-lg text-stone-900 dark:text-stone-100 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
                       <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
                         Active Cluster Hub
                       </span>
@@ -293,7 +290,7 @@ export const LandingPage: React.FC = () => {
               <div className="text-xs font-medium text-emerald-800 dark:text-emerald-400 tracking-wider uppercase mb-1">
                 Quantitative Collective Advantage
               </div>
-              <h2 className="text-2xl sm:text-3xl font-display font-semibold text-stone-900 dark:text-stone-100">
+              <h2 className="text-2xl sm:text-3xl font-display font-semibold text-stone-900 dark:text-stone-100 text-wrap: balance">
                 Calculate Your Cluster Power & Savings (सामूहिक बचत कैलकुलेटर)
               </h2>
             </div>

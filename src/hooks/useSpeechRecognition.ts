@@ -38,6 +38,11 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
   );
   const [activeRecognitionLang, setActiveRecognitionLang] = useState<string>('en-IN');
 
+  // Helper to safely update state outside of render cycle
+  const safeSetState = useCallback((setter: any, value: any) => {
+    setTimeout(() => setter(value), 0);
+  }, []);
+
   const recognitionRef = useRef<any>(null);
   const continuousRef = useRef<boolean>(defaultOptions.continuous ?? false);
   const optionsRef = useRef(defaultOptions);
@@ -62,10 +67,10 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
   }, []);
 
   const resetTranscript = useCallback(() => {
-    setTranscript('');
-    setInterimTranscript('');
-    setError(null);
-  }, []);
+    safeSetState(setTranscript, '');
+    safeSetState(setInterimTranscript, '');
+    safeSetState(setError, null);
+  }, [safeSetState]);
 
   const stopListening = useCallback(() => {
     isExplicitStopRef.current = true;
@@ -77,13 +82,13 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
       }
     }
     setIsListening(false);
-    setInterimTranscript('');
-  }, []);
+    safeSetState(setInterimTranscript, '');
+  }, [safeSetState]);
 
   const startListeningWithCode = useCallback(
     (langIndex: number, customOptions?: UseSpeechRecognitionOptions) => {
       if (!isSupported) {
-        setError('Speech Recognition is not supported on this browser or device. Please type your query.');
+        safeSetState(setError, 'Speech Recognition is not supported on this browser or device. Please type your query.');
         return;
       }
 
@@ -91,19 +96,19 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
         (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
       if (!SpeechRecognition) {
-        setError('Speech Recognition API is unavailable in this environment.');
+        safeSetState(setError, 'Speech Recognition API is unavailable in this environment.');
         return;
       }
 
       if (langIndex >= candidateLangsRef.current.length) {
-        setError('Voice recognition language not supported by browser. Falling back to typing.');
-        setIsListening(false);
+        safeSetState(setError, 'Voice recognition language not supported by browser. Falling back to typing.');
+        safeSetState(setIsListening, false);
         return;
       }
 
       const activeCode = candidateLangsRef.current[langIndex] || 'en-IN';
       currentLangIndexRef.current = langIndex;
-      setActiveRecognitionLang(activeCode);
+      safeSetState(setActiveRecognitionLang, activeCode);
 
       // Abort any existing instance
       if (recognitionRef.current) {
@@ -126,8 +131,11 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
         recognition.maxAlternatives = 1;
 
         recognition.onstart = () => {
-          setIsListening(true);
-          setError(null);
+          // Wrap in setTimeout to ensure state update doesn't happen during render
+          setTimeout(() => {
+            setIsListening(true);
+            setError(null);
+          }, 0);
         };
 
         recognition.onresult = (event: any) => {
@@ -147,16 +155,22 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
           if (finalChunk) {
             setTranscript((prev) => {
               const updated = prev ? `${prev} ${finalChunk.trim()}` : finalChunk.trim();
-              customOptions?.onResult?.(updated, true);
-              optionsRef.current.onResult?.(updated, true);
+              // Schedule side-effect callbacks outside of the state updater function
+              setTimeout(() => {
+                customOptions?.onResult?.(updated, true);
+                optionsRef.current.onResult?.(updated, true);
+              }, 0);
               return updated;
             });
           }
 
-          setInterimTranscript(currentInterim);
+          safeSetState(setInterimTranscript, currentInterim);
           if (currentInterim) {
-            customOptions?.onResult?.(currentInterim, false);
-            optionsRef.current.onResult?.(currentInterim, false);
+            // Similarly wrap interim results to be safe, though they aren't in an updater here
+            setTimeout(() => {
+              customOptions?.onResult?.(currentInterim, false);
+              optionsRef.current.onResult?.(currentInterim, false);
+            }, 0);
           }
         };
 
@@ -174,23 +188,33 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
           }
 
           if (event.error === 'not-allowed' || event.error === 'permission-denied') {
-            setError('Microphone access was denied. Please allow microphone permission in your browser address bar.');
-            setIsListening(false);
+            setTimeout(() => {
+              setError('Microphone access was denied. Please allow microphone permission in your browser address bar.');
+              setIsListening(false);
+            }, 0);
           } else if (event.error === 'no-speech') {
             if (!continuousRef.current) {
-              setIsListening(false);
-              setError('No voice detected. Please speak closer to the microphone and try again.');
+              setTimeout(() => {
+                setIsListening(false);
+                setError('No voice detected. Please speak closer to the microphone and try again.');
+              }, 0);
             }
           } else if (event.error === 'network') {
-            setError('Speech recognition network timeout. Please check your internet connection or type your question.');
-            setIsListening(false);
+            setTimeout(() => {
+              setError('Speech recognition network timeout. Please check your internet connection or type your question.');
+              setIsListening(false);
+            }, 0);
           } else if (event.error !== 'aborted') {
-            setError(`Voice recognition notice: ${event.error}`);
-            setIsListening(false);
+            setTimeout(() => {
+              setError(`Voice recognition notice: ${event.error}`);
+              setIsListening(false);
+            }, 0);
           }
 
-          customOptions?.onError?.(event);
-          optionsRef.current.onError?.(event);
+          setTimeout(() => {
+            customOptions?.onError?.(event);
+            optionsRef.current.onError?.(event);
+          }, 0);
         };
 
         recognition.onend = () => {
@@ -203,10 +227,12 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
               // ignore
             }
           }
-          setIsListening(false);
-          setInterimTranscript('');
-          customOptions?.onEnd?.();
-          optionsRef.current.onEnd?.();
+          setTimeout(() => {
+            setIsListening(false);
+            setInterimTranscript('');
+            customOptions?.onEnd?.();
+            optionsRef.current.onEnd?.();
+          }, 0);
         };
 
         recognitionRef.current = recognition;
@@ -217,8 +243,8 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
         if (nextIndex < candidateLangsRef.current.length) {
           startListeningWithCode(nextIndex, customOptions);
         } else {
-          setError(err.message || 'Could not start voice recognition.');
-          setIsListening(false);
+            safeSetState(setError, err.message || 'Could not start voice recognition.');
+            safeSetState(setIsListening, false);
         }
       }
     },
@@ -228,7 +254,7 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
   const startListening = useCallback(
     (customOptions?: UseSpeechRecognitionOptions) => {
       isExplicitStopRef.current = false;
-      setError(null);
+      safeSetState(setError, null);
 
       const targetLang = customOptions?.lang || selectedLang || 'en-IN';
       const candidateCodes = getSupportedRecognitionCodes(targetLang);

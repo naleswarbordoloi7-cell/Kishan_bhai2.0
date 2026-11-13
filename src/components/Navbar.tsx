@@ -143,7 +143,6 @@ export const Navbar: React.FC = () => {
     { id: 'smart-irrigation', label: language === 'hi' ? 'स्मार्ट सिंचाई' : 'Smart Irrigation', icon: Droplets, desc: 'Evapotranspiration pump controls' },
     { id: 'weather', label: language === 'hi' ? 'मौसम पूर्वानुमान' : 'Weather Radar', icon: CloudSun, desc: 'Hyperlocal Doppler alerts' },
     { id: 'government-schemes', label: language === 'hi' ? 'सरकारी योजनाएं' : 'Govt Schemes', icon: Award, desc: 'PM-Kisan, PMFBY subsidies' },
-    { id: 'farm-diary', label: language === 'hi' ? 'कृषि डायरी' : 'Farm Journal', icon: BookOpen, desc: 'Daily expense & yield logbook' },
     { id: 'profit-calculator', label: language === 'hi' ? 'मुनाफ़ा कैलकुलेटर' : 'Yield Calculator', icon: Calculator, desc: 'Cost vs MSP return estimates' },
     { id: 'community', label: language === 'hi' ? 'किसान चौपाल' : 'Kisan Chaupal', icon: Users, desc: 'Village farmer Q&A community' },
   ];

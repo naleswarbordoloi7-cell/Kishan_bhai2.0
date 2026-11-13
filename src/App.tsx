@@ -26,21 +26,17 @@ import { BuyerOffersPage } from "./pages/BuyerOffersPage";
 import { MachineryPage } from "./pages/Machinery";
 import { AIAssistantPage } from "./pages/AIAssistantPage";
 import { WeatherModule } from "./pages/WeatherModule";
-import { TransactionsPage } from "./pages/TransactionsPage";
 import { FarmProfilePage } from "./pages/FarmProfile";
 import { AuthPage } from "./pages/AuthPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MyCropsPage } from "./pages/MyCropsPage";
 import { DiseaseScannerPage } from "./pages/DiseaseScannerPage";
 import { SmartIrrigationPage } from "./pages/SmartIrrigationPage";
-import { SoilHealthPage } from "./pages/SoilHealthPage";
 import { MarketPricesPage } from "./pages/MarketPrices/MarketPricesPage";
 import { ProfitCalculatorPage } from "./pages/ProfitCalculatorPage";
 import { CropRecommendationPage } from "./pages/CropRecommendationPage";
 import { GovernmentSchemesPage } from "./pages/GovernmentSchemesPage";
-import { FarmDiaryPage } from "./pages/FarmDiaryPage";
 import { CommunityPage } from "./pages/CommunityPage";
-import { TalkToExpertPage } from "./pages/TalkToExpertPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { LoyaltyRewardsPage } from "./pages/LoyaltyRewardsPage";
@@ -84,8 +80,6 @@ const AppContent: React.FC = () => {
         return <AIAssistantPage />;
       case "weather":
         return <WeatherModule />;
-      case "transactions":
-        return <TransactionsPage />;
       case "profile":
         return <FarmProfilePage />;
       case "my-crops":
@@ -94,8 +88,6 @@ const AppContent: React.FC = () => {
         return <DiseaseScannerPage />;
       case "smart-irrigation":
         return <SmartIrrigationPage />;
-      case "soil-health":
-        return <SoilHealthPage />;
       case "market-prices":
         return <MarketPricesPage />;
       case "profit-calculator":
@@ -104,12 +96,8 @@ const AppContent: React.FC = () => {
         return <CropRecommendationPage />;
       case "government-schemes":
         return <GovernmentSchemesPage />;
-      case "farm-diary":
-        return <FarmDiaryPage />;
       case "community":
         return <CommunityPage />;
-      case "talk-to-expert":
-        return <TalkToExpertPage />;
       case "alerts":
         return <AlertsPage />;
       case "settings":
@@ -199,7 +187,7 @@ const AppContent: React.FC = () => {
 
           <main
             className={`flex-1 overflow-y-auto scroll-smooth bg-[#F7F8F2] ${
-              isAuthRoute ? "min-h-screen pb-0" : "min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8 pb-24"
+              isAuthRoute ? "min-h-screen pb-0" : "min-h-[calc(100vh-4rem)] p-3 sm:p-4 lg:p-6 pb-24"
             }`}
           >
             <AnimatePresence mode="wait">

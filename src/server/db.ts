@@ -59,6 +59,7 @@ class InMemoryDB {
   soilRecords: Map<string, SoilRecordHistoryItem> = new Map();
   appointments: Map<string, any> = new Map();
   usedTxHashes: Set<string> = new Set();
+  farmerMemory: Map<string, { preferences: Record<string, any>; notes: string[]; updatedAt: string }> = new Map();
   
   // Two-Sided Farmer + Buyer Loyalty Store
   loyaltyAccounts: Map<string, LoyaltyAccount> = new Map();
@@ -1165,6 +1166,7 @@ class InMemoryDB {
       status: 'AVAILABLE',
       moisturePercentage: 8.2,
       notes: 'Lab tested: 29.5mm staple length, zero yellow spots, micronaire 4.1.',
+      createdAt: new Date(Date.now() - 3600000 * 48).toISOString(), // 2 days ago
     };
 
     const h2: HarvestPoolLot = {
@@ -1183,6 +1185,7 @@ class InMemoryDB {
       status: 'AVAILABLE',
       moisturePercentage: 7.5,
       notes: 'Oil percentage: 51.2%, Pod maturity 94%. Assayed by Saurashtra Lab.',
+      createdAt: new Date(Date.now() - 3600000 * 24).toISOString(), // Yesterday
     };
 
     const h3: HarvestPoolLot = {
@@ -1201,11 +1204,172 @@ class InMemoryDB {
       status: 'AVAILABLE',
       moisturePercentage: 9.1,
       notes: 'Protein content 14.2%, Golden lustre kernel, premium flour standard.',
+      createdAt: new Date(Date.now() - 3600000 * 12).toISOString(), // 12 hours ago (NEW)
+    };
+
+    const h4: HarvestPoolLot = {
+      id: 'lot_mustard_sikar_404',
+      clusterId: 'cluster_rajasthan_03',
+      clusterName: 'Shekhawati Mustard Growers Federation',
+      farmerId: 'usr_farmer_mukesh',
+      farmerName: 'Mukesh Choudhary',
+      village: 'Sikar',
+      crop: 'Yellow Mustard',
+      variety: 'Pusa-31 High Oil Content',
+      quantityKg: 40000,
+      qualityGrade: 'Grade A Premium',
+      expectedHarvestDate: '2026-10-18',
+      minimumTargetPricePerKg: 55.0,
+      status: 'AVAILABLE',
+      moisturePercentage: 7.8,
+      notes: 'Oil percentage: 42.1%, Machine cleaned, admixture < 1.5%.',
+      createdAt: new Date(Date.now() - 3600000 * 8).toISOString(),
+    };
+
+    const h5: HarvestPoolLot = {
+      id: 'lot_soybean_malwa_505',
+      clusterId: 'cluster_malwa_02',
+      clusterName: 'Malwa Organic Wheat & Soybean Federation',
+      farmerId: 'usr_champ_rajendra',
+      farmerName: 'Rajendra Singh Tomar',
+      village: 'Dharampuri',
+      crop: 'Organic Soybean',
+      variety: 'JS-335 Non-GMO High Protein',
+      quantityKg: 60000,
+      qualityGrade: 'A+ Export',
+      expectedHarvestDate: '2026-10-12',
+      minimumTargetPricePerKg: 48.0,
+      status: 'AVAILABLE',
+      moisturePercentage: 8.5,
+      notes: 'NPOP Organic certified, ideal for premium solvent extraction.',
+      createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
+    };
+
+    const h6: HarvestPoolLot = {
+      id: 'lot_cumin_unjha_606',
+      clusterId: 'cluster_unjha_04',
+      clusterName: 'Unjha Spice Producers Consortium',
+      farmerId: 'usr_farmer_praveen',
+      farmerName: 'Praveen Patel',
+      village: 'Unjha',
+      crop: 'Export Cumin / Jeera',
+      variety: 'GC-4 Machine Cleaned (99.5% Pure)',
+      quantityKg: 18000,
+      qualityGrade: 'A+ Export',
+      expectedHarvestDate: '2026-10-20',
+      minimumTargetPricePerKg: 195.0,
+      status: 'AVAILABLE',
+      moisturePercentage: 7.2,
+      notes: 'Volatile oil 3.8%, EU pesticide residue compliant.',
+      createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    };
+
+    const h7: HarvestPoolLot = {
+      id: 'lot_basmati_karnal_707',
+      clusterId: 'cluster_karnal_05',
+      clusterName: 'Karnal Basmati Growers Co-op',
+      farmerId: 'usr_farmer_gurpreet',
+      farmerName: 'Gurpreet Singh',
+      village: 'Taraori',
+      crop: 'Basmati Paddy',
+      variety: '1121 Traditional Extra Long',
+      quantityKg: 75000,
+      qualityGrade: 'A+ Export',
+      expectedHarvestDate: '2026-10-25',
+      minimumTargetPricePerKg: 39.0,
+      status: 'AVAILABLE',
+      moisturePercentage: 11.2,
+      notes: 'Average grain length 8.4mm, 2.2x cooked elongation.',
+      createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    };
+
+    const h8: HarvestPoolLot = {
+      id: 'lot_chana_bikaner_808',
+      clusterId: 'cluster_bikaner_06',
+      clusterName: 'Thar Pulses Collective',
+      farmerId: 'usr_farmer_ramlal',
+      farmerName: 'Ramlal Bishnoi',
+      village: 'Nokha',
+      crop: 'Chickpea / Desi Chana',
+      variety: 'JG-11 Bold Brown Kernel',
+      quantityKg: 50000,
+      qualityGrade: 'Grade A Premium',
+      expectedHarvestDate: '2026-10-08',
+      minimumTargetPricePerKg: 54.0,
+      status: 'AVAILABLE',
+      moisturePercentage: 9.0,
+      notes: 'Uniform size, machine sorted, clean and pest free.',
+      createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+    };
+
+    const h9: HarvestPoolLot = {
+      id: 'lot_wheat_moga_901',
+      clusterId: 'cluster_punjab_wheat_01',
+      clusterName: 'Malwa-Punjab Wheat Growers Federation',
+      farmerId: 'usr_farmer_harpreet_pb01',
+      farmerName: 'Harpreet Singh',
+      village: 'Moga, Punjab',
+      crop: 'Wheat',
+      variety: 'HD-3086 (Sharbati Extra Grade)',
+      quantityKg: 4000, // 40 quintals
+      qualityGrade: 'Grade A Premium',
+      expectedHarvestDate: '2026-10-15',
+      minimumTargetPricePerKg: 31.0,
+      status: 'AVAILABLE',
+      moisturePercentage: 9.8,
+      notes: 'Grain size > 7.5mm, protein 13.5%, Grade A premium specification.',
+      createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    };
+
+    const h10: HarvestPoolLot = {
+      id: 'lot_wheat_khanna_902',
+      clusterId: 'cluster_punjab_wheat_01',
+      clusterName: 'Malwa-Punjab Wheat Growers Federation',
+      farmerId: 'usr_farmer_gurinder_pb02',
+      farmerName: 'Gurinder Kaur',
+      village: 'Khanna, Punjab',
+      crop: 'Wheat',
+      variety: 'PBW-550 (Certified Grade A)',
+      quantityKg: 3500, // 35 quintals
+      qualityGrade: 'Grade A Premium',
+      expectedHarvestDate: '2026-10-14',
+      minimumTargetPricePerKg: 30.5,
+      status: 'AVAILABLE',
+      moisturePercentage: 9.5,
+      notes: 'Cleaned and graded at Khanna Mandi terminal facility, Grade A tested.',
+      createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    };
+
+    const h11: HarvestPoolLot = {
+      id: 'lot_wheat_ludhiana_903',
+      clusterId: 'cluster_punjab_wheat_01',
+      clusterName: 'Malwa-Punjab Wheat Growers Federation',
+      farmerId: 'usr_farmer_manjit_pb03',
+      farmerName: 'Manjit Singh',
+      village: 'Ludhiana, Punjab',
+      crop: 'Wheat',
+      variety: 'DBW-187 (Karan Vandana)',
+      quantityKg: 2500, // 25 quintals
+      qualityGrade: 'Grade A Premium',
+      expectedHarvestDate: '2026-10-16',
+      minimumTargetPricePerKg: 31.2,
+      status: 'AVAILABLE',
+      moisturePercentage: 9.2,
+      notes: 'High hectolitre weight, certified Grade A milling grade.',
+      createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
     };
 
     this.harvestLots.set(h1.id, h1);
     this.harvestLots.set(h2.id, h2);
     this.harvestLots.set(h3.id, h3);
+    this.harvestLots.set(h4.id, h4);
+    this.harvestLots.set(h5.id, h5);
+    this.harvestLots.set(h6.id, h6);
+    this.harvestLots.set(h7.id, h7);
+    this.harvestLots.set(h8.id, h8);
+    this.harvestLots.set(h9.id, h9);
+    this.harvestLots.set(h10.id, h10);
+    this.harvestLots.set(h11.id, h11);
 
     // 5. Machinery Pool Roster
     const m1: MachineryItem = {

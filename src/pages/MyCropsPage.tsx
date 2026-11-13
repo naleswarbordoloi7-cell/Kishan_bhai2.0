@@ -19,12 +19,22 @@ import {
 } from 'lucide-react';
 import { CropLifecycleItem } from '../../shared/types';
 import { HarvestReminderModal } from '../components/HarvestReminderModal';
+import { CropGrowthYieldProjection } from '../components/CropGrowthYieldProjection';
+import { CropObservationModal } from '../components/crops/CropObservationModal';
+import { History, Mic } from 'lucide-react';
 
 export const MyCropsPage: React.FC = () => {
-  const { crops, addCrop, updateCrop, removeCrop, language, setCurrentView } = useApp();
+  const { crops, addCrop, updateCrop, removeCrop, addCropObservation, language, setCurrentView } = useApp();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedCrop, setSelectedCrop] = useState<CropLifecycleItem | null>(null);
+  const [selectedCropId, setSelectedCropId] = useState<string>(crops[0]?.id || '');
   const [reminderCrop, setReminderCrop] = useState<CropLifecycleItem | null>(null);
+  const [observationCrop, setObservationCrop] = useState<CropLifecycleItem | null>(null);
+  const [expandedObservations, setExpandedObservations] = useState<Record<string, boolean>>({});
+
+  const toggleObservations = (cropId: string) => {
+    setExpandedObservations(prev => ({ ...prev, [cropId]: !prev[cropId] }));
+  };
 
   const handleSaveReminder = (cropId: string, reminderConfig: NonNullable<CropLifecycleItem['harvestReminder']>) => {
     updateCrop(cropId, { harvestReminder: reminderConfig });
@@ -79,7 +89,7 @@ export const MyCropsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#1B3B11] to-green-700 text-white p-6 sm:p-8 rounded-2xl shadow-md">
         <div>
@@ -139,6 +149,34 @@ export const MyCropsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Crop Growth & Yield Projection Recharts Graph */}
+      <div id="growth-yield-chart-section">
+        <CropGrowthYieldProjection
+          crops={crops}
+          selectedCropId={selectedCropId}
+          onSelectCrop={(id) => setSelectedCropId(id)}
+          language={language}
+        />
+      </div>
+
+      {/* Crops List Section Header */}
+      <div className="flex items-center justify-between pt-2">
+        <div>
+          <h2 className="text-xl font-bold text-stone-900 tracking-tight flex items-center gap-2">
+            <Sprout className="w-5 h-5 text-emerald-700" />
+            <span>{language === 'hi' ? 'पंजीकृत फसलें एवं दैनिक निगरानी' : 'Registered Crops & Field Plots'}</span>
+          </h2>
+          <p className="text-xs text-stone-500 mt-0.5">
+            {language === 'hi'
+              ? 'फसल वार विकास स्थिति, स्वास्थ्य, रोग जांच एवं सिंचाई नियंत्रण।'
+              : 'Detailed lifecycle breakdown, health index, disease scouting, and harvest reminders.'}
+          </p>
+        </div>
+        <span className="text-xs font-bold text-stone-500 uppercase tracking-tight">
+          {crops.length} {crops.length === 1 ? 'Plot' : 'Plots'}
+        </span>
+      </div>
+
       {/* Crops List */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {crops.map((crop) => (
@@ -156,7 +194,7 @@ export const MyCropsPage: React.FC = () => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
               <div className="absolute top-3 right-3">
-                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border backdrop-blur-md shadow-xs ${getStageColor(crop.stage)}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-tight ${getStageColor(crop.stage).replace(/bg-[\w-]+|border-[\w-]+/g, '')}`}>
                   {crop.stage}
                 </span>
               </div>
@@ -217,6 +255,36 @@ export const MyCropsPage: React.FC = () => {
                   <span>{language === 'hi' ? 'हालिया कृषि कार्य' : 'Recent Agronomic Action'}</span>
                 </div>
                 <p className="text-emerald-800/90 line-clamp-2">{crop.recentAction}</p>
+                
+                {crop.observations && crop.observations.length > 0 && (
+                  <button 
+                    onClick={() => toggleObservations(crop.id)}
+                    className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 hover:text-emerald-800"
+                  >
+                    <History className="w-3 h-3" />
+                    <span>
+                      {expandedObservations[crop.id] 
+                        ? (language === 'hi' ? 'नोट्स छिपाएं' : 'Hide Notes') 
+                        : `${crop.observations.length} ${language === 'hi' ? 'निरीक्षण नोट देखें' : 'Observations'}`}
+                    </span>
+                  </button>
+                )}
+
+                {expandedObservations[crop.id] && crop.observations && (
+                  <div className="mt-3 space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                    {crop.observations.map((obs) => (
+                      <div key={obs.id} className="p-2 bg-white rounded-lg border border-emerald-100 shadow-sm">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[9px] font-bold uppercase tracking-tight text-emerald-700">
+                            {obs.category}
+                          </span>
+                          <span className="text-[9px] text-stone-400">{obs.date}</span>
+                        </div>
+                        <p className="text-[10px] text-stone-600 leading-relaxed">{obs.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
@@ -235,6 +303,28 @@ export const MyCropsPage: React.FC = () => {
                     </button>
                   </div>
                 )}
+
+                {/* View Growth & Yield in Recharts Button */}
+                <button
+                  onClick={() => {
+                    setSelectedCropId(crop.id);
+                    const el = document.getElementById('growth-yield-chart-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                    selectedCropId === crop.id
+                      ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs'
+                      : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 border-emerald-200'
+                  }`}
+                >
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>
+                    {selectedCropId === crop.id
+                      ? (language === 'hi' ? '✓ ग्राफ में चयनित है' : '✓ Active in Growth Model')
+                      : (language === 'hi' ? 'वृद्धि व पैदावार ग्राफ देखें' : 'View Growth & Yield Graph')}
+                  </span>
+                </button>
+
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCurrentView('disease-scanner')}
@@ -258,6 +348,14 @@ export const MyCropsPage: React.FC = () => {
                     title="Schedule Harvest Reminder"
                   >
                     <Bell className="w-4 h-4 text-amber-600" />
+                  </button>
+
+                  <button
+                    onClick={() => setObservationCrop(crop)}
+                    className="flex items-center justify-center px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
+                    title={language === 'hi' ? 'निरीक्षण दर्ज करें' : 'Record Observation'}
+                  >
+                    <Mic className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -379,6 +477,19 @@ export const MyCropsPage: React.FC = () => {
           isOpen={!!reminderCrop}
           onClose={() => setReminderCrop(null)}
           onSave={handleSaveReminder}
+          language={language}
+        />
+      )}
+
+      {/* Crop Observation Voice Modal */}
+      {observationCrop && (
+        <CropObservationModal
+          crop={observationCrop}
+          isOpen={!!observationCrop}
+          onClose={() => setObservationCrop(null)}
+          onSave={(text, category) => {
+            addCropObservation(observationCrop.id, { text, category });
+          }}
           language={language}
         />
       )}

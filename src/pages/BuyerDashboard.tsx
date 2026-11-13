@@ -17,37 +17,47 @@ import {
   Star,
   RefreshCw,
   Gift,
+  Zap,
+  Sparkles,
 } from 'lucide-react';
 import { HarvestPoolLot, BuyerPurchaseRequest, LoyaltyAccount, LoyaltyRewardItem, LoyaltyRewardRedemption } from '../../shared/types';
 import { LoyaltyCard } from '../components/loyalty/LoyaltyCard';
 import { RewardRedemptionModal } from '../components/loyalty/RewardRedemptionModal';
 import { OrderRatingModal } from '../components/loyalty/OrderRatingModal';
+import { VirtualClusterAggregatorModal } from '../components/marketplace/VirtualClusterAggregatorModal';
 import { loyaltyService } from '../services/loyaltyService';
 
 export const BuyerDashboard: React.FC = () => {
   const currentUser = useUserStore(state => state.currentUser);
   const { setCurrentView, addToast } = useApp();
   const [lots, setLots] = useState<HarvestPoolLot[]>([]);
+  const [suggestedLots, setSuggestedLots] = useState<HarvestPoolLot[]>([]);
   const [purchaseRequests, setPurchaseRequests] = useState<BuyerPurchaseRequest[]>([]);
   const [selectedLot, setSelectedLot] = useState<HarvestPoolLot | null>(null);
   const [offeredPrice, setOfferedPrice] = useState<string>('');
   const [deliveryLocation, setDeliveryLocation] = useState<string>('Ahmedabad Processing Depot');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
   // Buyer Loyalty State
   const [loyaltyAccount, setLoyaltyAccount] = useState<LoyaltyAccount | null>(null);
   const [loyaltyRewards, setLoyaltyRewards] = useState<LoyaltyRewardItem[]>([]);
   const [loyaltyRedemptions, setLoyaltyRedemptions] = useState<LoyaltyRewardRedemption[]>([]);
   const [showRewardsModal, setShowRewardsModal] = useState<boolean>(false);
+  const [showAggregatorModal, setShowAggregatorModal] = useState<boolean>(false);
   const [ratingOrder, setRatingOrder] = useState<BuyerPurchaseRequest | null>(null);
   const [loyaltyLoading, setLoyaltyLoading] = useState<boolean>(true);
 
   const effectiveBuyerId = currentUser?.id || 'usr_buyer_1';
 
   useEffect(() => {
-    fetch('/api/marketplace')
+    const headers = { 'x-user-id': effectiveBuyerId };
+    
+    fetch('/api/marketplace', { headers })
       .then((res) => res.json())
       .then((data) => {
         if (data.lots) setLots(data.lots);
+        if (data.suggestions) setSuggestedLots(data.suggestions);
         if (data.purchaseRequests) setPurchaseRequests(data.purchaseRequests);
       })
       .catch(() => {});
@@ -128,30 +138,59 @@ export const BuyerDashboard: React.FC = () => {
     .filter((r) => r.status === 'ACCEPTED' || r.status === 'COMPLETED')
     .reduce((acc, r) => acc + r.quantityKg, 0) / 1000;
 
+  const filteredLots = lots.filter((lot) => {
+    const matchSearch =
+      lot.crop.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lot.clusterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lot.village.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lot.variety && lot.variety.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    let matchCat = true;
+    if (selectedCategory === 'Grains') {
+      matchCat = lot.crop.toLowerCase().includes('wheat') || lot.crop.toLowerCase().includes('paddy') || lot.crop.toLowerCase().includes('rice');
+    } else if (selectedCategory === 'Fibers') {
+      matchCat = lot.crop.toLowerCase().includes('cotton');
+    } else if (selectedCategory === 'Oilseeds') {
+      matchCat = lot.crop.toLowerCase().includes('mustard') || lot.crop.toLowerCase().includes('groundnut') || lot.crop.toLowerCase().includes('soybean');
+    } else if (selectedCategory === 'Pulses & Spices') {
+      matchCat = lot.crop.toLowerCase().includes('cumin') || lot.crop.toLowerCase().includes('jeera') || lot.crop.toLowerCase().includes('chana');
+    }
+    return matchSearch && matchCat;
+  });
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-amber-950 via-stone-900 to-emerald-950 text-white rounded-2xl p-6 sm:p-8 shadow-lg border border-amber-800/40 space-y-3">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-0.5 rounded-full font-mono border border-amber-400/30">
-              INSTITUTIONAL BUYER PROCUREMENT
+            <span className="text-amber-400 text-xs font-mono tracking-tight uppercase">
+              Institutional Buyer Procurement
             </span>
             <h1 className="text-2xl sm:text-3xl font-bold font-serif-display text-white mt-1">
-              {currentUser?.fullName || 'Institutional Buyer'}
+              {currentUser?.fullName || 'Vikram Mehta (AgroPure Organics)'}
             </h1>
             <p className="text-stone-300 text-xs sm:text-sm">
               Direct-from-cluster procurement with lab quality grading and transparent escrow settlement.
             </p>
           </div>
 
-          <button
-            onClick={() => setCurrentView('marketplace')}
-            className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow transition-colors flex items-center gap-2 cursor-pointer"
-          >
-            <Store className="w-4 h-4" />
-            <span>Browse Full Mandi Catalog</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => setShowAggregatorModal(true)}
+              className="bg-gradient-to-r from-emerald-600 to-amber-600 hover:from-emerald-500 hover:to-amber-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              <Sparkles className="w-4 h-4 text-amber-200" />
+              <span>AI Virtual Cluster Aggregator</span>
+            </button>
+            <button
+              onClick={() => setCurrentView('marketplace')}
+              className="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/20 transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <Store className="w-4 h-4" />
+              <span>Browse Product Catalog</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -199,27 +238,142 @@ export const BuyerDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* 1. Personalized Priority Matching & Recommendations */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-amber-100 rounded-lg">
+              <Zap className="w-5 h-5 text-amber-700" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-stone-900">Priority Matching For You</h2>
+              <p className="text-xs text-stone-500">Based on your {loyaltyAccount?.tier || 'SILVER'} Tier status & procurement history</p>
+            </div>
+          </div>
+          {loyaltyAccount && (
+            <div className="hidden sm:flex items-center gap-2 text-stone-500">
+              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+              <span className="text-[11px] font-bold uppercase tracking-tight">{loyaltyAccount.tier} STATUS ACTIVE</span>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(suggestedLots.length > 0 ? suggestedLots : lots.slice(0, 3)).map((lot) => (
+            <div 
+              key={`suggested-${lot.id}`}
+              className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-4 sm:p-5 shadow-xs hover:shadow-sm hover:border-emerald-600/50 transition-all flex flex-col justify-between space-y-4"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800/40">
+                    {lot.qualityGrade}
+                  </span>
+                  <span className="text-xs font-mono font-bold text-stone-600 dark:text-stone-400">
+                    {(lot.quantityKg / 1000).toFixed(1)} Tons
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
+                    {lot.crop}
+                  </h3>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                    <span className="truncate">{lot.clusterName} • {lot.village}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-stone-100 dark:border-stone-800">
+                <div>
+                  <span className="text-[10px] uppercase font-semibold text-stone-400">Target Rate</span>
+                  <div className="text-base font-bold text-emerald-700 dark:text-emerald-400">
+                    ₹{lot.minimumTargetPricePerKg}<span className="text-xs font-normal text-stone-500">/Kg</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedLot(lot);
+                    setOfferedPrice(lot.minimumTargetPricePerKg.toString());
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                >
+                  <span>Select Lot</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Available Lots Catalog */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-xs space-y-5">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-stone-100 pb-4">
               <div>
-                <h3 className="font-bold text-base text-stone-900">Available Pooled Harvest Lots</h3>
-                <p className="text-xs text-stone-500">Standardized crop lots aggregated by Virtual Farm Clusters</p>
+                <h3 className="font-bold text-base text-stone-900 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-emerald-700" />
+                  <span>Available Agricultural Products & Harvest Lots</span>
+                </h3>
+                <p className="text-xs text-stone-500">Quality assayed produce aggregated directly by Virtual Farm Clusters</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-stone-500 font-semibold bg-stone-100 px-2.5 py-1 rounded-lg">Showing: {filteredLots.length} of {lots.length} Lots</span>
               </div>
             </div>
 
-            <div className="space-y-4">
-              {lots.map((lot) => (
+            {/* Search & Category Filter Controls */}
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search products by crop, variety, cluster, or village..."
+                  className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-600"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                {['ALL', 'Grains', 'Fibers', 'Oilseeds', 'Pulses & Spices'].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1 rounded-full font-bold transition-all shrink-0 cursor-pointer ${
+                      selectedCategory === cat
+                        ? 'bg-amber-800 text-white shadow-xs'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    }`}
+                  >
+                    {cat === 'ALL' ? 'All Products' : cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+              {filteredLots.length === 0 ? (
+                <div className="text-center py-8 text-stone-400 text-xs">
+                  No products found matching "{searchTerm}". Try clearing search or choosing another category.
+                </div>
+              ) : (
+                filteredLots.map((lot) => (
                 <div
                   key={lot.id}
-                  className="p-4 rounded-2xl border border-stone-200 bg-stone-50/70 hover:bg-stone-50 transition-all space-y-3"
+                  className="p-4 rounded-2xl border border-stone-200 bg-stone-50/70 hover:bg-stone-50 transition-all space-y-3 group"
                 >
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                        <span className={`text-[10px] font-mono font-bold tracking-tight ${
+                          lot.qualityGrade === 'A+ Export' ? 'text-amber-700' : 'text-emerald-700'
+                        }`}>
                           {lot.qualityGrade}
                         </span>
                         <span className="text-xs font-mono text-stone-500">
@@ -247,7 +401,8 @@ export const BuyerDashboard: React.FC = () => {
                   </p>
 
                   <div className="flex justify-between items-center pt-2">
-                    <span className="text-[11px] text-stone-500">
+                    <span className="text-[11px] text-stone-500 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
                       Expected Harvest: <strong>{lot.expectedHarvestDate}</strong>
                     </span>
                     <button
@@ -257,11 +412,12 @@ export const BuyerDashboard: React.FC = () => {
                       }}
                       className="bg-stone-900 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer"
                     >
-                      Submit Purchase Proposal
+                      Submit Proposal
                     </button>
                   </div>
                 </div>
-              ))}
+              ))
+            )}
             </div>
           </div>
         </div>
@@ -438,6 +594,13 @@ export const BuyerDashboard: React.FC = () => {
           setLoyaltyAccount(updatedAcc);
           addToast('Rating Recorded', 'Earned +20 Buyer Loyalty Points for genuine review!', 'success');
         }}
+      />
+
+      {/* AI Virtual Cluster Aggregator Modal */}
+      <VirtualClusterAggregatorModal
+        isOpen={showAggregatorModal}
+        onClose={() => setShowAggregatorModal(false)}
+        availableLots={lots}
       />
     </div>
   );

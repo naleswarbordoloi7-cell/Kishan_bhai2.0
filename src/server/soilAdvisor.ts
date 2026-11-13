@@ -122,9 +122,10 @@ export function calculateSoilHealthScore(metrics: {
  * Extract Soil Health Card data using Gemini Multimodal Vision API or high-precision agronomic parser.
  */
 export async function parseSoilReportDocument(base64Data?: string, mimeType: string = 'image/jpeg'): Promise<Partial<SoilHealthData>> {
-  if (process.env.GEMINI_API_KEY && base64Data) {
+  const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+  if (geminiKey.length > 10 && !geminiKey.startsWith('gsk_') && base64Data) {
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ apiKey: geminiKey });
       const prompt = `You are a certified soil testing laboratory analyst in India.
 Analyze this Soil Health Card / Lab Test Report scan and extract all agricultural metrics.
 

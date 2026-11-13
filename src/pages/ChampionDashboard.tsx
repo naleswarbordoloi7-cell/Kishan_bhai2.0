@@ -345,10 +345,10 @@ export const ChampionDashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-700/20 text-[#144633] dark:text-emerald-300 text-xs font-bold font-mono">
+              <span className="inline-flex items-center gap-1.5 text-emerald-800 dark:text-emerald-400 text-xs font-bold font-mono tracking-tight">
                 ⭐ {currentUser?.village || 'Anandpur'} Gram Panchayat Hub
               </span>
-              <span className="bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300/60 font-bold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+              <span className="text-amber-700 dark:text-amber-400 font-bold text-[10px] uppercase tracking-tight">
                 Govt KYC Verified
               </span>
             </div>
@@ -440,13 +440,13 @@ export const ChampionDashboard: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-sm text-stone-900">{farmer.fullName}</span>
                       {farmer.verified ? (
-                        <span className="bg-emerald-50 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 border border-emerald-200">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span className="text-emerald-700 dark:text-emerald-400 text-[10px] font-bold flex items-center gap-1 tracking-tight">
+                          <CheckCircle2 className="w-3 h-3" />
                           Land Verified
                         </span>
                       ) : (
-                        <span className="bg-amber-50 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 border border-amber-200">
-                          <Clock className="w-3 h-3 text-amber-600" />
+                        <span className="text-amber-700 dark:text-amber-400 text-[10px] font-bold flex items-center gap-1 tracking-tight">
+                          <Clock className="w-3 h-3" />
                           Pending KYC
                         </span>
                       )}
@@ -500,7 +500,7 @@ export const ChampionDashboard: React.FC = () => {
                         {req.crop}
                       </span>
                       {req.priority === 'HIGH' && (
-                        <span className="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.2 rounded-full">
+                        <span className="text-[10px] text-rose-700 dark:text-rose-400 font-bold tracking-tight">
                           URGENT
                         </span>
                       )}
@@ -565,7 +565,7 @@ export const ChampionDashboard: React.FC = () => {
             <div className="bg-white p-3 rounded-xl border border-amber-200/70 text-xs space-y-1">
               <div className="font-bold text-stone-900">ITC Agri Sourcing (Gujarat Mesh)</div>
               <div className="text-[11px] text-stone-600">Requirement: 50 Tons Sharbati Wheat @ ₹2,950/qtl</div>
-              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">
+              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-tight">
                 Escrow Guarantee Verified
               </span>
             </div>

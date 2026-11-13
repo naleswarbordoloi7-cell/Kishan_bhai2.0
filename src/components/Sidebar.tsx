@@ -40,7 +40,6 @@ export const Sidebar: React.FC = () => {
         { id: 'farmer-dashboard', labelEn: 'Dashboard Overview', labelHi: 'डैशबोर्ड व मुख्य पृष्ठ', icon: LayoutDashboard },
         { id: 'ai-assistant', labelEn: 'Kisan AI Advisor', labelHi: 'किसान AI सलाहकार', icon: Sparkles },
         { id: 'crop-recommendation', labelEn: '🌱 What Should I Grow?', labelHi: '🌱 क्या उगाएं? (फसल सिफारिश)', icon: Sprout },
-        { id: 'soil-health', labelEn: '🧪 Soil Health Intelligence', labelHi: '🧪 मृदा स्वास्थ्य कार्ड (SHC)', icon: Layers },
         { id: 'weather', labelEn: '🌦 Weather Intelligence', labelHi: '🌦 मौसम पूर्वानुमान व सलाह', icon: CloudSun },
         { id: 'smart-irrigation', labelEn: '💧 Smart Irrigation', labelHi: '💧 स्मार्ट सिंचाई सलाहकार', icon: Droplets },
         { id: 'disease-scanner', labelEn: '🔍 AI Disease Scanner', labelHi: '🔍 रोग व कीट स्कैनर', icon: Scan },
@@ -53,7 +52,6 @@ export const Sidebar: React.FC = () => {
         { id: 'market-prices', labelEn: 'Live Mandi Rates', labelHi: 'दैनिक मंडी भाव', icon: TrendingUp },
         { id: 'profit-calculator', labelEn: 'Profit & ROI Engine', labelHi: 'फसल लाभ कैलकुलेटर', icon: Calculator },
         { id: 'government-schemes', labelEn: 'Government Schemes', labelHi: 'सरकारी योजनाएं', icon: Landmark },
-        { id: 'farm-diary', labelEn: 'Farm Diary & Khata', labelHi: 'खेत डायरी (खाता)', icon: BookOpen },
       ],
     },
     {
@@ -64,7 +62,6 @@ export const Sidebar: React.FC = () => {
         { id: 'harvest', labelEn: 'Harvest Pooling Lots', labelHi: 'फसल पूल लॉट', icon: Package },
         { id: 'machinery', labelEn: 'Machinery Booking', labelHi: 'कृषि यंत्र बुकिंग', icon: Tractor },
         { id: 'community', labelEn: 'Kisan Chaupal App', labelHi: 'किसान चौपाल (ऐप)', icon: Users, badge: 'APP' },
-        { id: 'talk-to-expert', labelEn: 'Talk to Expert', labelHi: 'विशेषज्ञ परामर्श', icon: UserCheck },
         { id: 'alerts', labelEn: 'Field Alerts', labelHi: 'खेत चेतावनी व अलर्ट', icon: Bell, badge: unreadAlertCount },
         { id: 'settings', labelEn: 'Profile & Settings', labelHi: 'सेटिंग्स व प्रोफ़ाइल', icon: Settings },
       ],
@@ -81,20 +78,17 @@ export const Sidebar: React.FC = () => {
           { id: 'harvest', labelEn: 'Cluster Harvest Lots', labelHi: 'कुल फसल पूल', icon: Package },
           { id: 'machinery', labelEn: 'Village Machinery Roster', labelHi: 'यंत्र उपलब्धता', icon: Tractor },
           { id: 'marketplace', labelEn: 'Buyer Coordination', labelHi: 'क्रेता समन्वय', icon: Store },
-          { id: 'transactions', labelEn: 'Settlement Logs', labelHi: 'सेटलमेंट लॉग', icon: Receipt },
         ];
       case 'BUYER':
         return [
           { id: 'buyer-dashboard', labelEn: 'Buyer Procurement Desk', labelHi: 'क्रेता डैशबोर्ड', icon: LayoutDashboard },
           { id: 'marketplace', labelEn: 'Cluster Harvest Catalog', labelHi: 'क्लस्टर फसल सूची', icon: Store },
           { id: 'clusters', labelEn: 'Verified Farm Clusters', labelHi: 'सत्यापित क्लस्टर', icon: Users },
-          { id: 'transactions', labelEn: 'Procurement Escrow & Tx', labelHi: 'भुगतान रिकॉर्ड', icon: Receipt },
         ];
       case 'ADMIN':
         return [
           { id: 'admin-dashboard', labelEn: 'System Control Center', labelHi: 'प्रशासक डैशबोर्ड', icon: LayoutDashboard },
           { id: 'clusters', labelEn: 'All Registered Clusters', labelHi: 'सभी क्लस्टर', icon: Users },
-          { id: 'transactions', labelEn: 'Algorand Testnet Ledger', labelHi: 'ब्लॉकचेन लेजर', icon: ShieldAlert },
         ];
       default:
         return [];

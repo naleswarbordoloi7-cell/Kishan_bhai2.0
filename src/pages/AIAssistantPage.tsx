@@ -26,6 +26,14 @@ import {
   Info,
   Radio,
   BookOpen,
+  Brain,
+  MoreVertical,
+  Settings2,
+  TrendingUp,
+  Droplets,
+  Sprout,
+  CloudSun,
+  Landmark,
 } from 'lucide-react';
 import { AIChatMessage, AIConversationSession } from '../../shared/types';
 import { AIFarmContextBadge } from '../components/ai/AIFarmContextBadge';
@@ -53,7 +61,7 @@ export const AIAssistantPage: React.FC = () => {
     addDiaryEntry,
   } = useApp();
 
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.8-flash');
   const [activeSessionId, setActiveSessionId] = useState<string>('sess_wheat_irrigation_01');
   const [sessions, setSessions] = useState<AIConversationSession[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -62,10 +70,39 @@ export const AIAssistantPage: React.FC = () => {
   const [isFieldVoiceModalOpen, setIsFieldVoiceModalOpen] = useState(false);
   const [autoSpeakAnswer, setAutoSpeakAnswer] = useState(true);
   const [isAudioSpeaking, setIsAudioSpeaking] = useState(false);
+  const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
+  const [farmMemoryData, setFarmMemoryData] = useState<{ preferences: Record<string, any>; notes: string[] } | null>(null);
   const [speechLanguageCode, setSpeechLanguageCode] = useState<string>(() => {
     const matched = INDIAN_SPEECH_LANGUAGES.find((l) => l.code === language);
     return matched?.speechCode || 'hi-IN';
   });
+
+  const openMemoryModal = async () => {
+    setIsMemoryModalOpen(true);
+    try {
+      const res = await fetch(`/api/ai/memory/${currentUser?.id || 'usr_farmer_ramesh'}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFarmMemoryData(data.memory || { preferences: {}, notes: [] });
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleClearMemory = async () => {
+    try {
+      await fetch(`/api/ai/memory/${currentUser?.id || 'usr_farmer_ramesh'}`, { method: 'DELETE' });
+      setFarmMemoryData({ preferences: {}, notes: [] });
+      addToast(
+        'Farm Memory Cleared',
+        language === 'hi' ? 'एआई मेमोरी और प्राथमिकताओं को रीसेट कर दिया गया है।' : 'AI long-term farm memory reset.',
+        'info'
+      );
+    } catch {
+      // ignore
+    }
+  };
 
   // Keep speech language synchronized with global application language
   useEffect(() => {
@@ -78,39 +115,32 @@ export const AIAssistantPage: React.FC = () => {
   const initialWelcomeMessage: AIChatMessage = {
     id: 'msg_welcome',
     role: 'assistant',
-    modelUsed: 'gemini-2.5-flash',
+    modelUsed: 'gemini-3.8-flash',
     language: language || 'en',
     content: language === 'hi'
-      ? `🌱 **Recommendation: नमस्ते ${currentUser?.fullName || 'किसान भाई'}! मैं आपका 24/7 स्मार्ट कृषि साथी हूँ**
+      ? `👋 **नमस्ते ${currentUser?.fullName || 'किसान भाई'}! मैं आपका व्यक्तिगत फार्म एजेंट हूँ।**
 
-**Why? (कारण):**
-- मैं आपके खेत का स्थान (**${currentUser?.village || 'आनंदपुर'}, गुजरात**), मिट्टी की नमी (**42%**), और मौसम का लाइव डेटा समझता हूँ।
-- आपके खेत में कल दोपहर **70% भारी बारिश (14-18 मिमी)** का पूर्वानुमान है।
+आज के लिए आपका **मैनेजमेंट ब्रीफ**:
+- आपके खेत (**${currentUser?.village || 'आनंदपुर'}**) में कल **70% भारी बारिश** की संभावना है।
+- **सिंचाई स्थगित रखें**: मिट्टी में अभी पर्याप्त नमी (42%) है।
+- **मंडी अलर्ट**: आज गोंडल मंडी में कपास के दाम ₹140 बढ़े हैं।
 
-**What to do (क्या करें):**
-1. नीचे दिए गए त्वरित प्रश्नों में से कोई विकल्प चुनें या अपना प्रश्न बोलें/लिखें।
-2. पत्तियों में रोग की जांच के लिए फोटो अपलोड करें।
-3. प्राकृतिक भाषा में खाद आर्डर, फसल पूल या प्रोफ़ाइल अपडेट करने का निर्देश दें।
+**मैं आपके लिए क्या करूँ?**
+- पत्तियों के रोगों की जांच (फोटो भेजें)
+- खाद का सामूहिक आर्डर बुक करना
+- मशीनरी बुक करना या फार्म डायरी अपडेट करना`
+      : `👋 **Namaste ${currentUser?.fullName || 'Farmer Brother'}! I am your Personal Farm Agent.**
 
-⚠️ **Important Warning (महत्वपूर्ण चेतावनी):** डिजिटल सलाह सामान्य निर्णय सहायता के लिए है। कीटनाशक प्रयोग से पहले स्थानीय कृषि विशेषज्ञ की पुष्टि अवश्य करें।`
-      : `🌱 **Recommendation: Namaste ${currentUser?.fullName || 'Farmer Brother'}! I am your 24/7 Intelligent Farming Copilot**
+Your **Management Brief** for today:
+- Live telemetry for **${currentUser?.village || 'Anandpur'}** shows **70% rain forecasted tomorrow**.
+- **Action: Hold Irrigation**. Soil moisture is optimal at 42%.
+- **Mandi Intelligence**: Gondal APMC is quoting ₹140 premium for your crop today.
 
-**Why?**
-- I am connected to your live farm telemetry in **${currentUser?.village || 'Anandpur'}, Gujarat** (${currentUser?.farmSizeAcres || 4.5} Acres).
-- Live soil moisture is **42% (Optimal)** and **70% rain is forecasted tomorrow**.
-
-**What to do:**
-1. Ask any agronomical question or select one of the 1-click quick scenarios below.
-2. Upload a leaf photo for instant computer vision disease diagnosis.
-3. Command me to modify your crops, create fertilizer pools, or list harvest lots directly.
-
-⚠️ **Important Warning:** Digital recommendations provide agricultural decision support. Verify specific chemical handling with local agricultural officers.`,
+**How can I assist your farm operations today?**
+- Diagnose crop issues via photo
+- Coordinate collective bulk orders
+- Book shared machinery or log field notes`,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    sources: [
-      'IMD Agro-Meteorological Weather Radar',
-      'ICAR Crop Knowledge Repository (ICAR-IIWBR)',
-      'Agmarknet APMC Live Mandi Data Feed',
-    ],
   };
 
   const [messages, setMessages] = useState<AIChatMessage[]>([initialWelcomeMessage]);
@@ -122,6 +152,60 @@ export const AIAssistantPage: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Suggested prompt chips above input area to start conversations faster
+  const suggestedPromptChips = [
+    {
+      id: 'crop_health',
+      icon: Sprout,
+      labelEn: 'Check crop health',
+      labelHi: 'फसल स्वास्थ्य जांचें',
+      labelGu: 'પાક આરોગ્ય તપાસો',
+      query: language === 'hi'
+        ? 'मेरी फसल के स्वास्थ्य की जांच करें। क्या कोई रोग या पोषण की कमी के लक्षण हैं?'
+        : 'Please check my crop health and advise on any disease or nutrient issues.',
+    },
+    {
+      id: 'market_prices',
+      icon: TrendingUp,
+      labelEn: 'Market prices today',
+      labelHi: 'आज के मंडी भाव',
+      labelGu: 'આજના બજાર ભાવ',
+      query: language === 'hi'
+        ? 'मेरी फसलों के लिए आज के ताजा APMC मंडी भाव और मूल्य रुझान क्या हैं?'
+        : "What are today's live APMC mandi prices and market trends for my crops?",
+    },
+    {
+      id: 'irrigation_help',
+      icon: Droplets,
+      labelEn: 'Help with irrigation',
+      labelHi: 'सिंचाई में सहायता',
+      labelGu: 'સિંચાઈ સહાય',
+      query: language === 'hi'
+        ? 'मिट्टी की नमी और बारिश के पूर्वानुमान के अनुसार क्या आज सिंचाई करनी चाहिए?'
+        : 'Should I irrigate my crops today based on current soil moisture and weather forecast?',
+    },
+    {
+      id: 'weather_advice',
+      icon: CloudSun,
+      labelEn: 'Weather advisory',
+      labelHi: 'मौसम पूर्वानुमान',
+      labelGu: 'હવામાન આગાહી',
+      query: language === 'hi'
+        ? 'मेरे क्षेत्र के लिए अगले 3 दिनों का मौसम पूर्वानुमान और वर्षा अलर्ट क्या है?'
+        : 'What is the 3-day weather forecast and rain advisory for my farm?',
+    },
+    {
+      id: 'govt_schemes',
+      icon: Landmark,
+      labelEn: 'Govt schemes',
+      labelHi: 'सरकारी योजनाएं',
+      labelGu: 'સરકારી યોજનાઓ',
+      query: language === 'hi'
+        ? 'मेरी खेती के लिए कौन-सी सरकारी सब्सिडी व पीएम-किसान योजनाएं उपलब्ध हैं?'
+        : 'What government subsidies, PM-Kisan, and welfare schemes are available for my farm?',
+    },
+  ];
 
   // Hook for resilient speech recognition with Indian regional fallbacks
   const {
@@ -202,8 +286,12 @@ export const AIAssistantPage: React.FC = () => {
     }
   }, [pendingAiQuery]);
 
-  // Voice speech recognition toggle
+  // Voice speech recognition toggle with audio interruption & echo prevention
   const toggleVoiceInput = () => {
+    // Interrupt and stop any playing audio so microphone doesn't capture speaker echo
+    stopSpeech();
+    setIsAudioSpeaking(false);
+
     if (!isVoiceSupported) {
       addToast(
         'Voice Input Unavailable',
@@ -217,6 +305,8 @@ export const AIAssistantPage: React.FC = () => {
       stopListening();
       setInterimVoiceSpeech('');
     } else {
+      // Ensure FieldVoiceBar is closed if we are doing direct input, 
+      // or at least stop its listener if it were open.
       resetTranscript();
       setInterimVoiceSpeech('');
       startListening({
@@ -224,13 +314,15 @@ export const AIAssistantPage: React.FC = () => {
         continuous: false,
         interimResults: true,
       });
+      
       const activeLanguageOption = INDIAN_SPEECH_LANGUAGES.find((l) => l.speechCode === speechLanguageCode);
       const displayLabel = activeLanguageOption ? activeLanguageOption.label : speechLanguageCode;
+      
       addToast(
-        'Listening in Field...',
+        'Listening...',
         language === 'hi'
-          ? 'बोलिए, किसान भाई AI सुन रहा है...'
-          : `Listening in ${displayLabel}. Speak now...`,
+          ? 'बोलिए, मैं सुन रहा हूँ...'
+          : `Listening in ${displayLabel}...`,
         'info'
       );
     }
@@ -260,6 +352,10 @@ export const AIAssistantPage: React.FC = () => {
     const imageToSend = customImage || selectedImage;
 
     if (!promptToSend.trim() && !imageToSend) return undefined;
+
+    // Halt active speech immediately when sending new query
+    stopSpeech();
+    setIsAudioSpeaking(false);
 
     const userMsg: AIChatMessage = {
       id: `msg_${Date.now()}`,
@@ -306,6 +402,10 @@ export const AIAssistantPage: React.FC = () => {
           language,
           farmContext,
           conversationId: activeSessionId,
+          history: messages.slice(-8).map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
         }),
       });
 
@@ -451,6 +551,8 @@ export const AIAssistantPage: React.FC = () => {
   };
 
   const handleClearChat = () => {
+    stopSpeech();
+    setIsAudioSpeaking(false);
     setMessages([initialWelcomeMessage]);
     setInputPrompt('');
     setSelectedImage(null);
@@ -508,128 +610,75 @@ export const AIAssistantPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
+    <div className="max-w-5xl mx-auto px-2 sm:px-4 py-3 sm:py-6 space-y-3 sm:space-y-4">
       {/* 1. Header Banner */}
-      <div className="bg-green-700 text-white p-4 sm:p-6 rounded-2xl shadow-xl border border-white/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+      {/* 1. Refined Header Banner */}
+      <div className="bg-emerald-900 dark:bg-[#0A1A0F] text-white p-4 sm:p-5 rounded-3xl shadow-lg border border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 relative overflow-hidden">
         {/* Left Title & Status */}
-        <div className="flex items-center gap-3.5 relative z-10">
-          <div className="w-12 h-12 rounded-2xl bg-white/15 text-emerald-200 flex items-center justify-center font-bold border border-white/20 backdrop-blur-xs shadow-inner shrink-0">
-            <Bot className="w-7 h-7 text-emerald-300" />
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="w-10 h-10 rounded-xl bg-white/10 text-emerald-400 flex items-center justify-center border border-white/10 backdrop-blur-md">
+            <Bot className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2">
               <h1 className="font-bold font-display text-xl text-white tracking-tight">
-                🤖 Kishan Bhai AI (किसान भाई AI)
+                Kishan Bhai Agent
               </h1>
-              <span className="bg-emerald-400/20 text-emerald-300 text-[11px] px-2.5 py-0.5 rounded-full font-mono border border-emerald-400/40 flex items-center gap-1.5 font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                AI Online
-              </span>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
             </div>
-            <p className="text-stone-200 text-xs sm:text-sm mt-0.5">
-              Your 24/7 intelligent farming partner • Powered by Gemini 3.7 Flash
+            <p className="text-emerald-400/70 text-[11px] font-bold uppercase tracking-widest mt-0.5">
+              Dedicated Farm Management Agent
             </p>
           </div>
         </div>
 
-        {/* Right Action Controls: Field Voice, Hands-Free Field Mode, Dialect, History, Clear */}
-        <div className="flex items-center gap-2 relative z-10 w-full md:w-auto justify-end flex-wrap">
-          {/* Field Voice Bar Toggle */}
-          <button
-            type="button"
-            onClick={() => setIsFieldVoiceBarOpen((prev) => !prev)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer border active:scale-95 shrink-0 ${
-              isFieldVoiceBarOpen
-                ? 'bg-emerald-400 text-stone-950 border-white'
-                : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
-            }`}
-            title="Toggle Hands-Free Field Voice Bar"
-          >
-            <Mic className={`w-3.5 h-3.5 ${isFieldVoiceBarOpen ? 'text-stone-950 animate-pulse' : 'text-emerald-300'}`} />
-            <span>{language === 'hi' ? 'खेत वॉयस बार' : 'Field Voice Bar'}</span>
-          </button>
-
-          {/* Hands-Free Assistant Trigger */}
-          <button
-            type="button"
-            onClick={() => setIsHandsFreeOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-stone-950 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer border border-emerald-200/50 active:scale-95 shrink-0"
-            title="Open Hands-Free Field Conversation Loop"
-          >
-            <Radio className="w-3.5 h-3.5 text-stone-950 animate-pulse" />
-            <span>{language === 'hi' ? 'बोलकर बात करें (Hands-Free)' : 'Hands-Free Field Mode'}</span>
-          </button>
-
-          {/* Voice Farm Diary Dictator Modal Button */}
-          <button
-            type="button"
-            onClick={() => setIsFieldVoiceModalOpen(true)}
-            className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-xl text-xs font-medium border border-white/20 transition-all cursor-pointer active:scale-95 shrink-0"
-            title="Open Voice Farm Diary Dictator Modal"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-amber-300" />
-            <span className="hidden sm:inline">{language === 'hi' ? 'वॉयस डायरी' : 'Voice Diary'}</span>
-          </button>
-
-          {/* Voice Dialect Selector */}
-          <div className="relative">
-            <select
-              value={speechLanguageCode}
-              onChange={(e) => setSpeechLanguageCode(e.target.value)}
-              className="bg-white/15 hover:bg-white/25 text-white text-[11px] font-medium px-2.5 py-1.5 rounded-xl border border-white/20 backdrop-blur-xs cursor-pointer focus:outline-none"
-              title="Voice Recognition Language"
+        {/* Right Action Controls */}
+        <div className="flex items-center gap-3 relative z-10 w-full md:w-auto justify-end">
+          {/* Voice Command Group */}
+          <div className="flex items-center bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={() => setIsHandsFreeOpen(true)}
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer active:scale-95 shrink-0"
             >
-              {INDIAN_SPEECH_LANGUAGES.map((opt) => (
-                <option key={opt.code} value={opt.speechCode} className="text-stone-900 bg-white">
-                  🎙️ {opt.nativeName} ({opt.label})
-                </option>
-              ))}
-            </select>
+              <Radio className="w-3 h-3" />
+              <span>{language === 'hi' ? 'बोलकर पूछें' : 'Hands-Free'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={toggleVoiceInput}
+              className={`p-1.5 transition-all cursor-pointer rounded-xl ml-0.5 ${
+                isListening ? 'text-rose-500 animate-pulse' : 'text-stone-400 hover:text-white'
+              }`}
+            >
+              <Mic className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Language Selector */}
-          <div className="relative">
-            <select
-              value={language}
-              onChange={(e) => {
-                const newLang = e.target.value as any;
-                setLanguage(newLang);
-              }}
-              className="bg-white/15 hover:bg-white/25 text-white text-xs font-medium px-3 py-1.5 rounded-xl border border-white/20 backdrop-blur-xs cursor-pointer focus:outline-none"
-              title="Change Chat Language"
+          {/* Secondary Utilities */}
+          <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-2xl border border-white/10">
+            <button
+              onClick={() => setIsHistoryOpen(true)}
+              className="p-1 rounded-xl text-stone-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+              title="History"
             >
-              {SUPPORTED_LANGUAGES.map((opt) => (
-                <option key={opt.code} value={opt.code} className="text-stone-900 bg-white">
-                  {opt.flag} {opt.nativeName} ({opt.name})
-                </option>
-              ))}
-            </select>
+              <History className="w-4 h-4" />
+            </button>
+            <button
+              onClick={openMemoryModal}
+              className="p-1 rounded-xl text-stone-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+              title="Farm Memory"
+            >
+              <Brain className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleClearChat}
+              className="p-1 rounded-xl text-stone-400 hover:text-rose-400 hover:bg-white/5 transition-colors cursor-pointer"
+              title="Clear Chat"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
-
-          {/* Conversation History Drawer Button */}
-          <button
-            onClick={() => setIsHistoryOpen(true)}
-            className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-xl text-xs font-medium text-white border border-white/20 backdrop-blur-xs transition-colors cursor-pointer"
-            title="Conversation History"
-          >
-            <History className="w-3.5 h-3.5 text-emerald-300" />
-            <span>History</span>
-            {sessions.length > 0 && (
-              <span className="bg-emerald-400 text-emerald-950 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                {sessions.length}
-              </span>
-            )}
-          </button>
-
-          {/* Clear Chat */}
-          <button
-            onClick={handleClearChat}
-            className="flex items-center gap-1 bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded-xl text-xs text-white border border-white/20 backdrop-blur-xs transition-colors cursor-pointer"
-            title="Clear Chat"
-          >
-            <Trash2 className="w-3.5 h-3.5 text-stone-300" />
-            <span className="hidden sm:inline">Clear</span>
-          </button>
         </div>
       </div>
 
@@ -645,7 +694,7 @@ export const AIAssistantPage: React.FC = () => {
       {/* 4. Main Chat Interface Feed */}
       <div className="bg-stone-50/60 backdrop-blur-xl rounded-2xl border border-stone-200/90 shadow-xs flex flex-col overflow-hidden min-h-[480px]">
         {/* Chat Feed */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 max-h-[560px]">
+        <div className="flex-1 overflow-y-auto p-2.5 sm:p-4 space-y-3 sm:space-y-4 max-h-[600px] custom-scrollbar">
           {messages.map((msg) => (
             <AIChatMessageItem
               key={msg.id}
@@ -660,8 +709,8 @@ export const AIAssistantPage: React.FC = () => {
           {/* Typing Animation Indicator */}
           {isProcessing && (
             <div className="flex gap-3.5 justify-start animate-in fade-in">
-              <div className="w-9 h-9 rounded-2xl bg-green-700 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm border border-emerald-700/30">
-                <Bot className="w-5 h-5 text-emerald-200 animate-spin" />
+              <div className="w-8 h-8 rounded-xl bg-green-700 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm border border-emerald-700/30">
+                <Bot className="w-4 h-4 text-emerald-200 animate-spin" />
               </div>
               <div className="bg-white/95 backdrop-blur-md border border-stone-200/90 rounded-2xl rounded-tl-xs p-4 shadow-xs text-xs sm:text-sm text-stone-700 flex items-center gap-3">
                 <div className="flex gap-1.5 items-center">
@@ -680,7 +729,7 @@ export const AIAssistantPage: React.FC = () => {
         </div>
 
         {/* 5. Large Bottom AI Input Area */}
-        <div className="p-3 sm:p-4 bg-white border-t border-stone-200/80 space-y-2.5">
+        <div className="p-2.5 sm:p-4 bg-white border-t border-stone-200/80 space-y-2">
           {/* Audio Speaking Out Loud Banner */}
           {isAudioSpeaking && (
             <div className="flex items-center justify-between gap-2 bg-emerald-950 text-emerald-200 border border-emerald-600/70 px-3.5 py-2 rounded-xl text-xs animate-in fade-in">
@@ -752,8 +801,33 @@ export const AIAssistantPage: React.FC = () => {
             </div>
           )}
 
-          {/* Large Input Box */}
-          <div className="flex items-center gap-2 bg-stone-50 border border-stone-200/90 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-green-700/30 focus-within:border-green-700 transition-all shadow-inner">
+          {/* Row of Suggested Prompt Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none">
+            <div className="flex items-center gap-1 text-[11px] font-bold text-stone-400 dark:text-stone-500 shrink-0 uppercase tracking-wider pl-0.5 select-none">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>{language === 'hi' ? 'त्वरित सुझाव:' : language === 'gu' ? 'સૂચનો:' : 'Suggested:'}</span>
+            </div>
+            {suggestedPromptChips.map((chip) => {
+              const Icon = chip.icon;
+              const label = language === 'hi' ? chip.labelHi : language === 'gu' ? chip.labelGu : chip.labelEn;
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  disabled={isProcessing}
+                  onClick={() => handleSend(chip.query)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-stone-100 hover:bg-emerald-50 dark:bg-stone-800/90 dark:hover:bg-emerald-950/40 text-stone-700 dark:text-stone-300 hover:text-emerald-800 dark:hover:text-emerald-300 border border-stone-200/90 dark:border-stone-700/80 whitespace-nowrap transition-all shadow-2xs hover:shadow-xs active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer shrink-0"
+                  title={chip.query}
+                >
+                  <Icon className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Beautiful Focused Input Box */}
+          <div className="flex items-center gap-2 bg-stone-50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 rounded-2xl p-1.5 sm:p-2 focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-600 transition-all shadow-sm">
             <input
               type="file"
               ref={fileInputRef}
@@ -762,32 +836,31 @@ export const AIAssistantPage: React.FC = () => {
               className="hidden"
             />
 
-            {/* Attach Image / Disease Scanner */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 rounded-xl text-stone-500 hover:text-green-700 hover:bg-emerald-50 transition-colors cursor-pointer shrink-0"
-              title="Upload crop photo for disease scan"
-            >
-              <ImageIcon className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              {/* Attach Image */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 rounded-xl text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors cursor-pointer shrink-0"
+                title="Upload crop photo"
+              >
+                <ImageIcon className="w-4 h-4" />
+              </button>
 
-            {/* Voice Input Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsFieldVoiceBarOpen(true);
-                toggleVoiceInput();
-              }}
-              className={`p-2.5 rounded-xl transition-all cursor-pointer shrink-0 ${
-                isListening || isFieldVoiceBarOpen
-                  ? 'bg-emerald-600 text-white animate-pulse shadow-sm'
-                  : 'text-stone-500 hover:text-green-700 hover:bg-emerald-50'
-              }`}
-              title="Hands-free field voice (Hindi/Regional)"
-            >
-              {isListening ? <MicOff className="w-5 h-5 text-rose-300" /> : <Mic className="w-5 h-5" />}
-            </button>
+              {/* Voice Input */}
+              <button
+                type="button"
+                onClick={toggleVoiceInput}
+                className={`p-2.5 rounded-xl transition-all cursor-pointer shrink-0 ${
+                  isListening
+                    ? 'bg-rose-500 text-white shadow-md animate-pulse'
+                    : 'text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                }`}
+                title={isListening ? "Stop Listening" : "Voice Query"}
+              >
+                <Mic className={`w-4 h-4 ${isListening ? 'scale-110' : ''}`} />
+              </button>
+            </div>
 
             {/* Text Input */}
             <input
@@ -802,10 +875,10 @@ export const AIAssistantPage: React.FC = () => {
               }}
               placeholder={
                 language === 'hi'
-                  ? 'किशन भाई से अपने खेत, फसल, मौसम या मंडी भाव के बारे में कुछ भी पूछें...'
-                  : 'Ask Kishan Bhai anything about your farm, crops, weather, or mandi prices...'
+                  ? 'खेत, फसल या मंडी भाव के बारे में पूछें...'
+                  : 'Ask about crops, soil, weather, or mandi prices...'
               }
-              className="w-full bg-transparent text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none px-2"
+              className="w-full bg-transparent text-sm sm:text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none px-2"
             />
 
             {/* Send Button */}
@@ -813,16 +886,15 @@ export const AIAssistantPage: React.FC = () => {
               type="button"
               onClick={() => handleSend()}
               disabled={isProcessing || (!inputPrompt.trim() && !selectedImage)}
-              className="bg-green-700 hover:bg-[#233f17] disabled:opacity-40 disabled:cursor-not-allowed text-white p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
+              className="bg-emerald-800 hover:bg-emerald-900 disabled:opacity-30 disabled:grayscale text-white p-3 rounded-xl font-bold transition-all cursor-pointer active:scale-95 shrink-0 shadow-sm shadow-emerald-900/20"
             >
-              <span className="hidden sm:inline">Send</span>
               <Send className="w-4 h-4" />
             </button>
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-stone-400 px-1">
             <span className="flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-600" />
+              <Info className="w-3 h-3 text-emerald-600" />
               <span>Ground-truth: ICAR knowledge repository & live sensor radar</span>
             </span>
             <span className="hidden sm:inline">Press Enter to send</span>
@@ -868,11 +940,103 @@ export const AIAssistantPage: React.FC = () => {
             crop: entry.crop,
             title: entry.title,
             expenseAmountInr: entry.expenseAmountInr,
-            revenueAmountInr: entry.revenueAmountInr,
             notes: entry.notes,
           });
         }}
       />
+
+      {/* 9. Farm Memory Review & Management Modal */}
+      {isMemoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-lg w-full p-6 text-white shadow-2xl space-y-5 relative">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold font-display text-base text-white">
+                    {language === 'as' ? 'ফাৰ্ম স্মৃতি আৰু পছন্দসমূহ' : language === 'hi' ? 'खेत मेमोरी व प्राथमिकताएं' : 'Farm Memory & Preferences'}
+                  </h3>
+                  <p className="text-xs text-stone-400">
+                    {language === 'as'
+                      ? 'আপোনাৰ সন্মতি সাপেক্ষে এআই-য়ে মনত ৰখা তথ্য'
+                      : language === 'hi'
+                      ? 'आपकी सहमति से एआई द्वारा याद रखी गई कृषि जानकारी'
+                      : 'Saved recurring farm details remembered across sessions'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMemoryModalOpen(false)}
+                className="p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-white/10 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="bg-stone-950/80 p-3 rounded-xl border border-white/10 space-y-2">
+                <div className="flex justify-between text-stone-300">
+                  <span className="text-stone-400 font-medium">Farmer:</span>
+                  <span className="font-bold text-white">{currentUser?.fullName || 'Ramesh Patel'}</span>
+                </div>
+                <div className="flex justify-between text-stone-300">
+                  <span className="text-stone-400 font-medium">Village & Location:</span>
+                  <span className="font-bold text-emerald-300">{currentUser?.village || 'Anandpur'}, Gujarat</span>
+                </div>
+                <div className="flex justify-between text-stone-300">
+                  <span className="text-stone-400 font-medium">Landholding:</span>
+                  <span className="font-bold text-white">{currentUser?.farmSizeAcres || 4.5} Acres (Medium Black Loam)</span>
+                </div>
+                <div className="flex justify-between text-stone-300">
+                  <span className="text-stone-400 font-medium">Crops Cultivated:</span>
+                  <span className="font-bold text-amber-300">{currentUser?.crops?.join(', ') || 'Wheat, Cotton'}</span>
+                </div>
+              </div>
+
+              {farmMemoryData?.notes && farmMemoryData.notes.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Recorded Farm Observations:</span>
+                  <div className="max-h-28 overflow-y-auto space-y-1 bg-stone-950/60 p-2.5 rounded-xl border border-white/5">
+                    {farmMemoryData.notes.map((note, i) => (
+                      <p key={i} className="text-[11px] text-stone-300">• {note}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[11px] text-stone-400 leading-relaxed">
+                {language === 'as'
+                  ? 'এই তথ্যই কিষাণ ভাই এআইক আপোনাৰ প্ৰশ্নৰ বাবে নিখুঁত আৰু ক্ষিপ্ৰ পৰামৰ্শ দিবলৈ সহায় কৰে।'
+                  : language === 'hi'
+                  ? 'यह जानकारी किसान भाई AI को आपके खेत के लिए सटीक व त्वरित सलाह प्रदान करने में सहायता करती है।'
+                  : 'This memory enables Kishan Bhai AI to answer follow-up questions seamlessly without repetitive queries.'}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={handleClearMemory}
+                className="flex items-center gap-1.5 text-rose-400 hover:text-rose-300 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-rose-500/10 cursor-pointer transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{language === 'as' ? 'মেমোৰি মচক' : language === 'hi' ? 'मेमोरी मिटाएं' : 'Clear Saved Memory'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsMemoryModalOpen(false)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer transition-colors"
+              >
+                {language === 'as' ? 'সম্পূৰ্ণ' : language === 'hi' ? 'पूर्ण' : 'Done'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

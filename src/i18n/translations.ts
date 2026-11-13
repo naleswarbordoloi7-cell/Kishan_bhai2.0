@@ -3,7 +3,7 @@
  * Kishan Bhai Platform
  */
 
-export type SupportedLanguage = 'hi' | 'en';
+export type SupportedLanguage = 'hi' | 'en' | 'as';
 
 export interface LanguageOption {
   code: SupportedLanguage;
@@ -15,6 +15,7 @@ export interface LanguageOption {
 export const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
   { code: 'en', name: 'English', nativeName: 'English', flag: '🌐' },
+  { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া', flag: '🌾' },
 ];
 
 export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
@@ -234,13 +235,54 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     history: 'History',
     handsFreeFieldMode: 'Hands-Free Field Mode',
   },
+  as: {
+    appTitle: 'কিষাণ ভাই',
+    tagline: 'বীজৰ পৰা বজাৰলৈ — আপোনাৰ AI কৃষি সংগী',
+    dashboard: 'ডেছবৰ্ড',
+    myCrops: 'মোৰ শস্য',
+    cropRecommendation: 'শস্য নিৰ্বাচন পৰামৰ্শ',
+    soilHealth: 'মাটিৰ স্বাস্থ্য কাৰ্ড',
+    diseaseScanner: 'শস্য ৰোগ নিৰ্ণয়',
+    smartIrrigation: 'স্মাৰ্ট সিঞ্চন',
+    marketPrices: 'মণ্ডিত শস্যৰ দৰ',
+    farmDiary: 'কৃষি ডায়েৰী আৰু খৰচ',
+    virtualClusters: 'ভাৰ্চুৱেল ফাৰ্ম ক্লাষ্টাৰ',
+    bulkBuying: 'সামূহিক ক্ৰয়',
+    harvestPooling: 'শস্য একত্ৰীকৰণ',
+    machinerySharing: 'কৃষি যন্ত্ৰ ভাড়া',
+    schemes: 'চৰকাৰী আঁচনি',
+    expertConsultation: 'কৃষি বিজ্ঞানীৰ পৰামৰ্শ',
+    community: 'কৃষক সভা',
+    profitCalculator: 'লাভৰ হিচাপ',
+    weather: 'বতৰৰ পূৰ্বাভাস',
+    adminDashboard: 'প্ৰশাসন ডেছবৰ্ড',
+    settings: 'ছেটিংছ',
+    logout: 'লগ আউট',
+    searchPlaceholder: 'শস্য, বজাৰ, ৰোগ বা পৰামৰ্শ সন্ধান কৰক...',
+    aiGreeting: 'নমস্কাৰ কৃষক ভাই! আজি আপোনাৰ শস্যৰ বাবে কি সহায় লাগে?',
+    saveChanges: 'সংৰক্ষণ কৰক',
+    cancel: 'বাতিল কৰক',
+    submit: 'দাখিল কৰক',
+    loading: 'অনুগ্ৰহ কৰি অপেক্ষা কৰক...',
+    verifiedData: 'প্ৰমাণিত তথ্য',
+    voiceAssistant: 'AI কণ্ঠ সহায়ক',
+    quickScan: 'ৰোগ পৰীক্ষা',
+    callExpert: 'বিশেষজ্ঞৰ সৈতে কথা পাতক',
+    helpline: 'কৃষক হেল্পলাইন',
+    soilMoisture: 'মাটিৰ আৰ্দ্ৰতা',
+    temperature: 'উষ্ণতা',
+    rainProbability: 'বৰষুণৰ সম্ভাৱনা',
+    clearChat: 'বাৰ্তালাপ মচক',
+    history: 'ইতিহাস',
+    handsFreeFieldMode: 'কণ্ঠৰ দ্বাৰা কথা পাতক (Hands-Free)',
+  },
 };
 
 /**
  * Translation helper function
  */
 export function t(lang: string, key: string, fallback?: string): string {
-  const currentLang = (lang === 'hi' || lang === 'en') ? lang : 'hi';
+  const currentLang = (lang === 'hi' || lang === 'en' || lang === 'as') ? lang : 'hi';
   const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.hi;
   if (dict[key]) {
     return dict[key];
@@ -255,12 +297,13 @@ export function getTranslation(lang: string, key: string, fallback?: string): st
 }
 
 /**
- * Direct locale selector for bilingual UI strings
+ * Direct locale selector for multilingual UI strings
  */
-export function loc(lang: string, enText: string, hiText: string, _guText?: string): string {
+export function loc(lang: string, enText: string, hiText: string, asText?: string): string {
+  if (lang === 'as' && asText) return asText;
   if (lang === 'en') return enText;
   if (lang === 'hi') return hiText;
-  return hiText || enText;
+  return asText || hiText || enText;
 }
 
 /**
@@ -268,10 +311,11 @@ export function loc(lang: string, enText: string, hiText: string, _guText?: stri
  */
 export function getLocalizedText(
   lang: string,
-  texts: { hi?: string; en?: string; [key: string]: string | undefined },
+  texts: { hi?: string; en?: string; as?: string; [key: string]: string | undefined },
   fallback?: string
 ): string {
   if (texts[lang]) return texts[lang]!;
+  if (lang === 'as' && texts.as) return texts.as;
   if (lang === 'en' && texts.en) return texts.en;
   if (texts.hi) return texts.hi;
   if (texts.en) return texts.en;
@@ -282,6 +326,7 @@ export function getLocalizedText(
  * Maps language code to browser speech synthesis / recognition language code
  */
 export function getSpeechLanguageCode(lang: string): string {
+  if (lang === 'as') return 'as-IN';
   return lang === 'en' ? 'en-IN' : 'hi-IN';
 }
 

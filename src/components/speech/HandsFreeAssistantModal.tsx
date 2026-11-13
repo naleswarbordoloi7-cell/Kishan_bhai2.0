@@ -89,19 +89,24 @@ export const HandsFreeAssistantModal: React.FC<HandsFreeAssistantModalProps> = (
     if (isOpen) {
       setLatestQuestion('');
       setLatestAnswer(
-        language === 'hi'
+        language === 'as'
+          ? `নমস্কাৰ ${farmerName}! মই আপোনাৰ কিষাণ ভাই এআই কৃষি সংগী। কোনো বুটাম নোচোৱাকৈ পথাৰত কাম কৰি থাকোঁতেই আপোনাৰ যিকোনো প্ৰশ্ন মোক পোনপটীয়াকৈ সোধক।`
+          : language === 'hi'
           ? `नमस्ते ${farmerName}! मैं आपका खेत सहायक हूँ। आप बिना फोन छुए सीधे बोलकर कोई भी प्रश्न पूछ सकते हैं।`
           : `Namaste ${farmerName}! I am your Hands-Free Farm Copilot. Speak any agricultural question directly while working in the field.`
       );
-      setStatusMessage('Listening for your voice question...');
+      setStatusMessage(language === 'as' ? 'আপোনাৰ প্ৰশ্ন শুনিবলৈ সাজু...' : language === 'hi' ? 'आपका प्रश्न सुनने के लिए तैयार...' : 'Listening for your voice question...');
       setConversationState('listening');
+
+      // Ensure speech synthesis is stopped before listening
+      stopSpeech();
 
       startListening({
         lang: selectedVoiceLang,
         continuous: false,
         interimResults: true,
         onResult: (text, isFinal) => {
-          if (isFinal && text.trim().length > 3) {
+          if (isFinal && text.trim().length > 2) {
             handleProcessQuestion(text.trim());
           }
         },
@@ -115,14 +120,19 @@ export const HandsFreeAssistantModal: React.FC<HandsFreeAssistantModalProps> = (
   const handleProcessQuestion = async (queryText: string) => {
     if (!queryText.trim()) return;
 
+    // Strict echo prevention: stop microphone immediately during thinking and speech
+    stopListening();
+    stopSpeech();
+
     setLatestQuestion(queryText);
     setConversationState('thinking');
     setStatusMessage(
-      language === 'hi'
+      language === 'as'
+        ? 'কিষাণ ভাই এআই-য়ে আপোনাৰ প্ৰশ্ন আৰু বতৰৰ তথ্য বিশ্লেষণ কৰি আছে...'
+        : language === 'hi'
         ? 'किसान भाई AI आपके प्रश्न का विश्लेषण कर रहा है...'
         : 'Analyzing farm telemetry & calculating advisory...'
     );
-    stopListening();
 
     try {
       const answer = await onSendQuery(queryText);
@@ -132,27 +142,29 @@ export const HandsFreeAssistantModal: React.FC<HandsFreeAssistantModalProps> = (
       if (autoSpeakAnswer) {
         setConversationState('speaking');
         setStatusMessage(
-          language === 'hi' ? 'सलाह बोलकर सुनाई जा रही है...' : 'Speaking advisory aloud...'
+          language === 'as' ? 'পৰামৰ্শ পঢ়ি শুনোৱা হৈছে...' : language === 'hi' ? 'सलाह बोलकर सुनाई जा रही है...' : 'Speaking advisory aloud...'
         );
 
         speakText(cleanAnswer, {
           lang: selectedVoiceLang,
           rate: speechRate,
           onEnd: () => {
-            // Once speech ends, loop back to listening for the next voice question!
-            setConversationState('listening');
-            setStatusMessage('Ready! Speak your next question...');
-            resetTranscript();
-            startListening({
-              lang: selectedVoiceLang,
-              continuous: false,
-              interimResults: true,
-              onResult: (text, isFinal) => {
-                if (isFinal && text.trim().length > 3) {
-                  handleProcessQuestion(text.trim());
-                }
-              },
-            });
+            // Natural turn-taking: 400ms pause to ensure echo has cleared before listening
+            setTimeout(() => {
+              setConversationState('listening');
+              setStatusMessage(language === 'as' ? 'পৰৱৰ্তী প্ৰশ্ন সোধক...' : language === 'hi' ? 'अगला प्रश्न पूछें...' : 'Ready! Speak your next question...');
+              resetTranscript();
+              startListening({
+                lang: selectedVoiceLang,
+                continuous: false,
+                interimResults: true,
+                onResult: (text, isFinal) => {
+                  if (isFinal && text.trim().length > 2) {
+                    handleProcessQuestion(text.trim());
+                  }
+                },
+              });
+            }, 400);
           },
           onError: () => {
             setConversationState('listening');

@@ -123,9 +123,10 @@ export async function recommendCrops(input: CropRecommendationInput): Promise<Cr
     resourceAlignment: `Budget requirement of ₹${topPick.estimatedCostPerAcre.toLocaleString('en-IN')}/acre aligns cleanly with your stated parameters.`,
   };
 
-  if (process.env.GEMINI_API_KEY) {
+  const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+  if (geminiKey.length > 10 && !geminiKey.startsWith('gsk_')) {
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ apiKey: geminiKey });
       const prompt = `You are "Kisan Bhai", India's premier agronomist and crop advisor. 
 Generate a clear, authoritative, and actionable recommendation summary for a farmer.
 

@@ -166,6 +166,7 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
     }
     return () => {
       if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
     };
   }, [isListening]);
 
@@ -664,7 +665,7 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
                 className="bg-stone-800 hover:bg-stone-700 disabled:opacity-40 disabled:cursor-not-allowed text-emerald-300 font-semibold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 border border-emerald-600/40 transition-all cursor-pointer"
                 title="Ask AI if this recorded activity is agronomically sound"
               >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <Sparkles className="w-3 h-3 text-emerald-400" />
                 <span>{isHi ? 'AI से राय लें' : 'Ask AI Advice'}</span>
               </button>
 
@@ -674,7 +675,7 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
                 disabled={!speechText.trim()}
                 className="bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 disabled:opacity-40 disabled:cursor-not-allowed text-stone-950 font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95"
               >
-                <BookOpen className="w-4 h-4" />
+                <BookOpen className="w-3.5 h-3.5" />
                 <span>{isHi ? 'डायरी में जोड़ें' : 'Save to Farm Diary'}</span>
               </button>
             </>

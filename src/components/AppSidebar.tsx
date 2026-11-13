@@ -20,12 +20,22 @@ import {
   ShieldCheck,
   ArrowRight,
   Award,
+  Package,
 } from 'lucide-react';
 import farmerImg from '../assets/images/farmer_champion_portrait_1790247882281.jpg';
 
 interface AppSidebarProps {
   isOpenOnMobile: boolean;
   onCloseMobile: () => void;
+}
+
+interface SidebarNavItem {
+  id: string;
+  labelEn: string;
+  labelHi: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+  highlight?: boolean;
 }
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({
@@ -37,9 +47,40 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const isHi = language === 'hi';
+  const isBuyerSection = userRole === 'BUYER' || currentView === 'buyer-dashboard' || currentView === 'marketplace';
 
-  // Primary Navigation Items
-  const primaryNavItems = [
+  // Buyer-specific navigation items (Only buyer-needed products and procurement)
+  const buyerNavItems: SidebarNavItem[] = [
+    {
+      id: 'buyer-dashboard',
+      labelEn: 'Procurement Hub',
+      labelHi: 'प्रोक्योरमेंट हब (Dashboard)',
+      icon: LayoutDashboard,
+    },
+    {
+      id: 'marketplace',
+      labelEn: 'Product Catalog',
+      labelHi: 'उत्पाद कैटलॉग (Products)',
+      icon: Package,
+      badge: 'Lots',
+    },
+    {
+      id: 'clusters',
+      labelEn: 'Producer Clusters',
+      labelHi: 'उत्पादक क्लस्टर (Clusters)',
+      icon: Users,
+    },
+    {
+      id: 'loyalty',
+      labelEn: 'Buyer Loyalty & Perks',
+      labelHi: 'लॉयल्टी रिवार्ड्स (Rewards)',
+      icon: Award,
+      badge: 'Perks',
+    },
+  ];
+
+  // Farmer Primary Navigation Items
+  const farmerPrimaryNavItems: SidebarNavItem[] = [
     {
       id: 'farmer-dashboard',
       labelEn: 'Overview',
@@ -93,33 +134,32 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     },
   ];
 
+  const primaryNavItems = isBuyerSection ? buyerNavItems : farmerPrimaryNavItems;
+
   // Secondary Navigation Items (Below Divider)
-  const secondaryNavItems = [
-    {
-      id: 'my-crops',
-      labelEn: 'My Farm',
-      labelHi: 'मेरा खेत (My Farm)',
-      icon: Tractor,
-    },
-    {
-      id: 'transactions',
-      labelEn: 'Payments',
-      labelHi: 'भुगतान (Payments)',
-      icon: CreditCard,
-    },
-    {
-      id: 'talk-to-expert',
-      labelEn: 'Support',
-      labelHi: 'सहायता (Support)',
-      icon: HelpCircle,
-    },
-    {
-      id: 'settings',
-      labelEn: 'Settings',
-      labelHi: 'सेटिंग्स (Settings)',
-      icon: Settings,
-    },
-  ];
+  const secondaryNavItems = isBuyerSection
+    ? [
+        {
+          id: 'settings',
+          labelEn: 'Company Settings',
+          labelHi: 'कंपनी सेटिंग्स (Settings)',
+          icon: Settings,
+        },
+      ]
+    : [
+        {
+          id: 'my-crops',
+          labelEn: 'My Farm',
+          labelHi: 'मेरा खेत (My Farm)',
+          icon: Tractor,
+        },
+        {
+          id: 'settings',
+          labelEn: 'Settings',
+          labelHi: 'सेटिंग्स (Settings)',
+          icon: Settings,
+        },
+      ];
 
   const handleNavClick = (viewId: string) => {
     setCurrentView(viewId);
@@ -133,7 +173,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         <div className="p-4 sm:p-5 flex items-center justify-between border-b border-[#087443]/50">
           <div
             onClick={() => {
-              setCurrentView('farmer-dashboard');
+              setCurrentView(isBuyerSection ? 'buyer-dashboard' : 'farmer-dashboard');
               setIsLogoSplashOpen(true);
             }}
             className="flex items-center gap-3 cursor-pointer group"
@@ -186,7 +226,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             const isActive = currentView === item.id;
             return (
               <button
-                key={item.id}
+                key={`primary-${item.id}`}
                 type="button"
                 onClick={() => handleNavClick(item.id)}
                 className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all relative group cursor-pointer ${
@@ -206,7 +246,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                     isActive ? 'text-[#FFD84D]' : 'text-emerald-300 group-hover:text-white'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-4 h-4" />
                 </div>
 
                 {!isCollapsed && (
@@ -239,7 +279,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             const isActive = currentView === item.id;
             return (
               <button
-                key={item.id}
+                key={`secondary-${item.id}`}
                 type="button"
                 onClick={() => handleNavClick(item.id)}
                 className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all relative group cursor-pointer ${
@@ -259,7 +299,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                     isActive ? 'text-[#FFD84D]' : 'text-emerald-300/80 group-hover:text-white'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-4 h-4" />
                 </div>
 
                 {!isCollapsed && (
@@ -273,30 +313,44 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </div>
       </div>
 
-      {/* Bottom Promotional Card: "Stronger Farmers. Brighter Tomorrow." */}
+      {/* Bottom Promotional Card */}
       {!isCollapsed && (
         <div className="p-3.5 m-3 rounded-2xl bg-gradient-to-br from-[#087443] to-[#003827] border border-emerald-600/40 text-white shadow-lg relative overflow-hidden">
           <div className="relative z-10 space-y-2">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#FFD84D] animate-pulse"></span>
               <span className="text-[11px] font-black uppercase tracking-wider text-[#FFD84D]">
-                Mission Bharat
+                {isBuyerSection ? 'Institutional Procurement' : 'Mission Bharat'}
               </span>
             </div>
             <h4 className="text-xs font-bold leading-snug">
-              "Stronger Farmers. Brighter Tomorrow."
+              {isBuyerSection
+                ? '"Direct Farm-Gate Quality Produce"'
+                : '"Stronger Farmers. Brighter Tomorrow."'}
             </h4>
             <p className="text-[11px] text-emerald-100/90 leading-tight">
-              Empowering Indian smallholders with AI intelligence, shared machinery & direct mandi access.
+              {isBuyerSection
+                ? 'Direct institutional sourcing from verified smallholder clusters with 100% lab assay quality assurance.'
+                : 'Empowering Indian smallholders with AI intelligence, shared machinery & direct mandi access.'}
             </p>
             <button
               type="button"
-              onClick={() => handleNavClick('ai-assistant')}
+              onClick={() => handleNavClick(isBuyerSection ? 'marketplace' : 'ai-assistant')}
               className="mt-1 w-full py-2 px-3 rounded-xl bg-[#20A464] hover:bg-[#1b8c55] text-white font-extrabold text-[11px] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
             >
-              <Sparkles className="w-3.5 h-3.5 text-[#FFD84D]" />
-              <span>Ask Kisan AI</span>
-              <ArrowRight className="w-3 h-3" />
+              {isBuyerSection ? (
+                <>
+                  <Package className="w-3.5 h-3.5 text-[#FFD84D]" />
+                  <span>Browse Product Catalog</span>
+                  <ArrowRight className="w-3 h-3" />
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 text-[#FFD84D]" />
+                  <span>Ask Kisan AI</span>
+                  <ArrowRight className="w-3 h-3" />
+                </>
+              )}
             </button>
           </div>
         </div>
