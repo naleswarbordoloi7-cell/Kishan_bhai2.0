@@ -31,10 +31,9 @@ function getGeminiClient(): GoogleGenAI {
 }
 
 export const CANDIDATE_MODELS = [
-  'gemini-3.8-flash',
-  'gemini-4-argon',
+  'gemini-2.5-flash',
   'gemini-flash-latest',
-  'gemini-3.1-flash-lite',
+  'gemini-2.5-flash-lite',
 ];
 
 /**
@@ -340,7 +339,7 @@ export async function askKishanAI(
   base64Image?: string,
   mimeType: string = 'image/jpeg',
   userId?: string,
-  modelName: string = 'gemini-3.8-flash',
+  modelName: string = 'gemini-2.5-flash',
   language: string = 'en',
   farmContextOverride?: FarmContextInput,
   history?: ChatHistoryItem[],
@@ -358,7 +357,7 @@ export async function askKishanAI(
   diseaseAnalysis?: DiseaseAnalysisResult;
   conversationId?: string;
 }> {
-  const preferredModel = modelName || 'gemini-3.8-flash';
+  const preferredModel = modelName || 'gemini-2.5-flash';
   let activeModel = preferredModel;
   const currentUser = userId ? db.users.get(userId) : Array.from(db.users.values())[0];
   const userCluster = Array.from(db.clusters.values())[0];
@@ -1137,7 +1136,7 @@ Provide a comprehensive diagnosis formatted with:
 
     const { response, modelUsed } = await generateWithModelFallback(
       ai,
-      'gemini-3.8-flash',
+      'gemini-2.5-flash',
       (m) => ({
         model: m,
         contents: { parts: contents },
@@ -1333,7 +1332,7 @@ COMMUNICATION DIRECTIVE:
   try {
     const { response } = await generateWithModelFallback(
       ai,
-      'gemini-3.8-flash',
+      'gemini-2.5-flash',
       (m) => ({
         model: m,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -1407,7 +1406,7 @@ Return ONLY the raw JSON adhering strictly to the required schema. Do not add ma
   try {
     const { response } = await generateWithModelFallback(
       ai,
-      'gemini-3.8-flash',
+      'gemini-2.5-flash',
       (m) => ({
         model: m,
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
@@ -1544,9 +1543,12 @@ Tone & Constraints:
 }`;
 
   try {
+    if (!hasValidGeminiApiKey()) {
+      throw new Error('Missing or invalid Gemini API key; using local Kishan Mitra fallback.');
+    }
     const { response } = await generateWithModelFallback(
       ai,
-      'gemini-3.8-flash',
+      'gemini-2.5-flash',
       (m) => ({
         model: m,
         contents: [{ role: 'user', parts: [{ text: userQuery }] }],

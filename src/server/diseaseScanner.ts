@@ -1263,7 +1263,7 @@ Important: Use ICAR (Indian Council of Agricultural Research) and KVK (Krishi Vi
 
     const { response } = await generateWithModelFallback(
       ai,
-      'gemini-1.5-flash',
+      'gemini-2.5-flash',
       (m) => ({
         model: m,
         contents: [{ role: 'user', parts: contents }],
@@ -1274,7 +1274,9 @@ Important: Use ICAR (Indian Council of Agricultural Research) and KVK (Krishi Vi
       })
     );
 
-    const parsed = JSON.parse(response.text || '{}');
+    const rawJsonText = (response.text || '{}').replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    const jsonMatch = rawJsonText.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : '{}');
     const liveAgronomy = getCropAgronomyDetails(
       parsed.detectedCrop || cropKey,
       parsed.possibleDisease || baseTemplate.possibleDisease,

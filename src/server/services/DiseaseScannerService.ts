@@ -92,7 +92,7 @@ Respond in STRICT JSON format:
 `;
 
         const response = await client.models.generateContent({
-          model: 'gemini-1.5-flash',
+          model: 'gemini-2.5-flash',
           contents: [
             {
               role: 'user',
@@ -113,8 +113,9 @@ Respond in STRICT JSON format:
           },
         });
 
-        const rawText = response.text || '{}';
-        const parsed = JSON.parse(rawText);
+        const rawText = (response.text || '{}').replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : '{}');
 
         const result: DiseaseScanResult = {
           id: scanId,

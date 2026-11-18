@@ -260,9 +260,9 @@ export async function getWeatherData(location: string = 'Anandpur, Gujarat'): Pr
     let fetchedData: WeatherData;
 
     try {
-      // 1. Geocode location with Open-Meteo
+      // 1. Geocode location with Open-Meteo (bounded timeout so fallback triggers promptly)
       const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`;
-      const geoRes = await fetch(geoUrl);
+      const geoRes = await fetch(geoUrl, { signal: AbortSignal.timeout(3500) });
       const geoJson = await geoRes.json();
 
       let lat = 22.56;
@@ -276,7 +276,7 @@ export async function getWeatherData(location: string = 'Anandpur, Gujarat'): Pr
 
       // 2. Fetch 7-Day Forecast with Hourly & Daily metrics
       const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,wind_speed_10m_max&timezone=auto`;
-      const wRes = await fetch(weatherUrl);
+      const wRes = await fetch(weatherUrl, { signal: AbortSignal.timeout(3500) });
       const wJson = await wRes.json();
 
       const current = wJson.current || {};

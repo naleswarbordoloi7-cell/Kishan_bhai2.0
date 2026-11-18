@@ -2086,11 +2086,25 @@ app.post('/api/appointments/book', async (req, res) => {
 
 app.get('/api/supabase/status', async (req, res) => {
   try {
-    const { data, error } = await serverSupabase.from('appointments').select('id').limit(1);
-    const tableExists = !error || (!error.message.includes('Could not find the table') && error.code !== 'PGRST205');
+    const queryPromise = serverSupabase.from('appointments').select('id').limit(1);
+    const timeoutPromise = new Promise<{ error: { message: string; code?: string } }>((resolve) =>
+      setTimeout(() => resolve({ error: { message: 'Supabase request timeout (3s)' } }), 3000)
+    );
+    const { error } = (await Promise.race([queryPromise, timeoutPromise])) as any;
+    const isNetworkError = Boolean(
+      error &&
+        (error.message?.includes('fetch failed') ||
+          error.message?.includes('ENOTFOUND') ||
+          error.message?.includes('ECONNREFUSED') ||
+          error.message?.includes('timeout'))
+    );
+    const connected = !isNetworkError;
+    const tableExists =
+      connected &&
+      (!error || (!error.message.includes('Could not find the table') && error.code !== 'PGRST205'));
     res.json({
       configured: true,
-      connected: true,
+      connected,
       tableExists,
       projectId: 'sphasblonzgvkninmjva',
       url: serverSupabaseUrl,
