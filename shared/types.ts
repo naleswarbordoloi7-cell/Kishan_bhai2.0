@@ -22,6 +22,21 @@ export interface UserProfile {
   crops?: string[];
   preferredLanguage?: 'en' | 'hi';
   walletAddress?: string;
+  // Buyer-specific profile fields
+  companyName?: string;
+  businessType?: string;
+  contactDesignation?: string;
+  gstin?: string;
+  panNumber?: string;
+  mandiLicenseNo?: string;
+  warehouseLocation?: string;
+  sourcingStates?: string[];
+  preferredCrops?: string[];
+  monthlyProcurementTons?: number;
+  paymentTerms?: string;
+  upiOrBankRef?: string;
+  bio?: string;
+  updatedAt?: string;
   createdAt: string;
 }
 
@@ -1317,6 +1332,29 @@ export interface FarmerProfileData {
   preferredLanguage: string;
 }
 
+export interface BuyerProfileData {
+  fullName: string;
+  companyName: string;
+  businessType: string;
+  contactDesignation: string;
+  email: string;
+  phone: string;
+  state: string;
+  district: string;
+  village: string;
+  warehouseLocation: string;
+  gstin: string;
+  panNumber?: string;
+  mandiLicenseNo: string;
+  preferredCrops: string[];
+  sourcingStates: string[];
+  monthlyProcurementTons: number;
+  paymentTerms: string;
+  upiOrBankRef?: string;
+  preferredLanguage: 'en' | 'hi';
+  bio?: string;
+}
+
 // ==========================================
 // 13. Village Champion Verification System
 // ==========================================
@@ -1568,5 +1606,178 @@ export interface LoyaltyAdminConfig {
     serverAuthoritativeLedger: boolean;
   };
 }
+
+// ==========================================
+// 15. Digital Crop Report Card
+// ==========================================
+
+export type DataVerificationTag = 'VERIFIED' | 'ESTIMATED';
+
+export interface CropReportActivityItem {
+  id: string;
+  date: string;
+  category: 'Fertilizer' | 'Irrigation' | 'Micronutrient' | 'Pesticide' | 'Sowing' | 'Harvest' | 'Observation';
+  title: string;
+  quantityOrDose: string;
+  expenseAmountInr: number;
+  notes?: string;
+  verification: DataVerificationTag;
+}
+
+export interface CropReportPerformanceSubject {
+  id: string;
+  subject: string;
+  subjectHi: string;
+  scorePct: number; // 0 to 100
+  grade: 'A+' | 'A' | 'B+' | 'B' | 'C';
+  ratingText: string;
+  verification: DataVerificationTag;
+  detailNote: string;
+}
+
+export interface CropReportExpenseItem {
+  label: string;
+  amountInr: number;
+  source: DataVerificationTag;
+}
+
+export interface DigitalCropReportCard {
+  reportId: string;
+  uniqueCropId: string;
+  seasonLabel: string;
+  generatedAt: string;
+  lastUpdatedAt: string;
+
+  // 1. Farmer Information
+  farmerInfo: {
+    farmerId: string;
+    fullName: string;
+    village: string;
+    district: string;
+    state: string;
+    phone?: string;
+    photoUrl: string;
+    kycVerified: boolean;
+  };
+
+  // 2-5. Crop Identity, Land Area, Dates & 6. Growth Progress
+  cropInfo: {
+    cropId: string;
+    cropName: string;
+    hindiName?: string;
+    variety: string;
+    landAreaAcres: number;
+    landAreaHectares: number;
+    sowingDate: string;
+    expectedHarvestDate: string;
+    actualHarvestDate?: string;
+    daysElapsed: number;
+    totalCycleDays: number;
+    growthStage: string;
+    growthProgressPct: number;
+    cropPhotoUrl: string;
+  };
+
+  // 7. Soil Health Report
+  soilHealthReport: {
+    sampleId: string;
+    testDate: string;
+    soilType: string;
+    ph: number;
+    phStatus: string;
+    organicCarbonPct: number;
+    nitrogenKgHa: number;
+    phosphorusKgHa: number;
+    potassiumKgHa: number;
+    soilHealthScore: number;
+    classification: string;
+    verification: DataVerificationTag;
+  };
+
+  // 8. Crop Disease Report
+  diseaseReport: {
+    latestScanDate: string;
+    pathogenDetected: string;
+    severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'NONE';
+    confidencePct: number;
+    activeRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+    treatmentStatus: string;
+    pestWatchlist: string[];
+    recentScansCount: number;
+    verification: DataVerificationTag;
+  };
+
+  // 9. Fertilizer and Irrigation History
+  fertilizerAndIrrigation: {
+    irrigationEventsCount: number;
+    fertilizerApplicationsCount: number;
+    soilMoisturePct: number;
+    waterSavedLitres: number;
+    pumpStatus: string;
+    history: CropReportActivityItem[];
+    verification: DataVerificationTag;
+  };
+
+  // 10. AI Crop Health Analysis
+  aiHealthAnalysis: {
+    healthScore: number;
+    summary: string;
+    strengths: string[];
+    recommendations: string[];
+    analyzedAt: string;
+    verification: DataVerificationTag;
+  };
+
+  // 11. Harvest Quantity & 12. Crop Quality Grade
+  harvestAndQuality: {
+    harvestQuantityQuintals: number;
+    harvestQuantityKg: number;
+    harvestVerification: DataVerificationTag;
+    cropQualityGrade: 'A+ Export' | 'Grade A Premium' | 'Grade B Standard' | 'Grade C Fair';
+    moisturePct: number;
+    purityScorePct: number;
+    gradeVerification: DataVerificationTag;
+  };
+
+  // 13-16. Financial Summary
+  financials: {
+    marketPricePerQuintalInr: number;
+    marketPricePerKgInr: number;
+    marketSource: string;
+    priceVerification: DataVerificationTag;
+    totalCultivationExpensesInr: number;
+    loggedExpensesInr: number;
+    estimatedBaselineExpensesInr: number;
+    expenseBreakdown: CropReportExpenseItem[];
+    expenseVerification: DataVerificationTag;
+    expectedRevenueInr: number;
+    estimatedProfitInr: number;
+    profitPerAcreInr: number;
+    roiPct: number;
+    revenueVerification: DataVerificationTag;
+  };
+
+  // Visual Performance Section
+  performance: {
+    overallGrade: 'A+' | 'A' | 'B+' | 'B' | 'C';
+    overallScorePct: number;
+    overallRatingOutOf5: number;
+    remarks: string;
+    subjects: CropReportPerformanceSubject[];
+  };
+
+  // Digital Verification, QR & Sharing Controls
+  verification: {
+    status: 'VERIFIED' | 'PROVISIONAL';
+    verifiedRecordsCount: number;
+    estimatedRecordsCount: number;
+    verificationCode: string;
+    verificationUrl: string;
+    farmerApprovedForBuyers: boolean;
+    approvedAt?: string;
+    approvedNote?: string;
+  };
+}
+
 
 

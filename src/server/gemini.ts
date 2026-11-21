@@ -31,54 +31,164 @@ function getGeminiClient(): GoogleGenAI {
 }
 
 export const CANDIDATE_MODELS = [
+  'gemini-3.1-flash-lite',
+  'gemini-4-hydrogen',
   'gemini-2.5-flash',
-  'gemini-flash-latest',
-  'gemini-2.5-flash-lite',
 ];
 
+const SUPPORTED_IMAGE_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/heic',
+  'image/heif',
+]);
+
+export function normalizeModelName(modelName?: string): string {
+  const cleaned = (modelName || '').trim();
+  if (!cleaned || cleaned === 'gemini-3.8-flash' || cleaned === 'gemini-3.7-flash' || cleaned === 'gemini-4-hydrogen') {
+    return 'gemini-3.1-flash-lite';
+  }
+  return cleaned;
+}
+
+export function sanitizeImagePayload(
+  rawImage?: string,
+  declaredMimeType: string = 'image/jpeg'
+): { data: string; mimeType: string } | null {
+  if (!rawImage || typeof rawImage !== 'string') return null;
+
+  let data = rawImage.trim();
+  let mimeType = (declaredMimeType || 'image/jpeg').trim().toLowerCase();
+
+  const dataUrlMatch = data.match(/^data:([^;,]+)(;[^,]*)?,([\s\S]*)$/i);
+  if (dataUrlMatch) {
+    mimeType = dataUrlMatch[1].trim().toLowerCase();
+    data = dataUrlMatch[3].trim();
+  }
+
+  if (mimeType === 'image/jpg') {
+    mimeType = 'image/jpeg';
+  }
+
+  // Gemini inlineData does not support SVG XML or non-raster text payloads
+  if (!SUPPORTED_IMAGE_MIME_TYPES.has(mimeType)) {
+    return null;
+  }
+
+  const normalizedBase64 = data.replace(/\s+/g, '');
+  if (!normalizedBase64 || normalizedBase64.startsWith('<svg') || normalizedBase64.length < 32) {
+    return null;
+  }
+
+  return { data: normalizedBase64, mimeType };
+}
+
+const unavailableModels = new Map<string, number>();
+const MODEL_404_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes cooldown for 404 / unsupported models
+const MODEL_TRANSIENT_COOLDOWN_MS = 10 * 1000; // 10 seconds cooldown for transient 503/429/timeout
+
 /**
- * Executes a Gemini generateContent call with automatic failover to alternative models
- * if a specific tier experiences high-demand spikes (503), rate limits (429), or temporary outages.
+ * Executes a Gemini generateContent call with automatic failover to alternative models,
+ * per-model request timeouts (preventing 5-minute hangs), and short-lived cooldowns
+ * for unavailable/stalled models.
  */
 export async function generateWithModelFallback(
   ai: GoogleGenAI,
   preferredModel: string,
-  paramsBuilder: (model: string) => any
+  paramsBuilder: (model: string) => any,
+  perModelTimeoutMs: number = 10000
 ): Promise<{ response: GenerateContentResponse; modelUsed: string }> {
-  const modelsToTry = [
-    preferredModel,
-    ...CANDIDATE_MODELS.filter((m) => m !== preferredModel),
+  const normalizedPreferred = normalizeModelName(preferredModel);
+  const allModels = [
+    normalizedPreferred,
+    ...CANDIDATE_MODELS.filter((m) => m !== normalizedPreferred),
   ];
+
+  const now = Date.now();
+  const activeModels = allModels.filter((m) => {
+    const blockedUntil = unavailableModels.get(m);
+    if (!blockedUntil) return true;
+    if (now >= blockedUntil) {
+      unavailableModels.delete(m);
+      return true;
+    }
+    return false;
+  });
+
+  const modelsToTry = activeModels.length > 0 ? activeModels : allModels;
 
   let lastError: any = null;
   for (let i = 0; i < modelsToTry.length; i++) {
     const model = modelsToTry[i];
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(new Error(`Timeout after ${perModelTimeoutMs}ms`)), perModelTimeoutMs);
+
     try {
-      const response: GenerateContentResponse = await ai.models.generateContent(paramsBuilder(model));
+      const params = paramsBuilder(model);
+      const nextConfig: Record<string, any> = { ...(params?.config || {}) };
+
+      // Do not pass deprecated sampling parameters to gemini-4-* models
+      if (model.startsWith('gemini-4-')) {
+        delete nextConfig.temperature;
+        delete nextConfig.topP;
+        delete nextConfig.topK;
+        delete nextConfig.candidateCount;
+      }
+
+      if (!nextConfig.abortSignal) {
+        nextConfig.abortSignal = controller.signal;
+      }
+      params.config = nextConfig;
+
+      const response: GenerateContentResponse = await ai.models.generateContent(params);
+      clearTimeout(timer);
       return { response, modelUsed: model };
     } catch (err: any) {
+      clearTimeout(timer);
       lastError = err;
-      const statusCode = err?.status || err?.code || (typeof err?.message === 'string' && err.message.includes('503') ? 503 : undefined);
+      const errMsg = typeof err?.message === 'string' ? err.message : String(err || 'unknown error');
+      const statusCode =
+        err?.status ||
+        err?.code ||
+        (errMsg.includes('503') ? 503 : errMsg.includes('404') ? 404 : undefined);
+
+      const isNotFoundOrUnsupported =
+        statusCode === 404 ||
+        errMsg.includes('NOT_FOUND') ||
+        errMsg.includes('is not found') ||
+        errMsg.includes('not supported for generateContent');
+
+      const isTimedOut =
+        err?.name === 'AbortError' ||
+        errMsg.includes('Timeout') ||
+        errMsg.includes('aborted');
+
       const isTransient =
         statusCode === 503 ||
         statusCode === 429 ||
         statusCode === 500 ||
-        (typeof err?.message === 'string' && (err.message.includes('high demand') || err.message.includes('spikes') || err.message.includes('UNAVAILABLE')));
+        isTimedOut ||
+        errMsg.includes('high demand') ||
+        errMsg.includes('spikes') ||
+        errMsg.includes('UNAVAILABLE');
 
-      console.warn(
-        `[Gemini Service] Model "${model}" reported ${statusCode || err?.message || 'issue'}. ${
-          isTransient && i < modelsToTry.length - 1 ? 'Switching to fallback model...' : ''
-        }`
-      );
+      if (isNotFoundOrUnsupported) {
+        unavailableModels.set(model, Date.now() + MODEL_404_COOLDOWN_MS);
+      } else if (isTimedOut || statusCode === 503 || statusCode === 429) {
+        unavailableModels.set(model, Date.now() + MODEL_TRANSIENT_COOLDOWN_MS);
+      }
 
-      if (isTransient && i < modelsToTry.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 300));
+      if (i < modelsToTry.length - 1) {
+        if (isTransient) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
         continue;
       }
 
-      if (i === modelsToTry.length - 1) {
-        break;
-      }
+      break;
     }
   }
   throw lastError;
@@ -339,7 +449,7 @@ export async function askKishanAI(
   base64Image?: string,
   mimeType: string = 'image/jpeg',
   userId?: string,
-  modelName: string = 'gemini-2.5-flash',
+  modelName: string = 'gemini-4-hydrogen',
   language: string = 'en',
   farmContextOverride?: FarmContextInput,
   history?: ChatHistoryItem[],
@@ -357,7 +467,7 @@ export async function askKishanAI(
   diseaseAnalysis?: DiseaseAnalysisResult;
   conversationId?: string;
 }> {
-  const preferredModel = modelName || 'gemini-2.5-flash';
+  const preferredModel = normalizeModelName(modelName);
   let activeModel = preferredModel;
   const currentUser = userId ? db.users.get(userId) : Array.from(db.users.values())[0];
   const userCluster = Array.from(db.clusters.values())[0];
@@ -441,39 +551,56 @@ COMMUNICATION DIRECTIVE:
 3. Understand follow-ups seamlessly. If the farmer asks a continuation question (e.g., "what next?", "explain in simpler words", "how much will that cost?"), use the conversation history without asking them to repeat themselves.
 4. If the farmer asks to change profile/add crop/book machinery/pool harvest/bulk order, invoke the appropriate tool.`;
 
-    // Multi-turn conversation contents array
+    const sanitizedImage = sanitizeImagePayload(base64Image, mimeType);
+
+    // Multi-turn conversation contents array with strict user/model alternation
     const contents: Array<{ role: 'user' | 'model'; parts: any[] }> = [];
 
-    // Include recent conversation turns for short-term memory continuity
     if (history && history.length > 0) {
       const recentHistory = history.slice(-8);
       for (const turn of recentHistory) {
-        const textVal = turn.content || turn.text || '';
-        if (textVal.trim()) {
+        const textVal = (turn.content || turn.text || '').trim();
+        if (!textVal) continue;
+        const normalizedRole: 'user' | 'model' =
+          turn.role === 'assistant' || turn.role === 'model' ? 'model' : 'user';
+        // Gemini requires the first turn in contents to be from 'user'
+        if (contents.length === 0 && normalizedRole === 'model') {
+          continue;
+        }
+        // Merge consecutive turns of the same role to preserve strict alternation
+        const lastTurn = contents[contents.length - 1];
+        if (lastTurn && lastTurn.role === normalizedRole) {
+          lastTurn.parts.push({ text: textVal });
+        } else {
           contents.push({
-            role: turn.role === 'assistant' || turn.role === 'model' ? 'model' : 'user',
+            role: normalizedRole,
             parts: [{ text: textVal }],
           });
         }
       }
     }
 
-    // Current turn with live ground context & any attached image
+    // Current turn with live ground context & any attached raster image
     const currentParts: any[] = [];
-    if (base64Image) {
+    if (sanitizedImage) {
       currentParts.push({
         inlineData: {
-          data: base64Image,
-          mimeType,
+          data: sanitizedImage.data,
+          mimeType: sanitizedImage.mimeType,
         },
       });
     }
     currentParts.push({ text: contextHeader });
 
-    contents.push({
-      role: 'user',
-      parts: currentParts,
-    });
+    const prevTurn = contents[contents.length - 1];
+    if (prevTurn && prevTurn.role === 'user') {
+      prevTurn.parts.push(...currentParts);
+    } else {
+      contents.push({
+        role: 'user',
+        parts: currentParts,
+      });
+    }
 
     const { response, modelUsed: resolvedModel } = await generateWithModelFallback(
       ai,
@@ -484,7 +611,6 @@ COMMUNICATION DIRECTIVE:
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
           tools: toolsList,
-          temperature: 0.5,
         },
       })
     );
@@ -651,7 +777,7 @@ COMMUNICATION DIRECTIVE:
       text: fallback.text,
       suggestedPaidService: prompt.toLowerCase().includes('analyze') ? 'crop-analysis' : undefined,
       executedAction: fallback.executedAction,
-      modelUsed: 'gemini-3.7-flash (Kishan Agronomic Engine)',
+      modelUsed: 'Kishan Agronomic Engine',
       language,
       sources: defaultSources,
       farmingActionCard: fallback.farmingActionCard,
@@ -1109,15 +1235,18 @@ export async function analyzeCropDiseaseImage(
 
   try {
     const ai = getGeminiClient();
-    const contents = [
-      {
+    const sanitizedImage = sanitizeImagePayload(base64Image, mimeType);
+    const contents: any[] = [];
+    if (sanitizedImage) {
+      contents.push({
         inlineData: {
-          data: base64Image,
-          mimeType,
+          data: sanitizedImage.data,
+          mimeType: sanitizedImage.mimeType,
         },
-      },
-      {
-        text: `You are an expert plant pathologist and agronomist. Analyze this crop leaf photo carefully.
+      });
+    }
+    contents.push({
+      text: `You are an expert plant pathologist and agronomist. Analyze this crop leaf photo carefully.
 Crop Name: ${cropName}
 Target Language: ${language}
 
@@ -1131,18 +1260,16 @@ Provide a comprehensive diagnosis formatted with:
 2. [Chemical foliar spray with exact dosage per liter]
 3. [Cultural and field management practices]
 ⚠️ **Important Warning:** [Crucial safety warning and disclaimer that AI result is advisory and should be verified by an agriculture expert.]`,
-      },
-    ];
+    });
 
     const { response, modelUsed } = await generateWithModelFallback(
       ai,
-      'gemini-2.5-flash',
+      'gemini-4-hydrogen',
       (m) => ({
         model: m,
         contents: { parts: contents },
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.3,
         },
       })
     );
@@ -1182,7 +1309,7 @@ Provide a comprehensive diagnosis formatted with:
       text: response.text || generateSmartStructuredAdvice('Check my crop disease', language, 42, 70, cropName),
       sources: defaultSources,
       farmingActionCard,
-      modelUsed: 'gemini-3.7-flash',
+      modelUsed: modelUsed || 'gemini-4-hydrogen',
     };
   } catch (err) {
     console.error('[Vision Analysis] Error calling Gemini Vision, using high-precision agronomy rule-engine:', err);
@@ -1221,7 +1348,7 @@ Provide a comprehensive diagnosis formatted with:
       text: generateSmartStructuredAdvice('Check my crop disease', language, 42, 70, cropName),
       sources: defaultSources,
       farmingActionCard,
-      modelUsed: 'gemini-3.7-flash (Agronomic Vision Engine)',
+      modelUsed: 'Kishan Agronomic Vision Engine',
     };
   }
 }
@@ -1253,7 +1380,7 @@ Provide:
 
     const { response } = await generateWithModelFallback(
       ai,
-      'gemini-2.5-flash',
+      'gemini-4-hydrogen',
       (m) => ({
         model: m,
         contents: prompt,
@@ -1332,13 +1459,12 @@ COMMUNICATION DIRECTIVE:
   try {
     const { response } = await generateWithModelFallback(
       ai,
-      'gemini-2.5-flash',
+      'gemini-4-hydrogen',
       (m) => ({
         model: m,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.4,
         },
       })
     );
@@ -1406,14 +1532,13 @@ Return ONLY the raw JSON adhering strictly to the required schema. Do not add ma
   try {
     const { response } = await generateWithModelFallback(
       ai,
-      'gemini-2.5-flash',
+      'gemini-4-hydrogen',
       (m) => ({
         model: m,
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         config: {
           systemInstruction: systemPrompt,
           responseMimeType: 'application/json',
-          temperature: 0.1,
         },
       })
     );
@@ -1548,14 +1673,13 @@ Tone & Constraints:
     }
     const { response } = await generateWithModelFallback(
       ai,
-      'gemini-2.5-flash',
+      'gemini-4-hydrogen',
       (m) => ({
         model: m,
         contents: [{ role: 'user', parts: [{ text: userQuery }] }],
         config: {
           systemInstruction,
           responseMimeType: 'application/json',
-          temperature: 0.2,
         },
       })
     );

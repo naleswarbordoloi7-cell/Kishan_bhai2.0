@@ -49,6 +49,40 @@
           "type": "number",
           "description": "Size of cultivated land in acres"
         },
+        "companyName": {
+          "type": "string",
+          "description": "Buyer company or organization name",
+          "maxLength": 150
+        },
+        "businessType": {
+          "type": "string",
+          "description": "Buyer business classification",
+          "maxLength": 80
+        },
+        "gstin": {
+          "type": "string",
+          "description": "GST identification number",
+          "maxLength": 32
+        },
+        "mandiLicenseNo": {
+          "type": "string",
+          "description": "APMC or mandi trading license number",
+          "maxLength": 80
+        },
+        "warehouseLocation": {
+          "type": "string",
+          "description": "Designated delivery warehouse or processing depot",
+          "maxLength": 200
+        },
+        "monthlyProcurementTons": {
+          "type": "number",
+          "description": "Target monthly procurement volume in metric tons"
+        },
+        "paymentTerms": {
+          "type": "string",
+          "description": "Preferred escrow or settlement terms",
+          "maxLength": 80
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp of account creation",
@@ -466,6 +500,141 @@
         }
       },
       "required": ["id", "clusterId", "status", "title"]
+    },
+    "DigitalCropReport": {
+      "title": "DigitalCropReport",
+      "description": "Official Digital Crop Report Card published or saved by a farmer for verification and buyer inspection",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Report identifier",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "farmerId": {
+          "type": "string",
+          "description": "Owning farmer UID",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "farmerName": {
+          "type": "string",
+          "description": "Farmer display name",
+          "maxLength": 120
+        },
+        "village": {
+          "type": "string",
+          "description": "Farm village",
+          "maxLength": 100
+        },
+        "state": {
+          "type": "string",
+          "description": "Farm state",
+          "maxLength": 80
+        },
+        "uniqueCropId": {
+          "type": "string",
+          "description": "Unique crop record code",
+          "maxLength": 64
+        },
+        "cropName": {
+          "type": "string",
+          "description": "Crop name",
+          "maxLength": 100
+        },
+        "variety": {
+          "type": "string",
+          "description": "Crop variety",
+          "maxLength": 100
+        },
+        "landAreaAcres": {
+          "type": "number",
+          "description": "Cultivated land area in acres"
+        },
+        "sowingDate": {
+          "type": "string",
+          "description": "Sowing date",
+          "maxLength": 64
+        },
+        "expectedHarvestDate": {
+          "type": "string",
+          "description": "Harvest date",
+          "maxLength": 64
+        },
+        "growthProgressPct": {
+          "type": "number",
+          "description": "Crop growth completion percentage"
+        },
+        "soilHealthScore": {
+          "type": "number",
+          "description": "Soil fertility score out of 100"
+        },
+        "diseaseStatus": {
+          "type": "string",
+          "description": "Summary of disease screening",
+          "maxLength": 200
+        },
+        "aiSummary": {
+          "type": "string",
+          "description": "AI crop health summary",
+          "maxLength": 1200
+        },
+        "harvestQuantityQuintals": {
+          "type": "number",
+          "description": "Harvest yield in quintals"
+        },
+        "qualityGrade": {
+          "type": "string",
+          "description": "Crop quality grade",
+          "maxLength": 64
+        },
+        "estimatedMarketPriceInr": {
+          "type": "number",
+          "description": "Market price per quintal in INR"
+        },
+        "totalExpensesInr": {
+          "type": "number",
+          "description": "Total cultivation expenses in INR"
+        },
+        "expectedRevenueInr": {
+          "type": "number",
+          "description": "Expected revenue in INR"
+        },
+        "estimatedProfitInr": {
+          "type": "number",
+          "description": "Estimated profit in INR"
+        },
+        "overallGrade": {
+          "type": "string",
+          "description": "Overall report card letter grade",
+          "maxLength": 10
+        },
+        "overallRating": {
+          "type": "number",
+          "description": "Overall performance rating out of 5"
+        },
+        "verificationCode": {
+          "type": "string",
+          "description": "QR verification code",
+          "maxLength": 40
+        },
+        "farmerApprovedForBuyers": {
+          "type": "boolean",
+          "description": "Whether the farmer has approved buyers to view this report"
+        },
+        "approvedAt": {
+          "type": "string",
+          "description": "Timestamp when farmer approved buyer access",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last report update timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "farmerId", "uniqueCropId", "cropName", "farmerApprovedForBuyers", "verificationCode"]
     }
   },
   "firestore": {
@@ -500,6 +669,10 @@
     "/soilRecords/{recordId}": {
       "schema": "SoilRecord",
       "description": "Soil health card and test historical data"
+    },
+    "/cropReports/{reportId}": {
+      "schema": "DigitalCropReport",
+      "description": "Digital Crop Report Cards with farmer-controlled buyer sharing and QR verification"
     }
   }
 }

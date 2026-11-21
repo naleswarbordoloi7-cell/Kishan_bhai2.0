@@ -89,16 +89,27 @@ const SEED_USERS: UserProfile[] = [
     createdAt: '2026-08-01T00:00:00.000Z',
   },
   {
-    id: 'usr_buyer_vikram',
-    email: 'vikram.mehta@agropure.com',
-    fullName: 'Vikram Mehta',
-    phone: '+91 98111 22334',
+    id: 'usr_buyer_itc',
+    email: 'arunav.sengupta@itc.in',
+    fullName: 'Arunav Sengupta',
+    phone: '+91 98110 55432',
     role: 'BUYER',
-    village: 'Ahmedabad Mandi Hub',
+    village: 'Ahmedabad APMC Hub',
+    district: 'Ahmedabad',
     state: 'Gujarat',
     verified: true,
-    farmSizeAcres: 0,
-    crops: [],
+    companyName: 'ITC Agri Sourcing',
+    businessType: 'Food Processor & Exporter',
+    contactDesignation: 'Head of Direct Cluster Procurement',
+    gstin: '24AAACI5950L1ZX',
+    panNumber: 'AAACI5950L',
+    mandiLicenseNo: 'APMC-GJ-AMD-2026-441',
+    warehouseLocation: 'Ahmedabad Processing Depot, Sanand GIDC',
+    preferredCrops: ['Cotton', 'Wheat', 'Groundnut', 'Yellow Mustard'],
+    sourcingStates: ['Gujarat', 'Madhya Pradesh', 'Rajasthan'],
+    monthlyProcurementTons: 250,
+    paymentTerms: 'Escrow Instant',
+    upiOrBankRef: 'itcagri.escrow@icici',
     preferredLanguage: 'en',
     createdAt: '2026-08-01T00:00:00.000Z',
   },
@@ -531,18 +542,81 @@ export async function executeMockApiFallback(
     return { ok: true, status: 200, data: { success: true, status: 'READY', firestore: 'CONNECTED' } };
   }
 
-  if (pathname === '/api/auth/update-profile') {
-    const { id, fullName, village, farmSizeAcres, crops, preferredLanguage, walletAddress } = body || {};
+  if (pathname === '/api/auth/update-profile' || pathname === '/api/buyer/profile') {
+    const {
+      id,
+      email,
+      role,
+      fullName,
+      phone,
+      village,
+      district,
+      state,
+      farmSizeAcres,
+      crops,
+      preferredLanguage,
+      walletAddress,
+      companyName,
+      businessType,
+      contactDesignation,
+      gstin,
+      panNumber,
+      mandiLicenseNo,
+      warehouseLocation,
+      sourcingStates,
+      preferredCrops,
+      monthlyProcurementTons,
+      paymentTerms,
+      upiOrBankRef,
+      bio,
+    } = body || {};
     const users = getLocalItem<UserProfile[]>('users', SEED_USERS);
-    const user = users.find((u) => u.id === id) || users[0];
+    let user = users.find((u) => u.id === id);
+
+    if (!user && id) {
+      const safeRole = role && ['FARMER', 'CHAMPION', 'BUYER'].includes(role) ? role : (String(id).includes('buyer') ? 'BUYER' : 'FARMER');
+      user = {
+        id,
+        email: email || `${id}@kishanbhai.in`,
+        fullName: fullName || (safeRole === 'BUYER' ? 'Institutional Buyer' : 'Kishan Member'),
+        phone: phone || '+91 98000 00000',
+        role: safeRole as any,
+        village: village || (safeRole === 'BUYER' ? 'Ahmedabad APMC Hub' : 'Anandpur'),
+        district,
+        state: state || 'Gujarat',
+        verified: true,
+        preferredLanguage: preferredLanguage || 'en',
+        createdAt: new Date().toISOString(),
+      };
+      users.push(user);
+    }
 
     if (user) {
-      if (fullName) user.fullName = fullName;
-      if (village) user.village = village;
-      if (farmSizeAcres) user.farmSizeAcres = Number(farmSizeAcres);
-      if (crops) user.crops = crops;
+      if (typeof fullName === 'string' && fullName.trim()) user.fullName = fullName.trim();
+      if (typeof phone === 'string' && phone.trim()) user.phone = phone.trim();
+      if (typeof village === 'string' && village.trim()) user.village = village.trim();
+      if (typeof district === 'string') user.district = district.trim();
+      if (typeof state === 'string' && state.trim()) user.state = state.trim();
+      if (farmSizeAcres !== undefined && !isNaN(Number(farmSizeAcres))) user.farmSizeAcres = Number(farmSizeAcres);
+      if (Array.isArray(crops)) user.crops = crops;
       if (preferredLanguage) user.preferredLanguage = preferredLanguage;
       if (walletAddress) user.walletAddress = walletAddress;
+      if (typeof companyName === 'string') user.companyName = companyName.trim();
+      if (typeof businessType === 'string') user.businessType = businessType.trim();
+      if (typeof contactDesignation === 'string') user.contactDesignation = contactDesignation.trim();
+      if (typeof gstin === 'string') user.gstin = gstin.trim().toUpperCase();
+      if (typeof panNumber === 'string') user.panNumber = panNumber.trim().toUpperCase();
+      if (typeof mandiLicenseNo === 'string') user.mandiLicenseNo = mandiLicenseNo.trim();
+      if (typeof warehouseLocation === 'string') user.warehouseLocation = warehouseLocation.trim();
+      if (Array.isArray(sourcingStates)) user.sourcingStates = sourcingStates;
+      if (Array.isArray(preferredCrops)) user.preferredCrops = preferredCrops;
+      if (monthlyProcurementTons !== undefined && !isNaN(Number(monthlyProcurementTons))) {
+        user.monthlyProcurementTons = Math.max(0, Number(monthlyProcurementTons));
+      }
+      if (typeof paymentTerms === 'string') user.paymentTerms = paymentTerms.trim();
+      if (typeof upiOrBankRef === 'string') user.upiOrBankRef = upiOrBankRef.trim();
+      if (typeof bio === 'string') user.bio = bio.trim();
+      user.updatedAt = new Date().toISOString();
       setLocalItem('users', users);
     }
 

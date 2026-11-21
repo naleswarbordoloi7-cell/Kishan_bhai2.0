@@ -152,7 +152,7 @@ export const LoyaltyRewardsPage: React.FC = () => {
               AUDITABLE TWO-SIDED REWARDS
             </span>
             <span className="text-xs text-stone-300">|</span>
-            <span className="text-xs text-emerald-300 font-mono">Server-Authoritative Ledger</span>
+            <span className="text-xs text-emerald-300 font-mono">Verified Rewards Ledger</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold font-serif-display text-white">
             Farmer & Buyer Loyalty Rewards Network
@@ -515,7 +515,7 @@ export const LoyaltyRewardsPage: React.FC = () => {
               <tr className="hover:bg-stone-50">
                 <td className="p-3 font-semibold text-stone-900">Completed Eligible Crop Trade</td>
                 <td className="p-3 text-stone-600">Farmer & Buyer</td>
-                <td className="p-3 text-stone-500">Escrow funds locked and fully settled via Algorand smart contracts</td>
+                <td className="p-3 text-stone-500">Escrow funds locked and fully settled upon delivery confirmation</td>
                 <td className="p-3 text-right font-mono font-bold text-emerald-700">+100</td>
               </tr>
               <tr className="hover:bg-stone-50">

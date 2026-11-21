@@ -180,6 +180,18 @@ export const HomeSearchBar: React.FC = () => {
         viewTarget: 'buyer-dashboard',
         badge: 'Orders',
       },
+      {
+        id: 'buyer_profile',
+        title: 'Buyer Profile, GSTIN & Delivery Depot Settings',
+        hindiTitle: 'खरीदार प्रोफाइल, GSTIN और डिलीवरी डिपो अपडेट',
+        gujaratiTitle: 'ખરીદનાર પ્રોફાઇલ અને ડિપો સેટિંગ્સ',
+        subtitle: 'Update company name, GSTIN, PAN, APMC license, warehouse depot, and preferred crops',
+        category: 'tool',
+        categoryLabel: isHi ? 'प्रोफाइल' : 'Profile',
+        icon: Building2,
+        viewTarget: 'profile',
+        badge: 'Update',
+      },
     ],
     [isHi, isGu]
   );

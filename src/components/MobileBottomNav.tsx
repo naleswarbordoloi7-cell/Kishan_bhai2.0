@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Gift,
   Package,
+  Building2,
 } from 'lucide-react';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 
@@ -86,7 +87,7 @@ export const MobileBottomNav: React.FC = () => {
       label: language === 'hi' ? 'मेनू' : 'Menu',
       icon: Grid,
       isDrawerTrigger: true,
-      isActive: isHubOpen || currentView === 'settings',
+      isActive: isHubOpen || currentView === 'settings' || currentView === 'profile',
     },
   ];
 
@@ -133,7 +134,8 @@ export const MobileBottomNav: React.FC = () => {
     { id: 'buyer-dashboard', label: language === 'hi' ? 'सक्रिय खरीद प्रस्ताव' : 'Proposals & Contracts', icon: ShoppingBag, color: 'text-amber-700 bg-amber-50' },
     { id: 'clusters', label: language === 'hi' ? 'उत्पादक फार्म क्लस्टर' : 'Producer Farm Clusters', icon: Users, color: 'text-blue-700 bg-blue-50' },
     { id: 'loyalty', label: language === 'hi' ? 'खरीदार लॉयल्टी पर्क' : 'Buyer Loyalty Perks', icon: Award, color: 'text-amber-700 bg-amber-50' },
-    { id: 'settings', label: language === 'hi' ? 'कंपनी सेटिंग्स व प्रोफाइल' : 'Company Settings', icon: Settings, color: 'text-stone-700 bg-stone-100' },
+    { id: 'profile', label: language === 'hi' ? 'खरीदार प्रोफाइल' : 'Buyer Profile', icon: Building2, color: 'text-emerald-700 bg-emerald-50' },
+    { id: 'settings', label: language === 'hi' ? 'कंपनी सेटिंग्स' : 'Company Settings', icon: Settings, color: 'text-stone-700 bg-stone-100' },
   ];
 
   const farmerQuickTools = [

@@ -1,6 +1,7 @@
 import { CropDetail, CropRecommendationInput, CropRecommendationResult, CropRecommendationResultItem } from '../../shared/types.js';
 import { CROP_RECOMMENDATIONS_DATABASE } from '../data/agriData.js';
 import { GoogleGenAI } from '@google/genai';
+import { generateWithModelFallback } from './gemini.js';
 
 /**
  * Intelligent Multi-Factor Crop Recommendation Engine
@@ -124,9 +125,16 @@ export async function recommendCrops(input: CropRecommendationInput): Promise<Cr
   };
 
   const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-  if (geminiKey.length > 10 && !geminiKey.startsWith('gsk_')) {
+  if (geminiKey.length > 10 && !geminiKey.startsWith('gsk_') && !geminiKey.includes('YOUR_') && !geminiKey.includes('MY_')) {
     try {
-      const ai = new GoogleGenAI({ apiKey: geminiKey });
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
       const prompt = `You are "Kisan Bhai", India's premier agronomist and crop advisor. 
 Generate a clear, authoritative, and actionable recommendation summary for a farmer.
 
@@ -151,13 +159,13 @@ Respond in valid JSON only with this schema:
   "resourceAlignment": "Specific note on how budget and irrigation align with this recommendation."
 }`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+      const { response } = await generateWithModelFallback(ai, 'gemini-3.1-flash-lite', (m) => ({
+        model: m,
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
         },
-      });
+      }));
 
       if (response.text) {
         const parsed = JSON.parse(response.text);

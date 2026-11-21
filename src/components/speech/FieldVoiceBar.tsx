@@ -119,6 +119,8 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
   const countdownTimerRef = useRef<any>(null);
   const elapsedTimerRef = useRef<any>(null);
   const lastSpeechTimeRef = useRef<number>(0);
+  const speechTextRef = useRef<string>('');
+  const isSubmittingQueryRef = useRef<boolean>(false);
 
   const isHi = language === 'hi';
 
@@ -136,6 +138,7 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
     onResult: (text, isFinal) => {
       lastSpeechTimeRef.current = Date.now();
       const combined = text.trim();
+      speechTextRef.current = combined;
       setSpeechText(combined);
 
       if (combined.length > 2) {
@@ -173,19 +176,19 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
   // Silence countdown handler
   const startSilenceCountdown = () => {
     clearSilenceCountdown();
-    setAutoSubmitCountdown(2);
+    let remaining = 2;
+    setAutoSubmitCountdown(remaining);
 
     countdownTimerRef.current = setInterval(() => {
-      setAutoSubmitCountdown((prev) => {
-        if (prev === null || prev <= 1) {
-          clearInterval(countdownTimerRef.current);
-          countdownTimerRef.current = null;
-          // Auto submit trigger
-          handleAutoSubmit();
-          return null;
-        }
-        return prev - 1;
-      });
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+        setAutoSubmitCountdown(null);
+        handleAutoSubmit();
+      } else {
+        setAutoSubmitCountdown(remaining);
+      }
     }, 1000);
   };
 
@@ -198,9 +201,10 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
   };
 
   const handleAutoSubmit = () => {
-    if (!speechText.trim()) return;
+    const latest = speechTextRef.current.trim();
+    if (!latest) return;
     if (mode === 'query') {
-      handleSendCurrentQuery();
+      handleSendCurrentQuery(latest);
     }
   };
 
@@ -212,6 +216,7 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
     } else {
       playChime('start');
       resetTranscript();
+      speechTextRef.current = '';
       setSpeechText('');
       setParsedNote(null);
       setSaveSuccessNotice(null);
@@ -225,17 +230,24 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
     }
   };
 
-  const handleSendCurrentQuery = async () => {
-    const textToSend = speechText.trim();
-    if (!textToSend) return;
+  const handleSendCurrentQuery = async (overrideText?: string) => {
+    const textToSend = (typeof overrideText === 'string' ? overrideText : speechTextRef.current || speechText).trim();
+    if (!textToSend || isSubmittingQueryRef.current || isProcessingQuery) return;
 
+    isSubmittingQueryRef.current = true;
     clearSilenceCountdown();
     stopListening();
     playChime('save');
 
-    await onSendQuery(textToSend);
+    speechTextRef.current = '';
     setSpeechText('');
     setParsedNote(null);
+
+    try {
+      await onSendQuery(textToSend);
+    } finally {
+      isSubmittingQueryRef.current = false;
+    }
   };
 
   const handleSaveFarmNote = () => {
@@ -287,6 +299,7 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
   const handleClear = () => {
     clearSilenceCountdown();
     resetTranscript();
+    speechTextRef.current = '';
     setSpeechText('');
     setParsedNote(null);
     setSaveSuccessNotice(null);
@@ -597,6 +610,7 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => {
+                  speechTextRef.current = p;
                   setSpeechText(p);
                   const parsed = parseFarmVoiceDictation(p, defaultCrop);
                   setParsedNote(parsed);
@@ -649,7 +663,7 @@ export const FieldVoiceBar: React.FC<FieldVoiceBarProps> = ({
           {mode === 'query' ? (
             <button
               type="button"
-              onClick={handleSendCurrentQuery}
+              onClick={() => handleSendCurrentQuery()}
               disabled={!speechText.trim() || isProcessingQuery}
               className="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 disabled:opacity-40 disabled:cursor-not-allowed text-stone-950 font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95"
             >

@@ -131,7 +131,7 @@ export const HandsFreeAssistantModal: React.FC<HandsFreeAssistantModalProps> = (
         ? 'কিষাণ ভাই এআই-য়ে আপোনাৰ প্ৰশ্ন আৰু বতৰৰ তথ্য বিশ্লেষণ কৰি আছে...'
         : language === 'hi'
         ? 'किसान भाई AI आपके प्रश्न का विश्लेषण कर रहा है...'
-        : 'Analyzing farm telemetry & calculating advisory...'
+        : 'Analyzing farm details & calculating advisory...'
     );
 
     try {

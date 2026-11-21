@@ -19,6 +19,8 @@ import {
   Gift,
   Zap,
   Sparkles,
+  FileText,
+  Building2,
 } from 'lucide-react';
 import { HarvestPoolLot, BuyerPurchaseRequest, LoyaltyAccount, LoyaltyRewardItem, LoyaltyRewardRedemption } from '../../shared/types';
 import { LoyaltyCard } from '../components/loyalty/LoyaltyCard';
@@ -29,13 +31,23 @@ import { loyaltyService } from '../services/loyaltyService';
 
 export const BuyerDashboard: React.FC = () => {
   const currentUser = useUserStore(state => state.currentUser);
+  const buyerProfile = useUserStore(state => state.buyerProfile);
   const { setCurrentView, addToast } = useApp();
+
+  const isBuyerAccount = currentUser?.role === 'BUYER';
+  const effectiveBuyerId = (isBuyerAccount && currentUser?.id) || 'usr_buyer_itc';
+  const activeBuyerName = (isBuyerAccount && currentUser?.fullName) || buyerProfile.fullName || 'Arunav Sengupta';
+  const activeBuyerCompany = (isBuyerAccount && currentUser?.companyName) || buyerProfile.companyName || 'ITC Agri Sourcing';
+  const activeBuyerDepot = (isBuyerAccount && currentUser?.warehouseLocation) || buyerProfile.warehouseLocation || 'Ahmedabad Processing Depot';
+  const activeBuyerGstin = (isBuyerAccount && currentUser?.gstin) || buyerProfile.gstin;
+  const activeBuyerBusinessType = (isBuyerAccount && currentUser?.businessType) || buyerProfile.businessType;
+
   const [lots, setLots] = useState<HarvestPoolLot[]>([]);
   const [suggestedLots, setSuggestedLots] = useState<HarvestPoolLot[]>([]);
   const [purchaseRequests, setPurchaseRequests] = useState<BuyerPurchaseRequest[]>([]);
   const [selectedLot, setSelectedLot] = useState<HarvestPoolLot | null>(null);
   const [offeredPrice, setOfferedPrice] = useState<string>('');
-  const [deliveryLocation, setDeliveryLocation] = useState<string>('Ahmedabad Processing Depot');
+  const [deliveryLocation, setDeliveryLocation] = useState<string>(activeBuyerDepot);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
@@ -48,7 +60,9 @@ export const BuyerDashboard: React.FC = () => {
   const [ratingOrder, setRatingOrder] = useState<BuyerPurchaseRequest | null>(null);
   const [loyaltyLoading, setLoyaltyLoading] = useState<boolean>(true);
 
-  const effectiveBuyerId = currentUser?.id || 'usr_buyer_1';
+  useEffect(() => {
+    setDeliveryLocation(activeBuyerDepot);
+  }, [activeBuyerDepot]);
 
   useEffect(() => {
     const headers = { 'x-user-id': effectiveBuyerId };
@@ -114,9 +128,9 @@ export const BuyerDashboard: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           harvestLotId: selectedLot.id,
-          buyerId: currentUser?.id || 'usr_buyer_1',
-          buyerName: currentUser?.fullName || 'Vikram Mehta',
-          buyerCompany: 'AgroPure Organics & Textiles',
+          buyerId: effectiveBuyerId,
+          buyerName: activeBuyerName,
+          buyerCompany: activeBuyerCompany,
           offeredPricePerKg: price,
           deliveryLocation,
         }),
@@ -163,15 +177,16 @@ export const BuyerDashboard: React.FC = () => {
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-amber-950 via-stone-900 to-emerald-950 text-white rounded-2xl p-6 sm:p-8 shadow-lg border border-amber-800/40 space-y-3">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
+          <div className="min-w-0">
             <span className="text-amber-400 text-xs font-mono tracking-tight uppercase">
-              Institutional Buyer Procurement
+              {activeBuyerBusinessType || 'Institutional Buyer Procurement'}
             </span>
-            <h1 className="text-2xl sm:text-3xl font-bold font-serif-display text-white mt-1">
-              {currentUser?.fullName || 'Vikram Mehta (AgroPure Organics)'}
+            <h1 className="text-2xl sm:text-3xl font-bold font-serif-display text-white mt-1 break-words">
+              {activeBuyerName} ({activeBuyerCompany})
             </h1>
-            <p className="text-stone-300 text-xs sm:text-sm">
-              Direct-from-cluster procurement with lab quality grading and transparent escrow settlement.
+            <p className="text-stone-300 text-xs sm:text-sm mt-1 break-words">
+              Depot: <strong className="text-white">{activeBuyerDepot}</strong>
+              {activeBuyerGstin ? <> • GSTIN: <span className="font-mono text-amber-300">{activeBuyerGstin}</span></> : null}
             </p>
           </div>
 
@@ -184,11 +199,25 @@ export const BuyerDashboard: React.FC = () => {
               <span>AI Virtual Cluster Aggregator</span>
             </button>
             <button
+              onClick={() => setCurrentView('crop-report-card')}
+              className="bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl border border-emerald-500/40 transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Verified Crop Report Cards</span>
+            </button>
+            <button
               onClick={() => setCurrentView('marketplace')}
               className="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/20 transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Store className="w-4 h-4" />
               <span>Browse Product Catalog</span>
+            </button>
+            <button
+              onClick={() => setCurrentView('profile')}
+              className="bg-amber-700/80 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl border border-amber-500/40 transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <Building2 className="w-4 h-4" />
+              <span>Edit Buyer Profile</span>
             </button>
           </div>
         </div>
@@ -589,7 +618,7 @@ export const BuyerDashboard: React.FC = () => {
         onClose={() => setRatingOrder(null)}
         order={ratingOrder}
         buyerId={effectiveBuyerId}
-        buyerName={currentUser?.fullName || 'Vikram Mehta'}
+        buyerName={activeBuyerName}
         onRatingSuccess={(updatedAcc) => {
           setLoyaltyAccount(updatedAcc);
           addToast('Rating Recorded', 'Earned +20 Buyer Loyalty Points for genuine review!', 'success');

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { useUserStore } from '../store/userStore';
+import { useUserStore, DEFAULT_BUYER_USER } from '../store/userStore';
 import {
   Settings,
   User,
@@ -24,27 +24,69 @@ import {
   Monitor,
   Eye,
   Zap,
+  Building2,
+  ArrowRight,
 } from 'lucide-react';
 import { SUPPORTED_LANGUAGES } from '../i18n/translations';
 import {
   INDIAN_STATES_AND_DISTRICTS,
   getDistrictsForState,
 } from '../data/indianStatesAndDistricts';
+import { updateFirebaseUserProfile } from '../services/firebaseAuthService';
 
 export const SettingsPage: React.FC = () => {
-  const { farmerProfile, updateProfile } = useUserStore();
-  const { language, setLanguage, wallet, addToast, isOnline, cacheStats, syncOfflineData, setIsOfflineModalOpen, themeMode, setThemeMode, isDarkMode, toggleDarkMode } = useApp();
+  const {
+    currentUser,
+    userRole,
+    setCurrentUser,
+    farmerProfile,
+    updateProfile,
+    buyerProfile,
+    updateBuyerProfile,
+  } = useUserStore();
+  const {
+    language,
+    setLanguage,
+    wallet,
+    addToast,
+    isOnline,
+    cacheStats,
+    syncOfflineData,
+    setIsOfflineModalOpen,
+    themeMode,
+    setThemeMode,
+    isDarkMode,
+    toggleDarkMode,
+    setCurrentView,
+  } = useApp();
 
+  const isBuyer = userRole === 'BUYER' || currentUser?.role === 'BUYER';
   const [isSyncingOffline, setIsSyncingOffline] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
+  // Farmer fields
   const [name, setName] = useState(farmerProfile.name);
   const [mobile, setMobile] = useState(farmerProfile.mobile);
-  const [state, setState] = useState(farmerProfile.state);
-  const [district, setDistrict] = useState(farmerProfile.district);
-  const [village, setVillage] = useState(farmerProfile.village);
+  const [state, setState] = useState(isBuyer ? (currentUser?.state || buyerProfile.state) : farmerProfile.state);
+  const [district, setDistrict] = useState(isBuyer ? (currentUser?.district || buyerProfile.district) : farmerProfile.district);
+  const [village, setVillage] = useState(isBuyer ? (currentUser?.village || buyerProfile.village) : farmerProfile.village);
   const [farmSizeAcres, setFarmSizeAcres] = useState<number>(farmerProfile.farmSizeAcres);
   const [soilType, setSoilType] = useState(farmerProfile.soilType);
   const [mainCrop, setMainCrop] = useState(farmerProfile.mainCrop);
+
+  // Buyer fields
+  const [buyerName, setBuyerName] = useState(currentUser?.role === 'BUYER' ? currentUser.fullName : buyerProfile.fullName);
+  const [buyerMobile, setBuyerMobile] = useState(currentUser?.role === 'BUYER' ? currentUser.phone : buyerProfile.phone);
+  const [companyName, setCompanyName] = useState(currentUser?.companyName || buyerProfile.companyName);
+  const [businessType, setBusinessType] = useState(currentUser?.businessType || buyerProfile.businessType);
+  const [gstin, setGstin] = useState(currentUser?.gstin || buyerProfile.gstin);
+  const [warehouseLocation, setWarehouseLocation] = useState(currentUser?.warehouseLocation || buyerProfile.warehouseLocation);
+  const [preferredCropsStr, setPreferredCropsStr] = useState(
+    (currentUser?.preferredCrops || buyerProfile.preferredCrops || []).join(', ')
+  );
+  const [monthlyCapacity, setMonthlyCapacity] = useState<number>(
+    currentUser?.monthlyProcurementTons ?? buyerProfile.monthlyProcurementTons ?? 250
+  );
 
   // Notification toggles
   const [smsAlerts, setSmsAlerts] = useState(true);
@@ -52,8 +94,78 @@ export const SettingsPage: React.FC = () => {
   const [moistureAlerts, setMoistureAlerts] = useState(true);
   const [priceSpikeAlerts, setPriceSpikeAlerts] = useState(true);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isBuyer) {
+      const src = currentUser?.role === 'BUYER' ? currentUser : DEFAULT_BUYER_USER;
+      setBuyerName(src.fullName || buyerProfile.fullName);
+      setBuyerMobile(src.phone || buyerProfile.phone);
+      setState(src.state || buyerProfile.state);
+      setDistrict(src.district || buyerProfile.district);
+      setVillage(src.village || buyerProfile.village);
+      setCompanyName(src.companyName ?? buyerProfile.companyName);
+      setBusinessType(src.businessType ?? buyerProfile.businessType);
+      setGstin(src.gstin ?? buyerProfile.gstin);
+      setWarehouseLocation(src.warehouseLocation ?? buyerProfile.warehouseLocation);
+      setPreferredCropsStr((src.preferredCrops ?? buyerProfile.preferredCrops ?? []).join(', '));
+      setMonthlyCapacity(src.monthlyProcurementTons ?? buyerProfile.monthlyProcurementTons ?? 250);
+    }
+  }, [isBuyer, currentUser?.id, currentUser?.role]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSavingProfile(true);
+
+    if (isBuyer) {
+      const parsedCrops = preferredCropsStr.split(',').map((c) => c.trim()).filter(Boolean);
+      const baseBuyer = currentUser?.role === 'BUYER' ? currentUser : DEFAULT_BUYER_USER;
+      const updatedUser = {
+        ...baseBuyer,
+        role: 'BUYER' as const,
+        fullName: buyerName.trim(),
+        phone: buyerMobile.trim(),
+        state,
+        district,
+        village: village.trim(),
+        companyName: companyName.trim(),
+        businessType: businessType.trim(),
+        gstin: gstin.trim().toUpperCase(),
+        warehouseLocation: warehouseLocation.trim(),
+        preferredCrops: parsedCrops,
+        monthlyProcurementTons: Math.max(0, Number(monthlyCapacity) || 0),
+        preferredLanguage: (language === 'hi' ? 'hi' : 'en') as 'en' | 'hi',
+        updatedAt: new Date().toISOString(),
+      };
+
+      updateBuyerProfile({
+        fullName: updatedUser.fullName,
+        phone: updatedUser.phone,
+        state: updatedUser.state,
+        district: updatedUser.district || '',
+        village: updatedUser.village,
+        companyName: updatedUser.companyName || '',
+        businessType: updatedUser.businessType || '',
+        gstin: updatedUser.gstin || '',
+        warehouseLocation: updatedUser.warehouseLocation || '',
+        preferredCrops: parsedCrops,
+        monthlyProcurementTons: updatedUser.monthlyProcurementTons,
+        preferredLanguage: updatedUser.preferredLanguage,
+      });
+      setCurrentUser(updatedUser);
+
+      try {
+        await fetch('/api/auth/update-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedUser),
+        });
+        await updateFirebaseUserProfile(updatedUser);
+      } catch {}
+
+      setIsSavingProfile(false);
+      addToast('Buyer Profile Updated', `${companyName} preferences and depot details saved.`, 'success');
+      return;
+    }
+
     updateProfile({
       name,
       mobile,
@@ -65,6 +177,32 @@ export const SettingsPage: React.FC = () => {
       mainCrop,
       preferredLanguage: language,
     });
+
+    if (currentUser && currentUser.role !== 'BUYER') {
+      const updatedFarmer = {
+        ...currentUser,
+        fullName: name.trim(),
+        phone: mobile.trim(),
+        state,
+        district,
+        village: village.trim(),
+        farmSizeAcres: Number(farmSizeAcres),
+        crops: mainCrop.split(/[,&]/).map((c) => c.trim()).filter(Boolean),
+        preferredLanguage: (language === 'hi' ? 'hi' : 'en') as 'en' | 'hi',
+        updatedAt: new Date().toISOString(),
+      };
+      setCurrentUser(updatedFarmer);
+      try {
+        await fetch('/api/auth/update-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedFarmer),
+        });
+        await updateFirebaseUserProfile(updatedFarmer);
+      } catch {}
+    }
+
+    setIsSavingProfile(false);
     addToast('Profile Updated', 'Farmer profile and agricultural preferences have been saved.', 'success');
   };
 
@@ -86,12 +224,18 @@ export const SettingsPage: React.FC = () => {
               <span>{language === 'hi' ? 'सेटिंग्स और प्राथमिकताएं' : 'Preferences & Farm Account'}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              {language === 'hi' ? 'प्रोफ़ाइल, थीम और भाषा' : 'Farmer Profile & Settings'}
+              {isBuyer
+                ? (language === 'hi' ? 'कंपनी प्रोफ़ाइल, थीम और भाषा' : 'Buyer Company Profile & Settings')
+                : (language === 'hi' ? 'प्रोफ़ाइल, थीम और भाषा' : 'Farmer Profile & Settings')}
             </h1>
             <p className="text-emerald-100/80 text-sm mt-1">
-              {language === 'hi'
-                ? 'कम रोशनी वाले खेतों के लिए डार्क मोड, क्षेत्रीय भाषा, मृदा प्रकार और किसान प्रोफाइल प्रबंधित करें।'
-                : 'Manage field night mode, regional language preference, IoT pump triggers, and wallet keys.'}
+              {isBuyer
+                ? (language === 'hi'
+                    ? 'कंपनी विवरण, डिलीवरी गोदाम, GSTIN, भाषा और डिस्प्ले थीम प्रबंधित करें।'
+                    : 'Manage institutional company details, delivery depot, GSTIN, language, and display settings.')
+                : (language === 'hi'
+                    ? 'कम रोशनी वाले खेतों के लिए डार्क मोड, क्षेत्रीय भाषा, मृदा प्रकार और किसान प्रोफाइल प्रबंधित करें।'
+                    : 'Manage field night mode, regional language preference, IoT pump triggers, and wallet keys.')}
             </p>
           </div>
 
@@ -291,144 +435,307 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Profile Form */}
+      {/* Profile Form (Role-Aware: Buyer vs Farmer) */}
       <form onSubmit={handleSaveProfile} className="bg-white dark:bg-[#161c14] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 sm:p-8 space-y-6 transition-colors">
-        <div className="flex items-center justify-between pb-4 border-b border-stone-100 dark:border-stone-800">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-stone-100 dark:border-stone-800">
           <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base flex items-center gap-2">
-            <User className="w-5 h-5 text-green-700 dark:text-emerald-400" />
-            <span>{language === 'hi' ? 'कृषक और खेत की जानकारी' : 'Farmer & Land Ownership Details'}</span>
+            {isBuyer ? (
+              <Building2 className="w-5 h-5 text-amber-700 dark:text-amber-400" />
+            ) : (
+              <User className="w-5 h-5 text-green-700 dark:text-emerald-400" />
+            )}
+            <span>
+              {isBuyer
+                ? (language === 'hi' ? 'खरीदार और कंपनी प्रोफ़ाइल' : 'Buyer & Company Profile Details')
+                : (language === 'hi' ? 'कृषक और खेत की जानकारी' : 'Farmer & Land Ownership Details')}
+            </span>
           </h3>
-          <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-            Kisan ID: KB-98402
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentView('profile')}
+              className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200/70 transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <span>{isBuyer ? 'Full Buyer Profile' : 'Full ID Card'}</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Full Name (किसान का पूरा नाम)</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
-              required
-            />
-          </div>
+        {isBuyer ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Authorized Representative Name *</label>
+              <input
+                type="text"
+                value={buyerName}
+                onChange={(e) => setBuyerName(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Mobile Number (मोबाइल नंबर)</label>
-            <input
-              type="tel"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-              className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
-              required
-            />
-          </div>
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Company / Organization Name *</label>
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">State (राज्य - All India)</label>
-            <select
-              value={state}
-              onChange={(e) => {
-                const newState = e.target.value;
-                setState(newState);
-                const dists = getDistrictsForState(newState);
-                if (dists.length > 0) setDistrict(dists[0]);
-              }}
-              className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
-            >
-              <optgroup label="🇮🇳 States (28)">
-                {INDIAN_STATES_AND_DISTRICTS.filter((s) => s.type === 'state').map((s) => (
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Contact Mobile *</label>
+              <input
+                type="tel"
+                value={buyerMobile}
+                onChange={(e) => setBuyerMobile(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Business Type</label>
+              <input
+                type="text"
+                value={businessType}
+                onChange={(e) => setBusinessType(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">State (राज्य)</label>
+              <select
+                value={state}
+                onChange={(e) => {
+                  const newState = e.target.value;
+                  setState(newState);
+                  const dists = getDistrictsForState(newState);
+                  if (dists.length > 0) setDistrict(dists[0]);
+                }}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+              >
+                {INDIAN_STATES_AND_DISTRICTS.map((s) => (
                   <option key={s.state} value={s.state}>
                     {s.state} ({s.hindiName})
                   </option>
                 ))}
-              </optgroup>
-              <optgroup label="🏛️ Union Territories (8)">
-                {INDIAN_STATES_AND_DISTRICTS.filter((s) => s.type === 'ut').map((s) => (
-                  <option key={s.state} value={s.state}>
-                    {s.state} ({s.hindiName})
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">District / City</label>
+              <select
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+              >
+                {getDistrictsForState(state).map((dist) => (
+                  <option key={dist} value={dist}>
+                    {dist}
                   </option>
                 ))}
-              </optgroup>
-            </select>
-          </div>
+                {!getDistrictsForState(state).includes(district) && district && (
+                  <option value={district}>{district}</option>
+                )}
+              </select>
+            </div>
 
-          <div>
-            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">District / City (जिला / शहर)</label>
-            <select
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-              className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
-            >
-              {getDistrictsForState(state).map((dist) => (
-                <option key={dist} value={dist}>
-                  {dist}
-                </option>
-              ))}
-              {!getDistrictsForState(state).includes(district) && district && (
-                <option value={district}>{district}</option>
-              )}
-            </select>
-          </div>
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">City / APMC Hub</label>
+              <input
+                type="text"
+                value={village}
+                onChange={(e) => setVillage(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Village (गांव)</label>
-            <input
-              type="text"
-              value={village}
-              onChange={(e) => setVillage(e.target.value)}
-              className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
-              required
-            />
-          </div>
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">GSTIN</label>
+              <input
+                type="text"
+                maxLength={15}
+                value={gstin}
+                onChange={(e) => setGstin(e.target.value.toUpperCase())}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-mono uppercase focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+              />
+            </div>
 
-          <div>
-            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Total Farm Size (कुल रकबा एकड़)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={farmSizeAcres}
-              onChange={(e) => setFarmSizeAcres(parseFloat(e.target.value) || 1)}
-              className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
-              required
-            />
-          </div>
+            <div className="sm:col-span-2">
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Designated Delivery Warehouse / Depot *</label>
+              <input
+                type="text"
+                value={warehouseLocation}
+                onChange={(e) => setWarehouseLocation(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Primary Soil Type</label>
-            <select
-              value={soilType}
-              onChange={(e) => setSoilType(e.target.value)}
-              className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
-            >
-              <option value="Medium Black Cotton">Medium Black Cotton (काली मिट्टी)</option>
-              <option value="Alluvial Loam">Alluvial Loam (दोमट मिट्टी)</option>
-              <option value="Sandy Loam">Sandy Loam (बलुई दोमट)</option>
-              <option value="Red Soil">Red Soil (लाल मिट्टी)</option>
-            </select>
-          </div>
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Preferred Procurement Crops</label>
+              <input
+                type="text"
+                value={preferredCropsStr}
+                onChange={(e) => setPreferredCropsStr(e.target.value)}
+                placeholder="Cotton, Wheat, Groundnut"
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+              />
+            </div>
 
-          <div>
-            <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Primary Cash Crop</label>
-            <input
-              type="text"
-              value={mainCrop}
-              onChange={(e) => setMainCrop(e.target.value)}
-              className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
-              required
-            />
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Monthly Procurement Capacity (Tons)</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={monthlyCapacity}
+                onChange={(e) => setMonthlyCapacity(parseFloat(e.target.value) || 0)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Full Name (किसान का पूरा नाम)</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Mobile Number (मोबाइल नंबर)</label>
+              <input
+                type="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">State (राज्य - All India)</label>
+              <select
+                value={state}
+                onChange={(e) => {
+                  const newState = e.target.value;
+                  setState(newState);
+                  const dists = getDistrictsForState(newState);
+                  if (dists.length > 0) setDistrict(dists[0]);
+                }}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+              >
+                <optgroup label="🇮🇳 States (28)">
+                  {INDIAN_STATES_AND_DISTRICTS.filter((s) => s.type === 'state').map((s) => (
+                    <option key={s.state} value={s.state}>
+                      {s.state} ({s.hindiName})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="🏛️ Union Territories (8)">
+                  {INDIAN_STATES_AND_DISTRICTS.filter((s) => s.type === 'ut').map((s) => (
+                    <option key={s.state} value={s.state}>
+                      {s.state} ({s.hindiName})
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">District / City (जिला / शहर)</label>
+              <select
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+              >
+                {getDistrictsForState(state).map((dist) => (
+                  <option key={dist} value={dist}>
+                    {dist}
+                  </option>
+                ))}
+                {!getDistrictsForState(state).includes(district) && district && (
+                  <option value={district}>{district}</option>
+                )}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Village (गांव)</label>
+              <input
+                type="text"
+                value={village}
+                onChange={(e) => setVillage(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Total Farm Size (कुल रकबा एकड़)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={farmSizeAcres}
+                onChange={(e) => setFarmSizeAcres(parseFloat(e.target.value) || 1)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Primary Soil Type</label>
+              <select
+                value={soilType}
+                onChange={(e) => setSoilType(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+              >
+                <option value="Medium Black Cotton">Medium Black Cotton (काली मिट्टी)</option>
+                <option value="Alluvial Loam">Alluvial Loam (दोमट मिट्टी)</option>
+                <option value="Sandy Loam">Sandy Loam (बलुई दोमट)</option>
+                <option value="Red Soil">Red Soil (लाल मिट्टी)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">Primary Cash Crop</label>
+              <input
+                type="text"
+                value={mainCrop}
+                onChange={(e) => setMainCrop(e.target.value)}
+                className="w-full bg-stone-50 dark:bg-[#1f281d] border border-stone-300 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-hidden"
+                required
+              />
+            </div>
+          </div>
+        )}
 
         <div className="pt-2 flex justify-end">
           <button
             type="submit"
-            className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-xs font-bold px-6 py-3 rounded-2xl shadow-md transition-all cursor-pointer"
+            disabled={isSavingProfile}
+            className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-xs font-bold px-6 py-3 rounded-2xl shadow-md transition-all cursor-pointer disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            <span>{language === 'hi' ? 'विवरण सुरक्षित करें' : 'Save Farm Profile'}</span>
+            <span>
+              {isSavingProfile
+                ? 'Saving...'
+                : isBuyer
+                ? (language === 'hi' ? 'खरीदार प्रोफ़ाइल सहेजें' : 'Save Buyer Profile')
+                : (language === 'hi' ? 'विवरण सुरक्षित करें' : 'Save Farm Profile')}
+            </span>
           </button>
         </div>
       </form>
@@ -492,7 +799,7 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Offline Mode & Service Worker Cache Engine */}
+      {/* Offline Field Mode */}
       <div className="bg-white dark:bg-[#161c14] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -501,10 +808,10 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div>
               <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base">
-                {language === 'hi' ? 'ऑफ़लाइन फील्ड मोड और सर्विस वर्कर कैश' : 'Offline Field Mode & Service Worker'}
+                {language === 'hi' ? 'ऑफ़लाइन फील्ड मोड' : 'Offline Field Mode'}
               </h3>
               <p className="text-xs text-stone-500 dark:text-stone-400">
-                PWA Core Assets & Agricultural Intelligence cached for zero-connectivity fields
+                Essential farm tools & advisory saved locally for areas with weak mobile signal
               </p>
             </div>
           </div>
@@ -525,19 +832,19 @@ export const SettingsPage: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
           <div className="p-3.5 bg-stone-50 dark:bg-[#1a2218]/60 rounded-2xl border border-stone-200/80 dark:border-stone-800">
-            <div className="text-[11px] text-stone-500 dark:text-stone-400 font-medium">Core Application Shell</div>
+            <div className="text-[11px] text-stone-500 dark:text-stone-400 font-medium">Saved App Tools</div>
             <div className="text-lg font-bold font-mono text-stone-900 dark:text-stone-100 mt-0.5">
-              {cacheStats.coreAssets || 8} Assets Cached
+              {cacheStats.coreAssets || 8} Screens Ready
             </div>
             <div className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> HTML, JS, CSS, Fonts
+              <CheckCircle2 className="w-3 h-3" /> Available without signal
             </div>
           </div>
 
           <div className="p-3.5 bg-stone-50 dark:bg-[#1a2218]/60 rounded-2xl border border-stone-200/80 dark:border-stone-800">
-            <div className="text-[11px] text-stone-500 dark:text-stone-400 font-medium">Critical Farm Datasets</div>
+            <div className="text-[11px] text-stone-500 dark:text-stone-400 font-medium">Saved Farm Guides</div>
             <div className="text-lg font-bold font-mono text-emerald-800 dark:text-emerald-300 mt-0.5">
-              {cacheStats.dataEndpoints || 6} Datasets
+              {cacheStats.dataEndpoints || 6} Guides
             </div>
             <div className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1 flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" /> Mandi, Disease, Soil, Schemes
@@ -545,12 +852,12 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div className="p-3.5 bg-stone-50 dark:bg-[#1a2218]/60 rounded-2xl border border-stone-200/80 dark:border-stone-800">
-            <div className="text-[11px] text-stone-500 dark:text-stone-400 font-medium">Engine Version</div>
+            <div className="text-[11px] text-stone-500 dark:text-stone-400 font-medium">Offline Readiness</div>
             <div className="text-lg font-bold font-mono text-stone-900 dark:text-stone-100 mt-0.5">
-              SW v{cacheStats.version}
+              Active
             </div>
             <div className="text-[10px] text-stone-500 dark:text-stone-400 mt-1">
-              {cacheStats.lastSyncTimestamp ? `Synced ${new Date(cacheStats.lastSyncTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Instant pre-cache'}
+              {cacheStats.lastSyncTimestamp ? `Synced ${new Date(cacheStats.lastSyncTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Ready for field use'}
             </div>
           </div>
         </div>
@@ -579,25 +886,21 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Algorand Wallet & System Diagnostics */}
+      {/* Payout Account Summary */}
       <div className="bg-white dark:bg-[#161c14] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs p-6 space-y-4 transition-colors">
         <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base flex items-center gap-2">
           <Wallet className="w-5 h-5 text-green-700 dark:text-emerald-400" />
-          <span>Algorand Testnet Wallet & Diagnostics</span>
+          <span>{language === 'hi' ? 'भुगतान खाता सारांश' : 'Payout Account Summary'}</span>
         </h3>
 
         <div className="p-4 bg-stone-50 dark:bg-[#1a2218]/60 rounded-2xl border border-stone-200/80 dark:border-stone-800 space-y-2">
           <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-stone-700 dark:text-stone-300">Algorand Testnet Address:</span>
-            <span className="font-mono text-emerald-800 dark:text-emerald-400 font-bold">{wallet.address.slice(0, 10)}...{wallet.address.slice(-6)}</span>
+            <span className="font-bold text-stone-700 dark:text-stone-300">Account Reference:</span>
+            <span className="font-mono text-emerald-800 dark:text-emerald-400 font-bold">{wallet.address.slice(0, 8)}...{wallet.address.slice(-4)}</span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-stone-700 dark:text-stone-300">Available ALGO Balance:</span>
-            <span className="font-mono text-stone-900 dark:text-stone-100 font-bold">{wallet.balanceAlgo.toFixed(2)} ALGO (~₹{(wallet.balanceAlgo * 24.5).toFixed(0)})</span>
-          </div>
-          <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-stone-700 dark:text-stone-300">App Build Version:</span>
-            <span className="font-mono text-stone-500 dark:text-stone-400">v2.4.0-SIH-Production</span>
+            <span className="font-bold text-stone-700 dark:text-stone-300">Available Settlement Balance:</span>
+            <span className="font-mono text-stone-900 dark:text-stone-100 font-bold">₹{(wallet.balanceAlgo * 24.5).toFixed(0)}</span>
           </div>
         </div>
 
@@ -607,7 +910,7 @@ export const SettingsPage: React.FC = () => {
             className="flex items-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 p-2 cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>Reset Demo Cache to Defaults</span>
+            <span>Reset Local Cache to Defaults</span>
           </button>
         </div>
       </div>

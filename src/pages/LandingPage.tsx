@@ -567,7 +567,7 @@ export const LandingPage: React.FC = () => {
 
                 <div className="p-6 space-y-4">
                   <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
-                    Source verified 100+ quintal single-origin grain lots directly from clusters with moisture testing data, digital provenance, and Algorand escrow.
+                    Source verified 100+ quintal single-origin grain lots directly from clusters with moisture testing data, digital provenance, and escrow protection.
                   </p>
 
                   <div className="space-y-2 border-t border-stone-100 dark:border-stone-800 pt-3">

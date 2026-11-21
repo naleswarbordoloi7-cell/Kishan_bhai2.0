@@ -61,7 +61,7 @@ export const AIAssistantPage: React.FC = () => {
     addDiaryEntry,
   } = useApp();
 
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.8-flash');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.1-flash-lite');
   const [activeSessionId, setActiveSessionId] = useState<string>('sess_wheat_irrigation_01');
   const [sessions, setSessions] = useState<AIConversationSession[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -115,7 +115,7 @@ export const AIAssistantPage: React.FC = () => {
   const initialWelcomeMessage: AIChatMessage = {
     id: 'msg_welcome',
     role: 'assistant',
-    modelUsed: 'gemini-3.8-flash',
+    modelUsed: 'gemini-3.1-flash-lite',
     language: language || 'en',
     content: language === 'hi'
       ? `👋 **नमस्ते ${currentUser?.fullName || 'किसान भाई'}! मैं आपका व्यक्तिगत फार्म एजेंट हूँ।**
@@ -132,7 +132,7 @@ export const AIAssistantPage: React.FC = () => {
       : `👋 **Namaste ${currentUser?.fullName || 'Farmer Brother'}! I am your Personal Farm Agent.**
 
 Your **Management Brief** for today:
-- Live telemetry for **${currentUser?.village || 'Anandpur'}** shows **70% rain forecasted tomorrow**.
+- Live weather for **${currentUser?.village || 'Anandpur'}** shows **70% rain forecasted tomorrow**.
 - **Action: Hold Irrigation**. Soil moisture is optimal at 42%.
 - **Mandi Intelligence**: Gondal APMC is quoting ₹140 premium for your crop today.
 
@@ -152,6 +152,8 @@ Your **Management Brief** for today:
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const isSendingRef = useRef<boolean>(false);
+  const lastDispatchedRef = useRef<{ key: string; at: number }>({ key: '', at: 0 });
 
   // Suggested prompt chips above input area to start conversations faster
   const suggestedPromptChips = [
@@ -277,12 +279,16 @@ Your **Management Brief** for today:
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isProcessing, isTypingAnimation]);
 
-  // Handle pending queries from other dashboards
+  // Handle pending queries from other dashboards (guarded against React StrictMode double-invocation)
+  const consumedPendingRef = useRef<string | null>(null);
   useEffect(() => {
-    if (pendingAiQuery) {
+    if (pendingAiQuery && consumedPendingRef.current !== pendingAiQuery) {
+      consumedPendingRef.current = pendingAiQuery;
       const q = pendingAiQuery;
       setPendingAiQuery(null);
       handleSend(q);
+    } else if (!pendingAiQuery) {
+      consumedPendingRef.current = null;
     }
   }, [pendingAiQuery]);
 
@@ -348,24 +354,38 @@ Your **Management Brief** for today:
   };
 
   const handleSend = async (customPrompt?: string, customImage?: string): Promise<string | undefined> => {
-    const promptToSend = customPrompt || inputPrompt;
+    const promptToSend = (customPrompt !== undefined ? customPrompt : inputPrompt).trim();
     const imageToSend = customImage || selectedImage;
 
-    if (!promptToSend.trim() && !imageToSend) return undefined;
+    if (!promptToSend && !imageToSend) return undefined;
+
+    // Synchronous lock prevents duplicate sends from double-clicks, Enter repeats, or StrictMode remounts
+    const dispatchKey = `${promptToSend}::${imageToSend ? imageToSend.slice(0, 48) : ''}`;
+    const nowMs = Date.now();
+    if (
+      isSendingRef.current ||
+      (lastDispatchedRef.current.key === dispatchKey && nowMs - lastDispatchedRef.current.at < 1500)
+    ) {
+      return undefined;
+    }
+
+    isSendingRef.current = true;
+    lastDispatchedRef.current = { key: dispatchKey, at: nowMs };
 
     // Halt active speech immediately when sending new query
     stopSpeech();
     setIsAudioSpeaking(false);
 
+    const uniqueSuffix = Math.random().toString(36).slice(2, 7);
     const userMsg: AIChatMessage = {
-      id: `msg_${Date.now()}`,
+      id: `msg_u_${nowMs}_${uniqueSuffix}`,
       role: 'user',
       content: promptToSend || (language === 'hi' ? 'कृपया इस फसल की जांच करें।' : 'Please analyze this crop leaf photo.'),
       imageUrl: imageToSend || undefined,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => (prev.some((m) => m.id === userMsg.id) ? prev : [...prev, userMsg]));
     setInputPrompt('');
     setSelectedImage(null);
     setInterimVoiceSpeech('');
@@ -373,7 +393,22 @@ Your **Management Brief** for today:
     setIsTypingAnimation(true);
 
     try {
-      const base64Data = imageToSend ? imageToSend.split(',')[1] : undefined;
+      let base64Data: string | undefined;
+      let imageMimeType: string | undefined;
+      if (imageToSend) {
+        const dataUrlMatch = imageToSend.match(/^data:([^;,]+)(;[^,]*)?,([\s\S]*)$/i);
+        if (dataUrlMatch) {
+          const parsedMime = dataUrlMatch[1].trim().toLowerCase();
+          const isBase64 = (dataUrlMatch[2] || '').toLowerCase().includes('base64');
+          if (isBase64 && parsedMime !== 'image/svg+xml') {
+            imageMimeType = parsedMime === 'image/jpg' ? 'image/jpeg' : parsedMime;
+            base64Data = dataUrlMatch[3].trim();
+          }
+        } else {
+          base64Data = imageToSend;
+          imageMimeType = 'image/jpeg';
+        }
+      }
 
       const farmContext = {
         farmerName: currentUser?.fullName || 'Ramesh Patel',
@@ -389,27 +424,61 @@ Your **Management Brief** for today:
         },
       };
 
-      const aiRes = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: promptToSend,
-          userRole,
-          cropContext: currentUser?.crops?.join(', ') || 'Sharbati Wheat, BT Cotton',
-          imageBase64: base64Data,
-          userId: currentUser?.id,
-          modelName: selectedModel,
-          language,
-          farmContext,
-          conversationId: activeSessionId,
-          history: messages.slice(-8).map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-      });
+      const controller = new AbortController();
+      const requestTimeout = setTimeout(() => controller.abort(), 28000);
 
-      const aiData = await aiRes.json();
+      let aiRes: Response;
+      try {
+        aiRes = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            prompt: promptToSend,
+            userRole,
+            cropContext: currentUser?.crops?.join(', ') || 'Sharbati Wheat, BT Cotton',
+            imageBase64: base64Data,
+            imageMimeType,
+            userId: currentUser?.id,
+            modelName: selectedModel,
+            language,
+            farmContext,
+            conversationId: activeSessionId,
+            history: messages.slice(-8).map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+          }),
+        });
+      } finally {
+        clearTimeout(requestTimeout);
+      }
+
+      const aiData = await aiRes.json().catch(() => ({} as any));
+
+      if (!aiRes.ok) {
+        const errorDetail =
+          aiData?.error ||
+          aiData?.message ||
+          (aiRes.status === 429
+            ? language === 'hi'
+              ? 'बहुत अधिक अनुरोध भेजे गए हैं। कृपया कुछ सेकंड प्रतीक्षा करें।'
+              : 'Too many requests in a minute. Please wait a few seconds and try again.'
+            : language === 'hi'
+              ? 'AI सेवा से उत्तर प्राप्त करने में त्रुटि हुई। कृपया पुनः प्रयास करें।'
+              : 'Unable to reach Kishan AI right now. Please try again.');
+        addToast('Kishan AI Notice', errorDetail, 'error');
+        const errBotMsg: AIChatMessage = {
+          id: `msg_err_${Date.now()}`,
+          role: 'assistant',
+          modelUsed: selectedModel,
+          language,
+          content: errorDetail,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setMessages((prev) => [...prev, errBotMsg]);
+        return errorDetail;
+      }
 
       // If an autonomous app state modification was executed, update app state immediately
       if (aiData.executedAction) {
@@ -426,55 +495,20 @@ Your **Management Brief** for today:
         }
       }
 
-      // Execute free direct multispectral analysis if requested and image is provided (100% Free for Farmers)
-      if ((aiData.suggestedPaidService === 'crop-analysis' || aiData.suggestedService === 'crop-analysis') && imageToSend) {
-        try {
-          const paidRes = await fetch('/api/paid/crop-analysis', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              cropName: currentUser?.crops?.[0] || 'BT Cotton (Shankar-6)',
-              symptoms: promptToSend || 'Foliar discoloration and necrotic lesions',
-              imageProvided: true,
-            }),
-          });
+      const safeReplyText =
+        (typeof aiData.text === 'string' && aiData.text.trim()) ||
+        (typeof aiData.reply === 'string' && aiData.reply.trim()) ||
+        (language === 'hi'
+          ? 'आपके प्रश्न का विश्लेषण पूरा हो गया है। कृपया नीचे दिए गए सुझाव देखें।'
+          : 'Your farm query has been analyzed. Please review the advisory details below.');
 
-          if (paidRes.ok) {
-            const resultJson = await paidRes.json();
-            const rep = resultJson.result;
-
-            const diagnosisMsg: AIChatMessage = {
-              id: `msg_report_${Date.now()}`,
-              role: 'assistant',
-              modelUsed: selectedModel,
-              content: `🌱 **Multispectral Pathogen Diagnosis: ${rep.diagnosis}**\n\n**Analysis Details:**\n- Pathogen confidence score: **${rep.confidenceScore}** (Severity: **${rep.severity}**)\n- Rapid spread potential tracked via ambient relative humidity.\n\n**Recommended Remediation Plan:**\n${rep.remediationPlan.map((step: string, i: number) => `${i + 1}. ${step}`).join('\n')}\n\n⚠️ **Cluster Advisory:** ${rep.clusterAdvisory}`,
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              toolCall: {
-                toolName: 'crop_analysis',
-                status: 'executed',
-                resultData: rep,
-              },
-              sources: [
-                'ICAR Plant Pathology Protocol',
-                'Kishan Bhai Computer Vision Diagnostic Node',
-              ],
-            };
-
-            setMessages((prev) => [...prev, diagnosisMsg]);
-            setIsProcessing(false);
-            setIsTypingAnimation(false);
-            return diagnosisMsg.content;
-          }
-        } catch {}
-      }
-
-      // Normal response
+      // Normal response (including Gemini Vision disease diagnosis when an image was attached)
       const botMsg: AIChatMessage = {
-        id: `msg_bot_${Date.now()}`,
+        id: `msg_bot_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         role: 'assistant',
         modelUsed: aiData.modelUsed || selectedModel,
         language: aiData.language || language,
-        content: aiData.text,
+        content: safeReplyText,
         executedAction: aiData.executedAction,
         farmingActionCard: aiData.farmingActionCard,
         diseaseAnalysis: aiData.diseaseAnalysis,
@@ -482,20 +516,20 @@ Your **Management Brief** for today:
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
-      setMessages((prev) => [...prev, botMsg]);
+      setMessages((prev) => (prev.some((m) => m.id === botMsg.id) ? prev : [...prev, botMsg]));
       fetchSessions();
 
       // Read answer aloud if hands-free speech response is active
-      if (autoSpeakAnswer && aiData.text) {
+      if (autoSpeakAnswer && safeReplyText) {
         setIsAudioSpeaking(true);
-        speakText(aiData.text, {
+        speakText(safeReplyText, {
           lang: speechLanguageCode,
           onEnd: () => setIsAudioSpeaking(false),
           onError: () => setIsAudioSpeaking(false),
         });
       }
 
-      return aiData.text;
+      return safeReplyText;
     } catch (err: any) {
       const errMsg = language === 'hi'
         ? 'क्षमा करें, कनेक्शन में रुकावट आई है। कृपया दोबारा प्रयास करें।'
@@ -503,7 +537,7 @@ Your **Management Brief** for today:
       setMessages((prev) => [
         ...prev,
         {
-          id: `msg_err_${Date.now()}`,
+          id: `msg_err_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           role: 'assistant',
           modelUsed: selectedModel,
           content: errMsg,
@@ -512,6 +546,7 @@ Your **Management Brief** for today:
       ]);
       return errMsg;
     } finally {
+      isSendingRef.current = false;
       setIsProcessing(false);
       setIsTypingAnimation(false);
     }
@@ -689,6 +724,7 @@ Your **Management Brief** for today:
       <AIQuickPrompts
         onSelectPrompt={(prompt, sampleImg) => handleSend(prompt, sampleImg)}
         language={language}
+        disabled={isProcessing}
       />
 
       {/* 4. Main Chat Interface Feed */}
@@ -719,7 +755,7 @@ Your **Management Brief** for today:
                   <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce" style={{ animationDelay: '300ms' }}></span>
                 </div>
                 <span className="font-medium text-stone-600">
-                  {language === 'hi' ? 'किशन भाई AI आपके खेत के डेटा का विश्लेषण कर रहा है...' : 'Kishan Bhai AI is reasoning across your farm telemetry...'}
+                  {language === 'hi' ? 'किशन भाई AI आपके खेत के डेटा का विश्लेषण कर रहा है...' : 'Kishan Bhai AI is reviewing your farm details...'}
                 </span>
               </div>
             </div>
@@ -868,7 +904,7 @@ Your **Management Brief** for today:
               value={inputPrompt}
               onChange={(e) => setInputPrompt(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey && !e.repeat && !e.nativeEvent.isComposing) {
                   e.preventDefault();
                   handleSend();
                 }

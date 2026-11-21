@@ -11,6 +11,7 @@ import {
   SOIL_CROP_SUITABILITY,
 } from '../data/agriData.js';
 import { GoogleGenAI } from '@google/genai';
+import { generateWithModelFallback } from './gemini.js';
 
 /**
  * Calculate comprehensive Soil Health Score (0-100) based on Indian ICAR/SHC standard agronomic benchmarks.
@@ -123,9 +124,16 @@ export function calculateSoilHealthScore(metrics: {
  */
 export async function parseSoilReportDocument(base64Data?: string, mimeType: string = 'image/jpeg'): Promise<Partial<SoilHealthData>> {
   const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-  if (geminiKey.length > 10 && !geminiKey.startsWith('gsk_') && base64Data) {
+  if (geminiKey.length > 10 && !geminiKey.startsWith('gsk_') && !geminiKey.includes('YOUR_') && !geminiKey.includes('MY_') && base64Data) {
     try {
-      const ai = new GoogleGenAI({ apiKey: geminiKey });
+      const ai = new GoogleGenAI({
+        apiKey: geminiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
       const prompt = `You are a certified soil testing laboratory analyst in India.
 Analyze this Soil Health Card / Lab Test Report scan and extract all agricultural metrics.
 
@@ -154,8 +162,8 @@ Return ONLY a JSON object matching this schema:
       // Clean base64 string
       const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, '');
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+      const { response } = await generateWithModelFallback(ai, 'gemini-3.1-flash-lite', (m) => ({
+        model: m,
         contents: [
           {
             role: 'user',
@@ -173,7 +181,7 @@ Return ONLY a JSON object matching this schema:
         config: {
           responseMimeType: 'application/json',
         },
-      });
+      }));
 
       if (response.text) {
         const parsed = JSON.parse(response.text);

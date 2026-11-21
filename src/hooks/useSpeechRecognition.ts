@@ -157,8 +157,8 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
               const updated = prev ? `${prev} ${finalChunk.trim()}` : finalChunk.trim();
               // Schedule side-effect callbacks outside of the state updater function
               setTimeout(() => {
-                customOptions?.onResult?.(updated, true);
-                optionsRef.current.onResult?.(updated, true);
+                const handler = customOptions?.onResult || optionsRef.current.onResult;
+                handler?.(updated, true);
               }, 0);
               return updated;
             });
@@ -166,10 +166,9 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
 
           safeSetState(setInterimTranscript, currentInterim);
           if (currentInterim) {
-            // Similarly wrap interim results to be safe, though they aren't in an updater here
             setTimeout(() => {
-              customOptions?.onResult?.(currentInterim, false);
-              optionsRef.current.onResult?.(currentInterim, false);
+              const handler = customOptions?.onResult || optionsRef.current.onResult;
+              handler?.(currentInterim, false);
             }, 0);
           }
         };
@@ -212,8 +211,8 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
           }
 
           setTimeout(() => {
-            customOptions?.onError?.(event);
-            optionsRef.current.onError?.(event);
+            const errHandler = customOptions?.onError || optionsRef.current.onError;
+            errHandler?.(event);
           }, 0);
         };
 
@@ -230,8 +229,8 @@ export function useSpeechRecognition(defaultOptions: UseSpeechRecognitionOptions
           setTimeout(() => {
             setIsListening(false);
             setInterimTranscript('');
-            customOptions?.onEnd?.();
-            optionsRef.current.onEnd?.();
+            const endHandler = customOptions?.onEnd || optionsRef.current.onEnd;
+            endHandler?.();
           }, 0);
         };
 

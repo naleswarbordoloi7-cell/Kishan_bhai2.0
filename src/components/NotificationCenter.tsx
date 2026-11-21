@@ -60,10 +60,10 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'n4',
-    title: 'Cluster Escrow Settled on Algorand',
-    titleHi: 'अल्गोरैंड पर क्लस्टर एस्क्रो सेटल',
-    message: 'Collective harvest settlement verified on Algorand Testnet. Tx: V7XW2...C1EGF.',
-    messageHi: 'सामूहिक फसल सेटलमेंट अल्गोरैंड टेस्टनेट पर सत्यापित हुआ।',
+    title: 'Cluster Escrow Settled',
+    titleHi: 'क्लस्टर एस्क्रो सेटल हुआ',
+    message: 'Collective harvest settlement verified and credited to member payout accounts.',
+    messageHi: 'सामूहिक फसल सेटलमेंट सत्यापित हो गया है और भुगतान के लिए तैयार है।',
     timestamp: '5 hours ago',
     category: 'escrow',
     targetView: 'transactions',
@@ -179,7 +179,7 @@ export const NotificationCenter: React.FC = () => {
           </div>
 
           <div className="px-4 pt-2 border-t border-stone-100 flex items-center justify-between text-[11px] text-stone-500">
-            <span className="font-mono">Real-time telemetry</span>
+            <span>Live farm updates</span>
             <button
               onClick={() => setIsOpen(false)}
               className="text-stone-700 font-semibold hover:underline cursor-pointer"

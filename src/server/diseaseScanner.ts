@@ -1263,7 +1263,7 @@ Important: Use ICAR (Indian Council of Agricultural Research) and KVK (Krishi Vi
 
     const { response } = await generateWithModelFallback(
       ai,
-      'gemini-2.5-flash',
+      'gemini-3.1-flash-lite',
       (m) => ({
         model: m,
         contents: [{ role: 'user', parts: contents }],

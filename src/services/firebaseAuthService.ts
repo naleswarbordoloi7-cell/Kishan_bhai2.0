@@ -338,6 +338,36 @@ export async function resetFirebasePassword(email: string): Promise<void> {
 }
 
 /**
+ * Update signed-in user's profile in Firebase Auth and Firestore
+ */
+export async function updateFirebaseUserProfile(user: UserProfile): Promise<void> {
+  const fbUser = auth.currentUser;
+  if (!fbUser || fbUser.uid !== user.id) {
+    return;
+  }
+
+  try {
+    if (user.fullName && fbUser.displayName !== user.fullName) {
+      await updateProfile(fbUser, { displayName: user.fullName.trim() });
+    }
+  } catch (err) {
+    console.warn('[Firebase Auth] Display name update note:', err);
+  }
+
+  const userPath = `users/${fbUser.uid}`;
+  try {
+    const userDocRef = doc(db, 'users', fbUser.uid);
+    await setDoc(userDocRef, cleanFirestoreData({ ...user, updatedAt: new Date().toISOString() }), { merge: true });
+  } catch (error: any) {
+    const msg = error?.message || '';
+    if (msg.toLowerCase().includes('permission') || error?.code === 'permission-denied') {
+      handleFirestoreError(error, OperationType.UPDATE, userPath);
+    }
+    console.warn('[Firebase Auth] Firestore user profile sync note:', msg);
+  }
+}
+
+/**
  * Sign out current Firebase user
  */
 export async function signOutFirebaseUser(): Promise<void> {

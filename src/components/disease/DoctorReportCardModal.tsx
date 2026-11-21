@@ -165,36 +165,36 @@ export const DoctorReportCardModal: React.FC<DoctorReportCardModalProps> = ({
           className="p-6 sm:p-8 overflow-y-auto space-y-6 text-stone-900 bg-white"
         >
           {/* Official Prescription Slip Header */}
-          <div className="border-b-2 border-stone-800 pb-5">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3.5">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-800 text-white flex items-center justify-center font-serif text-2xl font-bold border-2 border-emerald-900 shadow-sm shrink-0">
-                  <span className="text-xl">Rx</span>
+          <div className="border-b-2 border-stone-800 pb-5 w-full min-w-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full min-w-0">
+              <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-800 text-white flex items-center justify-center font-serif text-xl sm:text-2xl font-bold border-2 border-emerald-900 shadow-sm shrink-0">
+                  <span>Rx</span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold tracking-widest uppercase bg-stone-900 text-white px-2 py-0.5 rounded">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-bold tracking-widest uppercase bg-stone-900 text-white px-2 py-0.5 rounded max-w-full whitespace-normal">
                       ICAR / KVK EXTENSION PROTOCOL
                     </span>
-                    <span className="text-xs text-stone-500 font-mono">
+                    <span className="text-xs text-stone-500 font-mono [overflow-wrap:break-word]">
                       Ref: {card?.reportId || `KBD-2026-${result.id.slice(-5)}`}
                     </span>
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-stone-900 tracking-tight mt-0.5">
+                  <h1 className="text-lg sm:text-2xl font-extrabold text-stone-900 tracking-tight mt-0.5 [overflow-wrap:break-word] [word-break:normal]">
                     KISAN BHAI CLINICAL CROP DIAGNOSTIC REPORT CARD
                   </h1>
-                  <p className="text-xs text-stone-600 font-medium">
+                  <p className="text-xs text-stone-600 font-medium [overflow-wrap:break-word] [word-break:normal]">
                     किसान डॉक्टर पर्चा (कृषि परामर्श एवं उपचार पर्ची) • AI Computer Vision Agronomy Slip
                   </p>
                 </div>
               </div>
 
-              <div className="text-left sm:text-right text-xs text-stone-600 border-l sm:border-l-0 sm:border-r border-stone-200 pl-3 sm:pl-0 sm:pr-3">
+              <div className="text-left sm:text-right text-xs text-stone-600 border-l sm:border-l-0 sm:border-r border-stone-200 pl-3 sm:pl-0 sm:pr-3 shrink-0 max-w-full">
                 <div className="font-semibold text-stone-900 flex items-center gap-1.5 sm:justify-end">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-700" />
+                  <Calendar className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                   <span>Date: {formattedDate}</span>
                 </div>
-                <div className="text-[11px] text-stone-500 mt-0.5">
+                <div className="text-[11px] text-stone-500 mt-0.5 [overflow-wrap:break-word]">
                   Assessment ID: <span className="font-mono">{result.id}</span>
                 </div>
                 <div className="text-[11px] text-emerald-700 font-bold mt-0.5">
@@ -205,32 +205,32 @@ export const DoctorReportCardModal: React.FC<DoctorReportCardModalProps> = ({
           </div>
 
           {/* Section 1: Farmer & Crop Demographic Card */}
-          <div className="bg-stone-50 rounded-2xl border border-stone-200 p-4 sm:p-4">
+          <div className="w-full max-w-full min-w-0 box-border bg-stone-50 rounded-2xl border border-stone-200 p-4">
             <h2 className="text-xs font-bold uppercase tracking-wider text-stone-700 mb-3 flex items-center gap-2">
-              <User className="w-4 h-4 text-emerald-700" />
+              <User className="w-4 h-4 text-emerald-700 shrink-0" />
               <span>1. Patient Crop & Field Demographics (मरीज फसल एवं खेत विवरण)</span>
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="bg-white p-3 rounded-xl border border-stone-200/80">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs w-full min-w-0">
+              <div className="bg-white p-3 rounded-xl border border-stone-200/80 min-w-0 box-border [overflow-wrap:break-word] [word-break:normal]">
                 <span className="text-[10px] text-stone-500 uppercase font-semibold block">Farmer Name</span>
-                <span className="font-bold text-stone-900 text-sm">
+                <span className="font-bold text-stone-900 text-sm block">
                   {card?.patientCrop.farmerName || 'Ramesh Patel'}
                 </span>
                 <span className="text-[10px] text-stone-500 block">Kishan ID: KB-7729</span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-stone-200/80">
+              <div className="bg-white p-3 rounded-xl border border-stone-200/80 min-w-0 box-border [overflow-wrap:break-word] [word-break:normal]">
                 <span className="text-[10px] text-stone-500 uppercase font-semibold block">Plot / Patch</span>
-                <span className="font-bold text-stone-900 text-sm">
+                <span className="font-bold text-stone-900 text-sm block">
                   {result.patchName || card?.patientCrop.fieldPlotName || 'Patch A - North Field'}
                 </span>
                 <span className="text-[10px] text-stone-500 block">Anandpur North Zone</span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-stone-200/80">
+              <div className="bg-white p-3 rounded-xl border border-stone-200/80 min-w-0 box-border [overflow-wrap:break-word] [word-break:normal]">
                 <span className="text-[10px] text-stone-500 uppercase font-semibold block">Crop & Variety</span>
-                <span className="font-bold text-stone-900 text-sm">
+                <span className="font-bold text-stone-900 text-sm block">
                   {result.cropName}
                 </span>
                 <span className="text-[10px] text-emerald-700 font-semibold block">
@@ -238,12 +238,12 @@ export const DoctorReportCardModal: React.FC<DoctorReportCardModalProps> = ({
                 </span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-stone-200/80">
+              <div className="bg-white p-3 rounded-xl border border-stone-200/80 min-w-0 box-border [overflow-wrap:break-word] [word-break:normal]">
                 <span className="text-[10px] text-stone-500 uppercase font-semibold block">Phenological Stage</span>
-                <span className="font-bold text-stone-900 text-xs">
+                <span className="font-bold text-stone-900 text-xs block">
                   {card?.patientCrop.growthStage || timing?.growthStage || 'Vegetative Stage (40-50 DAS)'}
                 </span>
-                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border mt-1 ${getSeverityBadge(result.severity)}`}>
+                <span className={`inline-block max-w-full text-[10px] font-bold px-2 py-0.5 rounded border mt-1 whitespace-normal ${getSeverityBadge(result.severity)}`}>
                   Severity: {result.severity}
                 </span>
               </div>
@@ -251,28 +251,28 @@ export const DoctorReportCardModal: React.FC<DoctorReportCardModalProps> = ({
           </div>
 
           {/* Section 2: Clinical Pathological Assessment */}
-          <div className="bg-white rounded-2xl border-2 border-stone-300 p-4 sm:p-4 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200 pb-3">
-              <div>
-                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+          <div className="w-full max-w-full min-w-0 box-border bg-white rounded-2xl border-2 border-stone-300 p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-3 w-full min-w-0">
+              <div className="min-w-0 flex-1">
+                <span className="inline-block max-w-full text-[10px] font-bold text-emerald-800 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 whitespace-normal">
                   Primary Pathological Diagnosis (प्राथमिक रोग निदान)
                 </span>
-                <h3 className="text-xl font-black text-stone-900 tracking-tight mt-1">
+                <h3 className="text-xl font-black text-stone-900 tracking-tight mt-1 [overflow-wrap:break-word] [word-break:normal]">
                   {result.possibleDisease || result.cropName + ' Pathogen Complex'}
                 </h3>
                 {result.pathogen && (
-                  <p className="text-xs font-mono text-stone-600 italic">
+                  <p className="text-xs font-mono text-stone-600 italic [overflow-wrap:break-word] [word-break:normal]">
                     Causal Organism: {result.pathogen}
                   </p>
                 )}
                 {result.hindiName && (
-                  <p className="text-xs font-semibold text-stone-700 mt-0.5">
+                  <p className="text-xs font-semibold text-stone-700 mt-0.5 [overflow-wrap:break-word] [word-break:normal]">
                     हिंदी नाम: {result.hindiName}
                   </p>
                 )}
               </div>
 
-              <div className="bg-stone-50 border border-stone-200 px-3.5 py-2 rounded-xl text-right">
+              <div className="bg-stone-50 border border-stone-200 px-3.5 py-2 rounded-xl text-left sm:text-right shrink-0 w-full sm:w-auto box-border">
                 <span className="text-[10px] text-stone-500 uppercase font-semibold block">Estimated Canopy Damage</span>
                 <span className="text-lg font-black text-rose-700">
                   {card?.patientCrop.affectedAcreagePct || (result.severity === 'CRITICAL' ? '35-45%' : result.severity === 'HIGH' ? '25-30%' : result.severity === 'MODERATE' ? '18-22%' : '8-12%')}
@@ -282,36 +282,36 @@ export const DoctorReportCardModal: React.FC<DoctorReportCardModalProps> = ({
             </div>
 
             {/* Diagnostic Symptoms and Contributing Factors */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div>
-                <span className="text-xs font-bold text-stone-700 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 w-full min-w-0">
+              <div className="min-w-0">
+                <span className="text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>Key Symptoms Observed (पहचाने गए लक्षण):</span>
                 </span>
-                <ul className="space-y-1.5 text-xs text-stone-800">
+                <ul className="space-y-1.5 text-xs text-stone-800 w-full min-w-0">
                   {result.symptoms.map((symp, idx) => (
-                    <li key={idx} className="flex items-start gap-2 bg-stone-50 p-2 rounded-lg border border-stone-200/60">
-                      <span className="text-emerald-700 font-bold">•</span>
-                      <span>{symp}</span>
+                    <li key={idx} className="flex items-start gap-2 bg-stone-50 p-2 rounded-lg border border-stone-200/60 min-w-0 whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
+                      <span className="text-emerald-700 font-bold shrink-0">•</span>
+                      <span className="min-w-0 flex-1">{symp}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div>
-                <span className="text-xs font-bold text-stone-700 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+              <div className="min-w-0">
+                <span className="text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                   <span>Probable Environmental Triggers (संभावित कारण):</span>
                 </span>
-                <ul className="space-y-1.5 text-xs text-stone-800">
+                <ul className="space-y-1.5 text-xs text-stone-800 w-full min-w-0">
                   {(result.causes || [
                     'High canopy humidity and prolonged morning leaf wetness',
                     'Favorable temperature range for airborne spore dissemination',
                     'Micro-climate stagnation within high-density planting rows',
                   ]).map((cause, idx) => (
-                    <li key={idx} className="flex items-start gap-2 bg-amber-50/60 p-2 rounded-lg border border-amber-200/60">
-                      <span className="text-amber-700 font-bold">•</span>
-                      <span>{cause}</span>
+                    <li key={idx} className="flex items-start gap-2 bg-amber-50/60 p-2 rounded-lg border border-amber-200/60 min-w-0 whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
+                      <span className="text-amber-700 font-bold shrink-0">•</span>
+                      <span className="min-w-0 flex-1">{cause}</span>
                     </li>
                   ))}
                 </ul>
@@ -320,65 +320,65 @@ export const DoctorReportCardModal: React.FC<DoctorReportCardModalProps> = ({
           </div>
 
           {/* Section 3: Dual Prescribed Regimen (Organic + Chemical) */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-extrabold uppercase tracking-wider text-stone-900 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-stone-900 text-white flex items-center justify-center text-xs">Rx</span>
+          <div className="space-y-4 w-full min-w-0 box-border">
+            <div className="flex flex-wrap items-center justify-between gap-2 w-full min-w-0">
+              <h2 className="text-sm font-extrabold uppercase tracking-wider text-stone-900 flex items-center gap-2 min-w-0 [overflow-wrap:break-word] [word-break:normal]">
+                <span className="w-6 h-6 rounded-full bg-stone-900 text-white flex items-center justify-center text-xs shrink-0">Rx</span>
                 <span>2. Prescribed Dual Treatment Regimen (दवाइयों का पर्चा / दोनों समाधान)</span>
               </h2>
               <span className="text-xs text-stone-500 font-medium">Both Eco-Friendly & Emergency Options</span>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full min-w-0 items-start">
               {/* Box A: Certified Organic & Biological Solutions */}
-              <div className="bg-emerald-50/60 rounded-2xl border-2 border-emerald-300 p-4 sm:p-4 space-y-3">
-                <div className="flex items-center justify-between border-b border-emerald-200 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+              <div className="w-full max-w-full min-w-0 box-border bg-emerald-50/60 rounded-2xl border-2 border-emerald-300 p-3.5 sm:p-4 space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-emerald-200 pb-2.5 w-full min-w-0">
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5">
                       <Sprout className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h4 className="text-xs font-black uppercase text-emerald-950 tracking-wider">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-xs font-black uppercase text-emerald-950 tracking-wider [overflow-wrap:break-word] [word-break:normal] whitespace-normal">
                         SOLUTION A: ORGANIC & BIOLOGICAL (जैविक समाधान)
                       </h4>
-                      <p className="text-[11px] text-emerald-800 font-medium">100% Eco-Safe, Zero Chemical Residue</p>
+                      <p className="text-[11px] text-emerald-800 font-medium [overflow-wrap:break-word] [word-break:normal] whitespace-normal">100% Eco-Safe, Zero Chemical Residue</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full">
+                  <span className="inline-block max-w-full text-[10px] font-bold bg-emerald-200 text-emerald-900 px-2.5 py-0.5 rounded-full whitespace-normal">
                     Bee & Soil Safe
                   </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 w-full min-w-0">
                   {organics.map((org, idx) => (
-                    <div key={idx} className="bg-white rounded-xl p-3 border border-emerald-200/80 shadow-xs space-y-1.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-bold text-emerald-950">{org.name}</span>
+                    <div key={idx} className="w-full max-w-full min-w-0 box-border bg-white rounded-xl p-3.5 border border-emerald-200/80 shadow-xs space-y-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2 w-full min-w-0">
+                        <span className="text-xs font-bold text-emerald-950 flex-1 min-w-[min(100%,140px)] max-w-full [overflow-wrap:break-word] [word-break:normal] whitespace-normal">{org.name}</span>
                         {org.estimatedCost && (
-                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                          <span className="inline-block max-w-full text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 leading-snug whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                             {org.estimatedCost}
                           </span>
                         )}
                       </div>
 
-                      <div className="text-xs text-stone-700">
+                      <div className="w-full max-w-full min-w-0 text-xs text-stone-700 leading-relaxed whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                         <span className="font-semibold text-emerald-900">Active Bio-Agent: </span>
                         {org.bioAgentOrBotanical}
                       </div>
 
-                      <div className="text-xs bg-emerald-50/80 p-2 rounded-lg border border-emerald-200 text-emerald-950">
+                      <div className="w-full max-w-full min-w-0 box-border text-xs bg-emerald-50/80 p-2.5 rounded-lg border border-emerald-200 text-emerald-950 leading-relaxed whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                         <span className="font-bold">Exact Dosage: </span>
                         {org.dosage}
                       </div>
 
-                      <div className="text-[11px] text-stone-600">
+                      <div className="w-full max-w-full min-w-0 text-[11px] text-stone-600 leading-relaxed whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                         <span className="font-semibold text-stone-800">Preparation & Spray Recipe: </span>
                         {org.preparationMethod}
                       </div>
 
-                      <div className="text-[11px] text-emerald-800 font-medium flex items-center gap-1 pt-1 border-t border-stone-100">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>{org.ecoBenefit}</span>
+                      <div className="w-full max-w-full min-w-0 text-[11px] text-emerald-800 font-medium flex items-start gap-1.5 pt-1.5 border-t border-stone-100 whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        <span className="min-w-0 flex-1">{org.ecoBenefit}</span>
                       </div>
                     </div>
                   ))}
@@ -386,58 +386,60 @@ export const DoctorReportCardModal: React.FC<DoctorReportCardModalProps> = ({
               </div>
 
               {/* Box B: Targeted Chemical Solutions */}
-              <div className="bg-blue-50/60 rounded-2xl border-2 border-blue-300 p-4 sm:p-4 space-y-3">
-                <div className="flex items-center justify-between border-b border-blue-200 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-blue-700 text-white flex items-center justify-center">
+              <div className="w-full max-w-full min-w-0 box-border bg-blue-50/60 rounded-2xl border-2 border-blue-300 p-3.5 sm:p-4 space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-blue-200 pb-2.5 w-full min-w-0">
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-blue-700 text-white flex items-center justify-center shrink-0 mt-0.5">
                       <FlaskConical className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h4 className="text-xs font-black uppercase text-blue-950 tracking-wider">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-xs font-black uppercase text-blue-950 tracking-wider [overflow-wrap:break-word] [word-break:normal] whitespace-normal">
                         SOLUTION B: CHEMICAL INTERVENTION (रासायनिक उपचार)
                       </h4>
-                      <p className="text-[11px] text-blue-800 font-medium">Fast-acting emergency curative suppression</p>
+                      <p className="text-[11px] text-blue-800 font-medium [overflow-wrap:break-word] [word-break:normal] whitespace-normal">Fast-acting emergency curative suppression</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full">
+                  <span className="inline-block max-w-full text-[10px] font-bold bg-blue-200 text-blue-900 px-2.5 py-0.5 rounded-full whitespace-normal">
                     Rapid Arrest
                   </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 w-full min-w-0">
                   {chemicals.map((chem, idx) => (
-                    <div key={idx} className="bg-white rounded-xl p-3 border border-blue-200/80 shadow-xs space-y-1.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-bold text-blue-950">{chem.name}</span>
+                    <div key={idx} className="w-full max-w-full min-w-0 box-border bg-white rounded-xl p-3.5 border border-blue-200/80 shadow-xs space-y-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2 w-full min-w-0">
+                        <span className="text-xs font-bold text-blue-950 flex-1 min-w-[min(100%,140px)] max-w-full [overflow-wrap:break-word] [word-break:normal] whitespace-normal">{chem.name}</span>
                         {chem.estimatedCost && (
-                          <span className="text-[10px] font-bold text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 shrink-0">
+                          <span className="inline-block max-w-full text-[10px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 leading-snug whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                             {chem.estimatedCost}
                           </span>
                         )}
                       </div>
 
-                      <div className="text-xs text-stone-700">
+                      <div className="w-full max-w-full min-w-0 text-xs text-stone-700 leading-relaxed whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                         <span className="font-semibold text-blue-900">Active Technical Ingredient: </span>
                         {chem.activeIngredient}
                       </div>
 
-                      <div className="text-xs bg-blue-50/80 p-2 rounded-lg border border-blue-200 text-blue-950">
+                      <div className="w-full max-w-full min-w-0 box-border text-xs bg-blue-50/80 p-2.5 rounded-lg border border-blue-200 text-blue-950 leading-relaxed whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                         <span className="font-bold">Recommended Dosage: </span>
                         {chem.dosage}
                       </div>
 
-                      <div className="text-[11px] text-stone-600">
+                      <div className="w-full max-w-full min-w-0 text-[11px] text-stone-600 leading-relaxed whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                         <span className="font-semibold text-stone-800">Application Guidelines: </span>
                         {chem.sprayGuidelines}
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pt-1 border-t border-stone-100">
-                        <span className="font-bold text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                          Waiting Period (PHI): {chem.waitingPeriodDays}
-                        </span>
-                        <span className="text-stone-600 italic">
+                      <div className="flex flex-col gap-1.5 text-[11px] pt-1.5 border-t border-stone-100 w-full min-w-0">
+                        <div>
+                          <span className="inline-block max-w-full font-bold text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
+                            Waiting Period (PHI): {chem.waitingPeriodDays}
+                          </span>
+                        </div>
+                        <p className="text-stone-600 italic leading-relaxed whitespace-normal [overflow-wrap:break-word] [word-break:normal] w-full">
                           Precautions: {chem.safetyPrecautions}
-                        </span>
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -447,95 +449,95 @@ export const DoctorReportCardModal: React.FC<DoctorReportCardModalProps> = ({
           </div>
 
           {/* Section 4: Optimal Timing & Weather Application Protocol */}
-          <div className="bg-amber-50/70 rounded-2xl border-2 border-amber-300 p-4 sm:p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-amber-200 pb-2.5">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center">
+          <div className="w-full max-w-full min-w-0 box-border bg-amber-50/70 rounded-2xl border-2 border-amber-300 p-3.5 sm:p-4 space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-2 border-b border-amber-200 pb-2.5 w-full min-w-0">
+              <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center shrink-0 mt-0.5">
                   <Clock className="w-4 h-4" />
                 </div>
-                <div>
-                  <h4 className="text-xs font-black uppercase text-amber-950 tracking-wider">
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-black uppercase text-amber-950 tracking-wider [overflow-wrap:break-word] [word-break:normal] whitespace-normal">
                     3. OPTIMAL TIMING & APPLICATION PROTOCOL (उपचार का सही समय व मौसम)
                   </h4>
-                  <p className="text-[11px] text-amber-800 font-medium">
+                  <p className="text-[11px] text-amber-800 font-medium [overflow-wrap:break-word] [word-break:normal] whitespace-normal">
                     Critical window to maximize effectiveness and avoid leaf burn or drift
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold bg-amber-200 text-amber-950 px-2.5 py-0.5 rounded-full">
+              <span className="inline-block max-w-full text-[10px] font-bold bg-amber-200 text-amber-950 px-2.5 py-0.5 rounded-full whitespace-normal">
                 Golden Spray Hours
               </span>
             </div>
 
             {/* Timing Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="bg-white p-3.5 rounded-xl border border-amber-200 space-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs w-full min-w-0">
+              <div className="w-full max-w-full min-w-0 box-border bg-white p-3.5 rounded-xl border border-amber-200 space-y-1.5">
                 <div className="flex items-center gap-1.5 text-amber-900 font-bold">
-                  <SunMedium className="w-4 h-4 text-amber-600" />
+                  <SunMedium className="w-4 h-4 text-amber-600 shrink-0" />
                   <span>Golden Time of Day</span>
                 </div>
-                <div className="text-xs font-black text-stone-900 bg-amber-100/60 p-2 rounded-lg">
+                <div className="w-full box-border text-xs font-black text-stone-900 bg-amber-100/60 p-2 rounded-lg whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                   {timing?.bestTimeOfDay || 'Early Morning (6:00 - 8:30 AM) or Late Evening (4:30 - 6:30 PM)'}
                 </div>
-                <p className="text-[11px] text-stone-600 leading-snug">
+                <p className="text-[11px] text-stone-600 leading-snug whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                   {timing?.timingReason || 'Prevents rapid solar UV breakdown of chemicals, avoids leaf scorching, and protects pollinating honeybees.'}
                 </p>
               </div>
 
-              <div className="bg-white p-3.5 rounded-xl border border-amber-200 space-y-1">
+              <div className="w-full max-w-full min-w-0 box-border bg-white p-3.5 rounded-xl border border-amber-200 space-y-1.5">
                 <div className="flex items-center gap-1.5 text-amber-900 font-bold">
-                  <Wind className="w-4 h-4 text-blue-600" />
+                  <Wind className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>Weather Safety Parameters</span>
                 </div>
-                <ul className="text-[11px] space-y-1 text-stone-700">
-                  <li className="flex items-center justify-between border-b border-stone-100 pb-0.5">
+                <ul className="text-[11px] space-y-1.5 text-stone-700 w-full min-w-0">
+                  <li className="flex flex-wrap items-center justify-between gap-1 border-b border-stone-100 pb-0.5">
                     <span>Temp Range:</span>
-                    <span className="font-bold text-stone-900">{timing?.weatherConditions.temperatureRange || '18°C - 26°C'}</span>
+                    <span className="font-bold text-stone-900 [overflow-wrap:break-word]">{timing?.weatherConditions.temperatureRange || '18°C - 26°C'}</span>
                   </li>
-                  <li className="flex items-center justify-between border-b border-stone-100 pb-0.5">
+                  <li className="flex flex-wrap items-center justify-between gap-1 border-b border-stone-100 pb-0.5">
                     <span>Wind Limit:</span>
-                    <span className="font-bold text-stone-900">{timing?.weatherConditions.windSpeedLimit || '< 8-10 km/h'}</span>
+                    <span className="font-bold text-stone-900 [overflow-wrap:break-word]">{timing?.weatherConditions.windSpeedLimit || '< 8-10 km/h'}</span>
                   </li>
-                  <li className="flex items-center justify-between">
+                  <li className="flex flex-wrap items-center justify-between gap-1">
                     <span>Rainfastness:</span>
-                    <span className="font-bold text-emerald-800">{timing?.weatherConditions.rainfastnessHours || '4 to 6 hrs dry window'}</span>
+                    <span className="font-bold text-emerald-800 [overflow-wrap:break-word]">{timing?.weatherConditions.rainfastnessHours || '4 to 6 hrs dry window'}</span>
                   </li>
                 </ul>
               </div>
 
-              <div className="bg-white p-3.5 rounded-xl border border-amber-200 space-y-1">
+              <div className="w-full max-w-full min-w-0 box-border bg-white p-3.5 rounded-xl border border-amber-200 space-y-1.5">
                 <div className="flex items-center gap-1.5 text-amber-900 font-bold">
-                  <Droplets className="w-4 h-4 text-emerald-600" />
+                  <Droplets className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>Spray Cadence & Interval</span>
                 </div>
-                <div className="text-xs font-black text-emerald-900 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                <div className="w-full box-border text-xs font-black text-emerald-900 bg-emerald-50 p-2 rounded-lg border border-emerald-200 whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                   {timing?.sprayIntervalDays || 'Organic: 5-7 days | Chemical: 10-14 days'}
                 </div>
-                <p className="text-[11px] text-stone-600">
+                <p className="text-[11px] text-stone-600 whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                   Do not exceed recommended spray concentration; ensure full underside leaf canopy wetting.
                 </p>
               </div>
             </div>
 
             {/* Expected Recovery Milestones */}
-            <div className="bg-white rounded-xl p-3 border border-amber-200 space-y-2">
+            <div className="w-full max-w-full min-w-0 box-border bg-white rounded-xl p-3 border border-amber-200 space-y-2">
               <span className="text-xs font-bold text-stone-800 uppercase tracking-wider block">
                 Expected Clinical Recovery Milestones (रोग ठीक होने की समयावधि):
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-200">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs w-full min-w-0">
+                <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-200 min-w-0 box-border whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                   <span className="font-bold text-emerald-800 text-[11px] block">Day 1 - 2 (First 48 Hours)</span>
                   <p className="text-[11px] text-stone-700">
                     {timing?.expectedRecoveryTimeline.day1to2 || 'Active fungal sporulation arrested; lesions cease spreading.'}
                   </p>
                 </div>
-                <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-200">
+                <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-200 min-w-0 box-border whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                   <span className="font-bold text-emerald-800 text-[11px] block">Day 4 - 5 (Mid Recovery)</span>
                   <p className="text-[11px] text-stone-700">
                     {timing?.expectedRecoveryTimeline.day4to5 || 'Lesions desiccate into dark necrotic spots with crisp margins; no new spore dust.'}
                   </p>
                 </div>
-                <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-200">
+                <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-200 min-w-0 box-border whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                   <span className="font-bold text-emerald-800 text-[11px] block">Day 7 - 10 (Full Recovery)</span>
                   <p className="text-[11px] text-stone-700">
                     {timing?.expectedRecoveryTimeline.day7to10 || 'Vigorous fresh green leaves emerge; photosynthetic vigor restored.'}
@@ -546,32 +548,32 @@ export const DoctorReportCardModal: React.FC<DoctorReportCardModalProps> = ({
           </div>
 
           {/* Section 5: Doctor's Clinical Review & Physical Sign-off Block */}
-          <div className="border-2 border-stone-300 rounded-2xl p-4 sm:p-4 bg-stone-50/80 space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-300 pb-2">
-              <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-stone-700" />
-                <span className="text-xs font-bold uppercase tracking-wider text-stone-900">
+          <div className="w-full max-w-full min-w-0 box-border border-2 border-stone-300 rounded-2xl p-3.5 sm:p-4 bg-stone-50/80 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-300 pb-2 w-full min-w-0">
+              <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
+                <Building2 className="w-4 h-4 text-stone-700 shrink-0 mt-0.5 sm:mt-0" />
+                <span className="text-xs font-bold uppercase tracking-wider text-stone-900 [overflow-wrap:break-word] [word-break:normal]">
                   4. Krishi Vigyan Kendra (KVK) / Extension Officer Validation Slip (कृषि वैज्ञानिक सत्यापन)
                 </span>
               </div>
-              <span className="text-[10px] font-bold uppercase bg-stone-200 text-stone-800 px-2 py-0.5 rounded">
+              <span className="text-[10px] font-bold uppercase bg-stone-200 text-stone-800 px-2 py-0.5 rounded shrink-0">
                 Official Validation Box
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div className="sm:col-span-2 space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs w-full min-w-0">
+              <div className="sm:col-span-2 space-y-2 min-w-0">
                 <span className="font-bold text-stone-700 block">
                   Agronomist / Doctor Field Observations & Treatment Endorsement (डॉक्टर की टिप्पणी):
                 </span>
-                <div className="h-20 border border-dashed border-stone-400 bg-white rounded-xl p-2.5 text-stone-400 text-[11px]">
+                <div className="min-h-20 border border-dashed border-stone-400 bg-white rounded-xl p-2.5 text-stone-400 text-[11px] box-border whitespace-normal [overflow-wrap:break-word] [word-break:normal]">
                   {card?.doctorReviewSection.doctorNotesPlaceholder || 'Remarks / Alterations noted during on-field physical plant tissue inspection...'}
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <span className="font-bold text-stone-700 block">Doctor Sign & Seal:</span>
-                <div className="h-20 border border-stone-300 bg-white rounded-xl flex flex-col items-center justify-end p-2 text-center">
+                <div className="min-h-20 border border-stone-300 bg-white rounded-xl flex flex-col items-center justify-end p-2 text-center box-border">
                   <div className="w-full border-t border-stone-400 pt-1 text-[10px] text-stone-500">
                     KVK Officer Signature & Stamp
                   </div>
@@ -579,7 +581,7 @@ export const DoctorReportCardModal: React.FC<DoctorReportCardModalProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-2 border-t border-stone-200">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-2 border-t border-stone-200 w-full min-w-0">
               <div className="text-stone-600">
                 <span className="font-bold">Next Recommended Field Check: </span>
                 <span className="font-semibold text-emerald-800">

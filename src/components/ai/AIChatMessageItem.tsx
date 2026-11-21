@@ -46,14 +46,17 @@ export const AIChatMessageItem: React.FC<Props> = ({
   const [feedbackGiven, setFeedbackGiven] = useState<'like' | 'dislike' | undefined>(message.feedback);
   const [showSources, setShowSources] = useState(false);
 
+  const safeContent = typeof message.content === 'string' ? message.content : '';
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(message.content);
+    if (!safeContent) return;
+    navigator.clipboard.writeText(safeContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleSpeak = () => {
-    if (!isSpeechSynthesisSupported()) return;
+    if (!isSpeechSynthesisSupported() || !safeContent) return;
 
     if (isSpeaking) {
       stopSpeech();
@@ -64,7 +67,7 @@ export const AIChatMessageItem: React.FC<Props> = ({
     const targetLang = message.language || language || 'en';
     setIsSpeaking(true);
 
-    speakText(message.content, {
+    speakText(safeContent, {
       lang: targetLang,
       rate: 0.95,
       onStart: () => setIsSpeaking(true),
@@ -81,9 +84,8 @@ export const AIChatMessageItem: React.FC<Props> = ({
   const isAssistant = message.role === 'assistant';
 
   // Parser to extract 4 structured advice sections for enhanced UI styling
-  const renderFormattedContent = (content: string) => {
-    // If it's a simple message without markdown sections
-    const lines = content.split('\n');
+  const renderFormattedContent = (content: string = '') => {
+    const lines = (content || '').split('\n');
 
     return (
       <div className="space-y-3 leading-relaxed">
@@ -196,10 +198,10 @@ export const AIChatMessageItem: React.FC<Props> = ({
         </div>
       )}
 
-      <div className={`max-w-[88%] sm:max-w-[80%] space-y-2.5`}>
+      <div className="min-w-0 max-w-[88%] sm:max-w-[80%] space-y-2.5">
         {/* User / Bot Message Bubble */}
         <div
-          className={`rounded-2xl p-3 sm:p-4 text-xs sm:text-sm shadow-xs transition-all ${
+          className={`rounded-2xl p-3 sm:p-4 text-xs sm:text-sm shadow-xs transition-all break-words [overflow-wrap:anywhere] ${
             isAssistant
               ? 'bg-white/95 backdrop-blur-md border border-stone-200/90 text-stone-900 rounded-tl-xs'
               : 'bg-green-700 text-white rounded-tr-xs border border-white/10'
@@ -218,34 +220,34 @@ export const AIChatMessageItem: React.FC<Props> = ({
 
           {/* Render formatted message content */}
           {isAssistant ? (
-            renderFormattedContent(message.content)
+            renderFormattedContent(safeContent)
           ) : (
-            <div className="whitespace-pre-wrap font-medium leading-relaxed">{message.content}</div>
+            <div className="whitespace-pre-wrap font-medium leading-relaxed break-words">{safeContent}</div>
           )}
 
           {/* Interactive Action Card (e.g. Irrigation / Disease / Mandi / Schemes) */}
           {message.farmingActionCard && (
             <div className="mt-3 sm:mt-4 bg-stone-50/95 border border-stone-200 rounded-xl p-3 sm:p-4 space-y-2.5 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-green-700 flex items-center justify-center font-bold text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-green-700 flex items-center justify-center font-bold text-xs shrink-0">
                     {message.farmingActionCard.actionType === 'IRRIGATION' && <Droplets className="w-3.5 h-3.5 text-blue-600" />}
                     {message.farmingActionCard.actionType === 'DISEASE_SPRAY' && <Bug className="w-3.5 h-3.5 text-rose-600" />}
                     {message.farmingActionCard.actionType === 'MARKET_SELL' && <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />}
                     {message.farmingActionCard.actionType === 'GENERAL' && <FileCheck className="w-3.5 h-3.5 text-purple-600" />}
                   </div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm break-words">
                       {message.farmingActionCard.title}
                     </h4>
-                    <p className="text-[11px] text-stone-500">
+                    <p className="text-[11px] text-stone-500 break-words">
                       Crop: {message.farmingActionCard.crop} • {message.farmingActionCard.recommendedTime || 'Scheduled'}
                     </p>
                   </div>
                 </div>
 
                 {message.farmingActionCard.badge && (
-                  <span className="text-[10px] text-emerald-800 dark:text-emerald-400 font-bold uppercase tracking-tight">
+                  <span className="text-[10px] text-emerald-800 dark:text-emerald-400 font-bold uppercase tracking-tight shrink-0">
                     {message.farmingActionCard.badge}
                   </span>
                 )}
@@ -365,9 +367,9 @@ export const AIChatMessageItem: React.FC<Props> = ({
               </button>
 
               {/* Regenerate */}
-              {onRegenerate && (
+              {onRegenerate && safeContent && (
                 <button
-                  onClick={() => onRegenerate(message.content)}
+                  onClick={() => onRegenerate(safeContent)}
                   className="p-1.5 rounded-lg hover:bg-stone-200/70 hover:text-stone-800 transition-colors flex items-center gap-1 cursor-pointer"
                   title="Regenerate answer"
                 >

@@ -14,12 +14,21 @@ import {
   Sparkles,
   X,
   Send,
+  FileText,
 } from 'lucide-react';
 import { HarvestPoolLot } from '../../shared/types';
 
 export const BuyerMarketplacePage: React.FC = () => {
   const currentUser = useUserStore((state) => state.currentUser);
+  const buyerProfile = useUserStore((state) => state.buyerProfile);
   const { addToast, setCurrentView } = useApp();
+
+  const isBuyerAccount = currentUser?.role === 'BUYER';
+  const effectiveBuyerId = (isBuyerAccount && currentUser?.id) || 'usr_buyer_itc';
+  const activeBuyerName = (isBuyerAccount && currentUser?.fullName) || buyerProfile.fullName || 'Arunav Sengupta';
+  const activeBuyerCompany = (isBuyerAccount && currentUser?.companyName) || buyerProfile.companyName || 'ITC Agri Sourcing';
+  const activeBuyerDepot = (isBuyerAccount && currentUser?.warehouseLocation) || buyerProfile.warehouseLocation || 'Ahmedabad Processing Depot';
+
   const [lots, setLots] = useState<HarvestPoolLot[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCrop, setSelectedCrop] = useState('ALL');
@@ -28,8 +37,12 @@ export const BuyerMarketplacePage: React.FC = () => {
   // Proposal Modal State
   const [selectedLot, setSelectedLot] = useState<HarvestPoolLot | null>(null);
   const [offeredPrice, setOfferedPrice] = useState<string>('');
-  const [deliveryLocation, setDeliveryLocation] = useState<string>('Ahmedabad Processing Depot');
+  const [deliveryLocation, setDeliveryLocation] = useState<string>(activeBuyerDepot);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setDeliveryLocation(activeBuyerDepot);
+  }, [activeBuyerDepot]);
 
   useEffect(() => {
     fetch('/api/marketplace')
@@ -87,9 +100,9 @@ export const BuyerMarketplacePage: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           harvestLotId: selectedLot.id,
-          buyerId: currentUser?.id || 'usr_buyer_1',
-          buyerName: currentUser?.fullName || 'Vikram Mehta',
-          buyerCompany: 'AgroPure Organics & Textiles',
+          buyerId: effectiveBuyerId,
+          buyerName: activeBuyerName,
+          buyerCompany: activeBuyerCompany,
           offeredPricePerKg: price,
           deliveryLocation,
         }),
@@ -136,13 +149,22 @@ export const BuyerMarketplacePage: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={() => setCurrentView('buyer-dashboard')}
-            className="bg-amber-700 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer shrink-0 self-start md:self-auto"
-          >
-            <span>Track My Proposals & Orders</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0 self-start md:self-auto">
+            <button
+              onClick={() => setCurrentView('crop-report-card')}
+              className="bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
+            >
+              <FileText className="w-4 h-4" />
+              <span>View Crop Report Cards</span>
+            </button>
+            <button
+              onClick={() => setCurrentView('buyer-dashboard')}
+              className="bg-amber-700 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
+            >
+              <span>Track My Proposals & Orders</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 

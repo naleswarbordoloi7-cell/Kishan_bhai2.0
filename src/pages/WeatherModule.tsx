@@ -204,7 +204,7 @@ export const WeatherModule: React.FC = () => {
               onClick={() => fetchWeather(location)}
               disabled={loading}
               className="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl border border-white/20 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              title="Refresh live atmospheric telemetry"
+              title="Refresh live weather forecast"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span>{loading ? 'Updating...' : 'Refresh'}</span>

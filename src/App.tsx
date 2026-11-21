@@ -4,7 +4,6 @@ import { AppSidebar } from "./components/AppSidebar";
 import { TopHeader } from "./components/TopHeader";
 import { NfcModal } from "./components/NfcModal";
 import { ToastContainer } from "./components/ToastContainer";
-import { ApiRetryNotification } from "./components/ApiRetryNotification";
 import { LogoIntroSplash } from "./components/LogoIntroSplash";
 import { MobileBottomNav } from "./components/MobileBottomNav";
 import { OfflineManagerModal } from "./components/OfflineManagerModal";
@@ -40,6 +39,7 @@ import { CommunityPage } from "./pages/CommunityPage";
 import { AlertsPage } from "./pages/AlertsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { LoyaltyRewardsPage } from "./pages/LoyaltyRewardsPage";
+import { CropReportCardPage } from "./pages/CropReportCardPage";
 
 const AppContent: React.FC = () => {
   const {
@@ -84,6 +84,8 @@ const AppContent: React.FC = () => {
         return <FarmProfilePage />;
       case "my-crops":
         return <MyCropsPage />;
+      case "crop-report-card":
+        return <CropReportCardPage />;
       case "disease-scanner":
         return <DiseaseScannerPage />;
       case "smart-irrigation":
@@ -186,7 +188,7 @@ const AppContent: React.FC = () => {
           )}
 
           <main
-            className={`flex-1 overflow-y-auto scroll-smooth bg-[#F7F8F2] ${
+            className={`flex-1 min-w-0 w-full overflow-y-auto scroll-smooth bg-[#F7F8F2] ${
               isAuthRoute ? "min-h-screen pb-0" : "min-h-[calc(100vh-4rem)] p-3 sm:p-4 lg:p-6 pb-24"
             }`}
           >
@@ -197,7 +199,7 @@ const AppContent: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="w-full h-full max-w-7xl mx-auto"
+                className="w-full min-w-0 h-full max-w-7xl mx-auto"
               >
                 {renderCurrentView()}
               </motion.div>
@@ -213,7 +215,6 @@ const AppContent: React.FC = () => {
         )}
 
         {/* Global Modals & Notifications */}
-        <ApiRetryNotification />
         <NfcModal />
         <OfflineManagerModal />
         <LogoIntroSplash

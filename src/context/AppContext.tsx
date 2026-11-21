@@ -202,11 +202,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentView, setCurrentViewState] = useState<string>(() => {
     try {
       if (typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search);
+        const queryView = searchParams.get('view');
+        if (queryView) return queryView;
+        if (searchParams.get('report')) return 'crop-report-card';
+
         const path = window.location.pathname.replace(/^\//, '').toLowerCase();
         if (path === 'login' || path === 'auth' || path === 'signin') return 'login';
         if (path === 'register' || path === 'signup') return 'register';
         if (path === 'forgot-password' || path === 'reset-password') return 'forgot-password';
         if (path === 'verify-otp') return 'verify-otp';
+        if (path === 'crop-report-card') return 'crop-report-card';
       }
       const savedView = localStorage.getItem('kb_current_view');
       if (savedView) return savedView;
@@ -233,6 +239,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const handlePopState = () => {
       if (typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search);
+        const queryView = searchParams.get('view');
+        if (queryView) {
+          setCurrentViewState(queryView);
+          return;
+        }
+        if (searchParams.get('report')) {
+          setCurrentViewState('crop-report-card');
+          return;
+        }
         const path = window.location.pathname.replace(/^\//, '').toLowerCase();
         if (path === 'login' || path === 'auth' || path === 'signin') {
           setCurrentViewState('login');
@@ -784,17 +800,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('kb_user', JSON.stringify(currentUser));
       localStorage.setItem('kb_user_authenticated', 'true');
       setUserRole(currentUser.role);
-      
-      const { farmerProfile } = useUserStore.getState();
-      updateProfile({
-        name: currentUser.fullName || farmerProfile.name,
-        mobile: currentUser.phone || farmerProfile.mobile,
-        village: currentUser.village || farmerProfile.village,
-        state: currentUser.state || farmerProfile.state,
-        farmSizeAcres: currentUser.farmSizeAcres || farmerProfile.farmSizeAcres,
-        mainCrop: currentUser.crops?.join(', ') || farmerProfile.mainCrop,
-        preferredLanguage: currentUser.preferredLanguage || farmerProfile.preferredLanguage,
-      });
+
+      if (currentUser.role === 'BUYER') {
+        const { buyerProfile, updateBuyerProfile } = useUserStore.getState();
+        updateBuyerProfile({
+          fullName: currentUser.fullName || buyerProfile.fullName,
+          email: currentUser.email || buyerProfile.email,
+          phone: currentUser.phone || buyerProfile.phone,
+          village: currentUser.village || buyerProfile.village,
+          district: currentUser.district || buyerProfile.district,
+          state: currentUser.state || buyerProfile.state,
+          companyName: currentUser.companyName ?? buyerProfile.companyName,
+          businessType: currentUser.businessType ?? buyerProfile.businessType,
+          contactDesignation: currentUser.contactDesignation ?? buyerProfile.contactDesignation,
+          gstin: currentUser.gstin ?? buyerProfile.gstin,
+          panNumber: currentUser.panNumber ?? buyerProfile.panNumber,
+          mandiLicenseNo: currentUser.mandiLicenseNo ?? buyerProfile.mandiLicenseNo,
+          warehouseLocation: currentUser.warehouseLocation ?? buyerProfile.warehouseLocation,
+          preferredCrops: currentUser.preferredCrops ?? buyerProfile.preferredCrops,
+          sourcingStates: currentUser.sourcingStates ?? buyerProfile.sourcingStates,
+          monthlyProcurementTons: currentUser.monthlyProcurementTons ?? buyerProfile.monthlyProcurementTons,
+          paymentTerms: currentUser.paymentTerms ?? buyerProfile.paymentTerms,
+          upiOrBankRef: currentUser.upiOrBankRef ?? buyerProfile.upiOrBankRef,
+          bio: currentUser.bio ?? buyerProfile.bio,
+          preferredLanguage: currentUser.preferredLanguage || buyerProfile.preferredLanguage,
+        });
+      } else {
+        const { farmerProfile } = useUserStore.getState();
+        updateProfile({
+          name: currentUser.fullName || farmerProfile.name,
+          mobile: currentUser.phone || farmerProfile.mobile,
+          village: currentUser.village || farmerProfile.village,
+          state: currentUser.state || farmerProfile.state,
+          farmSizeAcres: currentUser.farmSizeAcres ?? farmerProfile.farmSizeAcres,
+          mainCrop: currentUser.crops?.join(', ') || farmerProfile.mainCrop,
+          preferredLanguage: currentUser.preferredLanguage || farmerProfile.preferredLanguage,
+        });
+      }
     } else {
       localStorage.removeItem('kb_user');
       localStorage.removeItem('kb_user_authenticated');

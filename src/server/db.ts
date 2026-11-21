@@ -33,6 +33,7 @@ import {
   LoyaltyRewardRedemption,
   OrderRating,
   LoyaltyAdminConfig,
+  DigitalCropReportCard,
 } from '../../shared/types.js';
 import {
   CROP_RECOMMENDATIONS_DATABASE,
@@ -58,6 +59,7 @@ class InMemoryDB {
   soilHealth: Map<string, SoilHealthData> = new Map();
   soilRecords: Map<string, SoilRecordHistoryItem> = new Map();
   appointments: Map<string, any> = new Map();
+  cropReports: Map<string, DigitalCropReportCard> = new Map();
   usedTxHashes: Set<string> = new Set();
   farmerMemory: Map<string, { preferences: Record<string, any>; notes: string[]; updatedAt: string }> = new Map();
   
@@ -128,6 +130,7 @@ class InMemoryDB {
     this.cropRecommendations.clear();
     this.soilHealth.clear();
     this.soilRecords.clear();
+    this.cropReports.clear();
     this.usedTxHashes.clear();
     this.loyaltyAccounts.clear();
     this.loyaltyLedger.clear();
@@ -196,13 +199,27 @@ class InMemoryDB {
 
     const u3: UserProfile = {
       id: 'usr_buyer_itc',
-      fullName: 'Arunav Sengupta (ITC Agri Sourcing)',
+      fullName: 'Arunav Sengupta',
       email: 'arunav.sengupta@itc.in',
       phone: '+91 98110 55432',
       role: 'BUYER',
       village: 'Ahmedabad APMC Hub',
+      district: 'Ahmedabad',
       state: 'Gujarat',
       verified: true,
+      companyName: 'ITC Agri Sourcing',
+      businessType: 'Food Processor & Exporter',
+      contactDesignation: 'Head of Direct Cluster Procurement',
+      gstin: '24AAACI5950L1ZX',
+      panNumber: 'AAACI5950L',
+      mandiLicenseNo: 'APMC-GJ-AMD-2026-441',
+      warehouseLocation: 'Ahmedabad Processing Depot, Sanand GIDC',
+      preferredCrops: ['Cotton', 'Wheat', 'Groundnut', 'Yellow Mustard'],
+      sourcingStates: ['Gujarat', 'Madhya Pradesh', 'Rajasthan'],
+      monthlyProcurementTons: 250,
+      paymentTerms: 'Escrow Instant',
+      upiOrBankRef: 'itcagri.escrow@icici',
+      bio: 'Direct farm-gate procurement desk sourcing lab-assayed cotton, oilseeds, and organic wheat from smallholder clusters.',
       preferredLanguage: 'en',
       createdAt: '2026-05-20T14:15:00Z',
     };

@@ -126,7 +126,7 @@ export const SmartIrrigationPage: React.FC = () => {
             ? 'Scenario: Dry soil (22%) + Low rain -> YES, Irrigation Needed'
             : preset === 'WET'
             ? 'Scenario: Saturated soil (62%) -> NO, Adequate Buffer'
-            : 'Scenario: Sensor telemetry offline -> Fallback to Agro Models',
+            : 'Scenario: Field sensors offline -> Fallback to Agro Models',
           'info'
         );
       }
@@ -146,7 +146,7 @@ export const SmartIrrigationPage: React.FC = () => {
       });
       addToast(
         next ? 'Demo Sensor Mode Enabled' : 'Live Sensor Mode Enabled',
-        next ? 'Simulated IoT sensor readings enabled for testing & presentation.' : 'Displaying real connected hardware sensor telemetry.',
+        next ? 'Simulated field sensor readings enabled for demonstration.' : 'Displaying live connected field sensor readings.',
         'info'
       );
       fetchStatus();
@@ -305,7 +305,7 @@ export const SmartIrrigationPage: React.FC = () => {
             ) : (
               <span className="bg-emerald-400/20 text-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-mono flex items-center gap-1">
                 <Radio className="w-3 h-3 text-emerald-400" />
-                Live Node Telemetry
+                Live Field Sensors
               </span>
             )}
           </div>
@@ -623,7 +623,7 @@ export const SmartIrrigationPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                Hardware Node Telemetry
+                Field Sensor Readings
               </span>
               <span className="text-xs text-stone-500 font-medium">Multi-Layer Field IoT Sensor Grid</span>
             </div>
@@ -746,7 +746,7 @@ export const SmartIrrigationPage: React.FC = () => {
           <div className="bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20 text-xs text-amber-950 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
             <span>
-              <strong>Sensor Telemetry Notice:</strong> Moisture probe S-104 is currently offline. Kisan Bhai is automatically using historical depletion curve models and Open-Meteo satellite rain forecasts to maintain accurate recommendations.
+              <strong>Sensor Status Notice:</strong> Moisture probe S-104 is currently offline. Kisan Bhai is automatically using soil moisture models and rain forecasts to maintain accurate recommendations.
             </span>
           </div>
         )}

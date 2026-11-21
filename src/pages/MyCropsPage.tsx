@@ -21,7 +21,8 @@ import { CropLifecycleItem } from '../../shared/types';
 import { HarvestReminderModal } from '../components/HarvestReminderModal';
 import { CropGrowthYieldProjection } from '../components/CropGrowthYieldProjection';
 import { CropObservationModal } from '../components/crops/CropObservationModal';
-import { History, Mic } from 'lucide-react';
+import { History, Mic, FileText } from 'lucide-react';
+import { resolveCropPhoto } from '../utils/cropImages';
 
 export const MyCropsPage: React.FC = () => {
   const { crops, addCrop, updateCrop, removeCrop, addCropObservation, language, setCurrentView } = useApp();
@@ -65,7 +66,7 @@ export const MyCropsPage: React.FC = () => {
       pestVulnerability: 'LOW',
       pestWatchlist: ['Aphids', 'Rust'],
       recentAction: 'Land preparation and bio-fertilizer treatment',
-      imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=600&q=80',
+      imageUrl: resolveCropPhoto(newCropName),
     };
     addCrop(item);
     setIsAddModalOpen(false);
@@ -107,13 +108,23 @@ export const MyCropsPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center justify-center gap-2 bg-emerald-400 hover:bg-emerald-300 text-stone-950 font-bold px-5 py-3 rounded-2xl shadow-lg transition-all cursor-pointer text-sm shrink-0"
-        >
-          <Plus className="w-5 h-5" />
-          <span>{language === 'hi' ? 'नई फसल जोड़ें' : 'Register New Crop'}</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => setCurrentView('crop-report-card')}
+            className="flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 text-white font-bold px-4 py-3 rounded-2xl border border-white/25 transition-all cursor-pointer text-sm"
+          >
+            <FileText className="w-4 h-4 text-emerald-300" />
+            <span>{language === 'hi' ? 'डिजिटल रिपोर्ट कार्ड' : 'Digital Report Cards'}</span>
+          </button>
+
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center justify-center gap-2 bg-emerald-400 hover:bg-emerald-300 text-stone-950 font-bold px-5 py-3 rounded-2xl shadow-lg transition-all cursor-pointer text-sm"
+          >
+            <Plus className="w-5 h-5" />
+            <span>{language === 'hi' ? 'नई फसल जोड़ें' : 'Register New Crop'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Overview Cards */}
@@ -187,7 +198,7 @@ export const MyCropsPage: React.FC = () => {
             {/* Image Header */}
             <div className="relative h-44 w-full bg-stone-100 overflow-hidden">
               <img
-                src={crop.imageUrl}
+                src={resolveCropPhoto(crop.cropName, crop.imageUrl)}
                 alt={crop.cropName}
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
@@ -305,25 +316,42 @@ export const MyCropsPage: React.FC = () => {
                 )}
 
                 {/* View Growth & Yield in Recharts Button */}
-                <button
-                  onClick={() => {
-                    setSelectedCropId(crop.id);
-                    const el = document.getElementById('growth-yield-chart-section');
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                  className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
-                    selectedCropId === crop.id
-                      ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs'
-                      : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 border-emerald-200'
-                  }`}
-                >
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>
-                    {selectedCropId === crop.id
-                      ? (language === 'hi' ? '✓ ग्राफ में चयनित है' : '✓ Active in Growth Model')
-                      : (language === 'hi' ? 'वृद्धि व पैदावार ग्राफ देखें' : 'View Growth & Yield Graph')}
-                  </span>
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedCropId(crop.id);
+                      const el = document.getElementById('growth-yield-chart-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                      selectedCropId === crop.id
+                        ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs'
+                        : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 border-emerald-200'
+                    }`}
+                  >
+                    <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">
+                      {selectedCropId === crop.id
+                        ? (language === 'hi' ? '✓ ग्राफ सक्रिय' : '✓ In Growth Chart')
+                        : (language === 'hi' ? 'विकास ग्राफ' : 'Growth Graph')}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      try {
+                        localStorage.setItem('kb_selected_report_crop_id', crop.id);
+                      } catch {}
+                      setCurrentView('crop-report-card');
+                    }}
+                    className="flex items-center justify-center gap-1.5 py-2 px-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer border border-[#14532D]/30 bg-white hover:bg-emerald-50 text-[#14532D]"
+                  >
+                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">
+                      {language === 'hi' ? 'रिपोर्ट कार्ड' : 'Report Card'}
+                    </span>
+                  </button>
+                </div>
 
                 <div className="flex gap-2">
                   <button

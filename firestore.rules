@@ -98,6 +98,16 @@ service cloud.firestore {
         data.status in ['OPEN', 'LOCKED', 'ORDER_PLACED', 'DELIVERED'];
     }
 
+    function isValidCropReport(data) {
+      return data.keys().hasAll(['id', 'farmerId', 'uniqueCropId', 'cropName', 'farmerApprovedForBuyers', 'verificationCode']) &&
+        data.id is string && isValidId(data.id) &&
+        data.farmerId is string && isValidId(data.farmerId) &&
+        data.uniqueCropId is string && data.uniqueCropId.size() >= 3 && data.uniqueCropId.size() <= 64 &&
+        data.cropName is string && data.cropName.size() >= 2 && data.cropName.size() <= 100 &&
+        data.farmerApprovedForBuyers is bool &&
+        data.verificationCode is string && data.verificationCode.size() >= 4 && data.verificationCode.size() <= 40;
+    }
+
     // 1. Users collection - PII protection
     match /users/{userId} {
       allow get: if isSignedIn() && isValidId(userId) && (isCurrentUser(userId) || isAdmin());
@@ -194,6 +204,43 @@ service cloud.firestore {
         existing().status != 'DELIVERED'
       );
       allow delete: if isValidId(cartId) && isAdmin();
+    }
+
+    // 9. Digital Crop Report Cards (Farmer-owned, Buyer-viewable only when farmerApprovedForBuyers == true)
+    match /cropReports/{reportId} {
+      allow get: if isValidId(reportId) && (
+        existing().farmerApprovedForBuyers == true ||
+        (isSignedIn() && (existing().farmerId == request.auth.uid || isAdmin()))
+      );
+      allow list: if isSignedIn() && (
+        resource.data.farmerId == request.auth.uid ||
+        resource.data.farmerApprovedForBuyers == true ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() &&
+        isValidId(reportId) &&
+        isValidCropReport(incoming()) &&
+        incoming().id == reportId &&
+        (incoming().farmerId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() &&
+        isValidId(reportId) &&
+        isValidCropReport(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().farmerId == existing().farmerId && (
+          isAdmin() ||
+          (
+            existing().farmerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'farmerName', 'village', 'district', 'state', 'cropName', 'variety',
+              'landAreaAcres', 'sowingDate', 'expectedHarvestDate', 'growthProgressPct',
+              'soilHealthScore', 'diseaseStatus', 'aiSummary', 'harvestQuantityQuintals',
+              'qualityGrade', 'estimatedMarketPriceInr', 'totalExpensesInr',
+              'expectedRevenueInr', 'estimatedProfitInr', 'overallGrade', 'overallRating',
+              'farmerApprovedForBuyers', 'approvedAt', 'reportSnapshot', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isSignedIn() && isValidId(reportId) && (existing().farmerId == request.auth.uid || isAdmin());
     }
 
     // Admin whitelist collection

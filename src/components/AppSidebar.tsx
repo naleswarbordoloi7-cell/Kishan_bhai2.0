@@ -21,6 +21,8 @@ import {
   ArrowRight,
   Award,
   Package,
+  FileText,
+  Building2,
 } from 'lucide-react';
 import farmerImg from '../assets/images/farmer_champion_portrait_1790247882281.jpg';
 
@@ -69,6 +71,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       labelEn: 'Producer Clusters',
       labelHi: 'उत्पादक क्लस्टर (Clusters)',
       icon: Users,
+    },
+    {
+      id: 'crop-report-card',
+      labelEn: 'Crop Report Cards',
+      labelHi: 'फसल रिपोर्ट कार्ड (QR)',
+      icon: FileText,
+      badge: 'Verified',
     },
     {
       id: 'loyalty',
@@ -126,6 +135,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       icon: Wrench,
     },
     {
+      id: 'crop-report-card',
+      labelEn: 'Crop Report Card',
+      labelHi: 'डिजिटल फसल रिपोर्ट',
+      icon: FileText,
+      badge: 'PDF/QR',
+    },
+    {
       id: 'ai-assistant',
       labelEn: 'Kishan AI',
       labelHi: 'किसान AI (Advisor)',
@@ -139,6 +155,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   // Secondary Navigation Items (Below Divider)
   const secondaryNavItems = isBuyerSection
     ? [
+        {
+          id: 'profile',
+          labelEn: 'Buyer Profile',
+          labelHi: 'क्रेता प्रोफाइल (Profile)',
+          icon: Building2,
+        },
         {
           id: 'settings',
           labelEn: 'Company Settings',

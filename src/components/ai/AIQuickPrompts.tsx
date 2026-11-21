@@ -16,12 +16,68 @@ import {
 interface Props {
   onSelectPrompt: (prompt: string, sampleImage?: string) => void;
   language: string;
+  disabled?: boolean;
 }
 
-export const AIQuickPrompts: React.FC<Props> = ({ onSelectPrompt, language }) => {
-  const [activeCategory, setActiveCategory] = useState<'ALL' | 'IRRIGATION' | 'DISEASE' | 'MARKET' | 'COMMERCE'>('ALL');
+function createSampleLeafPng(): string {
+  if (typeof document === 'undefined') return '';
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 220;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
 
-  const sampleLeafSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect width="300" height="200" fill="%232d3748"/><path d="M150 20 C230 40, 260 140, 150 180 C40 140, 70 40, 150 20 Z" fill="%2348bb78"/><circle cx="120" cy="80" r="14" fill="%23744210"/><circle cx="165" cy="110" r="18" fill="%23744210"/><circle cx="140" cy="135" r="10" fill="%23b7791f"/><text x="20" y="190" fill="white" font-size="12">Sample: Cotton Leaf Spot Sample</text></svg>`;
+    // Dark soil/field background
+    ctx.fillStyle = '#243028';
+    ctx.fillRect(0, 0, 320, 220);
+
+    // Leaf body
+    ctx.fillStyle = '#48bb78';
+    ctx.beginPath();
+    ctx.moveTo(160, 22);
+    ctx.bezierCurveTo(245, 42, 265, 148, 160, 190);
+    ctx.bezierCurveTo(55, 148, 75, 42, 160, 22);
+    ctx.fill();
+
+    // Central vein
+    ctx.strokeStyle = '#9ae6b4';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(160, 28);
+    ctx.lineTo(160, 186);
+    ctx.stroke();
+
+    // Yellowing chlorosis + brown necrotic leaf spots
+    const spots = [
+      { x: 122, y: 84, r: 15 },
+      { x: 185, y: 112, r: 18 },
+      { x: 138, y: 140, r: 11 },
+    ];
+    for (const s of spots) {
+      ctx.fillStyle = '#ecc94b';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r + 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#744210';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Sample: Cotton Leaf Spot', 16, 208);
+
+    return canvas.toDataURL('image/png');
+  } catch {
+    return '';
+  }
+}
+
+export const AIQuickPrompts: React.FC<Props> = ({ onSelectPrompt, language, disabled = false }) => {
+  const [activeCategory, setActiveCategory] = useState<'ALL' | 'IRRIGATION' | 'DISEASE' | 'MARKET' | 'COMMERCE'>('ALL');
 
   const prompts = [
     {
@@ -43,7 +99,7 @@ export const AIQuickPrompts: React.FC<Props> = ({ onSelectPrompt, language }) =>
       title: language === 'hi' ? 'पत्तियों में पीलापन व धब्बे की जांच' : 'Check leaf disease & yellow spots',
       subtitle: language === 'hi' ? 'कंप्यूटर विजन रोग पहचान' : 'Fungal diagnosis & foliar spray remedies',
       query: 'Please analyze my crop for yellow leaf spots, pathogen infection, and provide immediate treatment plan.',
-      sampleImage: sampleLeafSvg,
+      useSampleLeaf: true,
     },
     {
       id: 'market_sell',
@@ -164,8 +220,10 @@ export const AIQuickPrompts: React.FC<Props> = ({ onSelectPrompt, language }) =>
           return (
             <button
               key={p.id}
-              onClick={() => onSelectPrompt(p.query, p.sampleImage)}
-              className="text-left bg-white/80 hover:bg-white p-3 rounded-2xl border border-stone-200/80 shadow-2xs hover:shadow-xs transition-all hover:border-emerald-500/50 cursor-pointer active:scale-[0.99] flex items-start gap-3 group"
+              type="button"
+              disabled={disabled}
+              onClick={() => onSelectPrompt(p.query, p.useSampleLeaf ? createSampleLeafPng() : undefined)}
+              className="text-left bg-white/80 hover:bg-white p-3 rounded-2xl border border-stone-200/80 shadow-2xs hover:shadow-xs transition-all hover:border-emerald-500/50 cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none flex items-start gap-3 group"
             >
               <div className={`w-8 h-8 rounded-xl ${p.bgColor} ${p.iconColor} flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform`}>
                 <Icon className="w-3.5 h-3.5" />

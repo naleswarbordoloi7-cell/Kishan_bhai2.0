@@ -161,6 +161,8 @@ export class AuthService {
       ...updates,
       id: existing.id, // Immutable
       email: existing.email, // Immutable
+      role: existing.role, // Immutable via self-update
+      updatedAt: new Date().toISOString(),
     };
 
     db.users.set(userId, updated);

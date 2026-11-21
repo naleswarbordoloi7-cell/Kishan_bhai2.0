@@ -25,10 +25,11 @@ import {
   User,
   ShieldAlert,
   LogIn,
+  FileText,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
-  const { userRole, currentUser } = useUserStore();
+  const { userRole, currentUser, buyerProfile } = useUserStore();
   const { currentView, setCurrentView, language, alerts } = useApp();
 
   const unreadAlertCount = alerts.filter((a) => !a.isRead).length;
@@ -44,6 +45,7 @@ export const Sidebar: React.FC = () => {
         { id: 'smart-irrigation', labelEn: '💧 Smart Irrigation', labelHi: '💧 स्मार्ट सिंचाई सलाहकार', icon: Droplets },
         { id: 'disease-scanner', labelEn: '🔍 AI Disease Scanner', labelHi: '🔍 रोग व कीट स्कैनर', icon: Scan },
         { id: 'my-crops', labelEn: '🌾 My Crops & Fields', labelHi: '🌾 मेरी फसलें व खेत', icon: Sprout },
+        { id: 'crop-report-card', labelEn: '📄 Digital Crop Report Card', labelHi: '📄 डिजिटल फसल रिपोर्ट कार्ड', icon: FileText },
       ],
     },
     {
@@ -83,7 +85,10 @@ export const Sidebar: React.FC = () => {
         return [
           { id: 'buyer-dashboard', labelEn: 'Buyer Procurement Desk', labelHi: 'क्रेता डैशबोर्ड', icon: LayoutDashboard },
           { id: 'marketplace', labelEn: 'Cluster Harvest Catalog', labelHi: 'क्लस्टर फसल सूची', icon: Store },
+          { id: 'crop-report-card', labelEn: 'Verified Crop Report Cards', labelHi: 'फसल रिपोर्ट कार्ड', icon: FileText },
           { id: 'clusters', labelEn: 'Verified Farm Clusters', labelHi: 'सत्यापित क्लस्टर', icon: Users },
+          { id: 'profile', labelEn: 'Buyer Profile', labelHi: 'खरीदार प्रोफ़ाइल', icon: User },
+          { id: 'settings', labelEn: 'Company Settings', labelHi: 'कंपनी सेटिंग्स', icon: Settings },
         ];
       case 'ADMIN':
         return [
@@ -108,7 +113,7 @@ export const Sidebar: React.FC = () => {
             <span className="truncate">
               {userRole === 'FARMER' && (currentUser?.fullName || 'Ramesh Patel (Farmer)')}
               {userRole === 'CHAMPION' && 'Devraj Bhai (Champion)'}
-              {userRole === 'BUYER' && 'ITC Agro Procurement'}
+              {userRole === 'BUYER' && ((currentUser?.role === 'BUYER' ? currentUser.companyName : '') || buyerProfile.companyName || 'ITC Agri Sourcing')}
               {userRole === 'ADMIN' && 'Kishan Bhai System Admin'}
             </span>
           </div>
@@ -193,18 +198,6 @@ export const Sidebar: React.FC = () => {
             <LogIn className="w-4 h-4 shrink-0 text-emerald-700" />
             <span className="truncate">{language === 'hi' ? 'खाता बदलें / लॉगिन' : 'Switch Account / Login'}</span>
           </button>
-        </div>
-      </div>
-
-      {/* Algorand Node status footer */}
-      <div className="p-3 border-t border-stone-200/60 bg-stone-50 m-3 rounded-2xl border text-[10px] text-stone-500 font-mono space-y-1">
-        <div className="flex items-center justify-between">
-          <span>ALGORAND:</span>
-          <span className="text-emerald-700 font-bold">TESTNET LIVE</span>
-        </div>
-        <div className="flex items-center justify-between text-stone-400">
-          <span>ESCROW:</span>
-          <span className="text-stone-700 font-bold">Smart Contract</span>
         </div>
       </div>
     </aside>

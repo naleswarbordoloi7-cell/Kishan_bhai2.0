@@ -732,7 +732,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-2xl border border-stone-200 text-xs font-bold">
+          <div className="flex flex-wrap items-center gap-1.5 bg-stone-100 p-1 rounded-2xl border border-stone-200 text-xs font-bold max-w-full">
             <button
               onClick={() => setFilterType('ALL')}
               className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
@@ -812,7 +812,7 @@ export const CropPatchTimelineCard: React.FC<CropPatchTimelineCardProps> = ({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-stone-500">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-stone-500">
                       <div className="flex items-center gap-1 font-medium">
                         <Calendar className="w-3.5 h-3.5 text-stone-400" />
                         <span>{event.date}</span>

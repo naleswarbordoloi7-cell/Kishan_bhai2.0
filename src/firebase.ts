@@ -64,14 +64,17 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 // Connection validation
 export async function testConnection(): Promise<boolean> {
   try {
-    // Non-blocking connection check with short timeout or graceful catch
+    await getDocFromServer(doc(db, 'test', 'connection'));
     return true;
   } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.error('Please check your Firebase configuration.');
+    }
     return false;
   }
 }
 
 // Initial connection boot check
 if (typeof window !== 'undefined') {
-  // Silent check
+  testConnection().catch(() => {});
 }

@@ -277,7 +277,7 @@ export const OfflineSyncIndicator: React.FC<OfflineSyncIndicatorProps> = ({ isMo
           !isOnline
             ? isHi
               ? 'ऑफ़लाइन मोड: स्थानीय कैश से सुरक्षित संचालन'
-              : 'Offline Field Mode: Running securely on Service Worker local cache'
+              : 'Offline Field Mode: Working securely from saved farm data'
             : isSyncing
             ? isHi
               ? 'कृषि डेटाबेस सिंक हो रहा है...'

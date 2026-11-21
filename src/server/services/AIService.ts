@@ -34,7 +34,7 @@ export class AIService {
         apiKey: config.geminiApiKey,
         httpOptions: {
           headers: {
-            'User-Agent': 'kishan-bhai-production/1.0',
+            'User-Agent': 'aistudio-build',
           },
         },
       });
@@ -104,16 +104,14 @@ AGRICULTURAL SAFETY & ACCURACY RULES:
 
     try {
       const ai = this.getClient();
-      const { response } = await generateWithModelFallback(
+      const { response, modelUsed } = await generateWithModelFallback(
         ai,
-        'gemini-2.5-flash',
+        'gemini-4-hydrogen',
         (m) => ({
           model: m,
           contents: cleanPrompt,
           config: {
             systemInstruction,
-            temperature: 0.4,
-            maxOutputTokens: 1000,
           },
         })
       );
@@ -140,7 +138,7 @@ AGRICULTURAL SAFETY & ACCURACY RULES:
         actionCards,
         sourceMetadata: {
           sourceType: 'LIVE_AI_MODEL',
-          model: 'gemini-2.5-flash',
+          model: modelUsed || 'gemini-4-hydrogen',
           timestamp: new Date().toISOString(),
         },
       };

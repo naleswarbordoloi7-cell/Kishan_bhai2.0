@@ -143,7 +143,7 @@ export const AIHistoryDrawer: React.FC<Props> = ({
                     </h4>
 
                     <p className="text-[11px] text-stone-500 mt-1 truncate">
-                      {s.messages.length} messages • {s.messages[s.messages.length - 1]?.content.slice(0, 45)}...
+                      {s.messages?.length || 0} messages • {(s.messages?.[s.messages.length - 1]?.content || '').slice(0, 45)}...
                     </p>
                   </div>
 

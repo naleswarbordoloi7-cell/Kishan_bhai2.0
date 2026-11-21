@@ -86,8 +86,8 @@ export const OfflineManagerModal: React.FC = () => {
               <div className="text-xs space-y-1 leading-relaxed">
                 <p className="font-semibold text-sm">
                   {isOnline
-                    ? (language === 'hi' ? 'सेवा कार्यकर्ता सक्रिय — डेटा ऑफ़लाइन के लिए तैयार है' : 'Service Worker Active — Core Assets Cached')
-                    : (language === 'hi' ? 'आप ऑफ़लाइन हैं — स्थानीय कैश से काम कर रहे हैं' : 'Offline Mode Active — Running on Service Worker')}
+                    ? (language === 'hi' ? 'ऑफ़लाइन सुविधा सक्रिय — मुख्य जानकारी सुरक्षित है' : 'Offline Companion Ready — Essential Tools Saved')
+                    : (language === 'hi' ? 'आप ऑफ़लाइन हैं — सुरक्षित स्थानीय डेटा से काम चल रहा है' : 'Offline Mode Active — Working Without Internet')}
                 </p>
                 <p className="text-stone-700">
                   {language === 'hi'
@@ -144,20 +144,20 @@ export const OfflineManagerModal: React.FC = () => {
             <div className="flex justify-between items-center text-xs font-mono text-stone-600 pb-2 border-b border-stone-200">
               <span className="flex items-center gap-1.5">
                 <HardDrive className="w-3.5 h-3.5 text-stone-700" />
-                <span>Service Worker Engine</span>
+                <span>Offline Farm Storage</span>
               </span>
-              <span className="font-bold text-stone-900">v{cacheStats.version}</span>
+              <span className="font-bold text-emerald-700">Ready</span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="bg-white p-2.5 rounded-xl border border-stone-200">
                 <div className="text-lg font-bold font-mono text-stone-900">{cacheStats.coreAssets || 8}</div>
-                <div className="text-[10px] text-stone-700 font-medium">Core Shell Assets</div>
+                <div className="text-[10px] text-stone-700 font-medium">App Screens</div>
               </div>
 
               <div className="bg-white p-2.5 rounded-xl border border-stone-200">
                 <div className="text-lg font-bold font-mono text-[#2D5A27]">{cacheStats.dataEndpoints || 6}</div>
-                <div className="text-[10px] text-stone-700 font-medium">Farm Datasets</div>
+                <div className="text-[10px] text-stone-700 font-medium">Farm Guides</div>
               </div>
 
               <div className="bg-white p-2.5 rounded-xl border border-stone-200">

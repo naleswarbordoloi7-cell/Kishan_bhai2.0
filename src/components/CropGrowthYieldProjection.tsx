@@ -1187,7 +1187,7 @@ export const CropGrowthYieldProjection: React.FC<CropGrowthYieldProjectionProps>
             <span>{language === 'hi' ? 'हरे बिंदु = मुख्य फिनोलॉजिकल मील के पत्थर' : 'Green dots = Phenological Milestones'}</span>
           </div>
           <div className="italic">
-            {language === 'hi' ? 'स्रोत: ICAR व स्थानीय उपग्रह मौसमीय मॉडल' : 'Calibrated with ICAR crop growth coefficients & local climate telemetry'}
+            {language === 'hi' ? 'स्रोत: ICAR व स्थानीय उपग्रह मौसमीय मॉडल' : 'Calibrated with ICAR crop growth coefficients & local weather data'}
           </div>
         </div>
       </div>

@@ -29,8 +29,8 @@ interface TopHeaderProps {
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSidebar }) => {
-  const { currentUser, setCurrentUser, userRole, setUserRole } = useUserStore();
-  const { currentView, setCurrentView, alerts, addToast } = useApp();
+  const { currentUser, setCurrentUser, userRole, setUserRole, buyerProfile } = useUserStore();
+  const { currentView, setCurrentView, alerts, addToast, language } = useApp();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -39,9 +39,18 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSidebar }) => {
   const unreadCount = alerts ? alerts.filter((a) => !a.isRead).length : 0;
 
   const isBuyerSection = userRole === 'BUYER' || currentView === 'buyer-dashboard' || currentView === 'marketplace';
+  const isSignedBuyer = currentUser?.role === 'BUYER';
 
-  // Actual authenticated user info with friendly fallback
-  const farmerName = currentUser?.fullName || (isBuyerSection ? 'Vikram Mehta' : 'Ramesh Patel');
+  // Actual authenticated user info with persona-aware fallback
+  const displayName = isBuyerSection
+    ? (isSignedBuyer ? currentUser?.fullName : buyerProfile.fullName) || 'Arunav Sengupta'
+    : currentUser?.fullName || 'Ramesh Patel';
+  const displayEmail = isBuyerSection
+    ? (isSignedBuyer ? currentUser?.email : buyerProfile.email) || 'arunav.sengupta@itc.in'
+    : currentUser?.email || `${displayName.toLowerCase().replace(/\s+/g, '')}@kishanbhai.in`;
+  const displayCompany = isBuyerSection
+    ? (isSignedBuyer ? currentUser?.companyName : buyerProfile.companyName) || 'ITC Agri Sourcing'
+    : '';
   const roleLabel =
     isBuyerSection
       ? 'Institutional Buyer'
@@ -51,7 +60,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSidebar }) => {
       ? 'Village Champion'
       : 'Admin';
 
-  const avatarInitial = farmerName.charAt(0).toUpperCase();
+  const avatarInitial = displayName.charAt(0).toUpperCase();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -141,10 +150,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSidebar }) => {
               {/* Name & Role (Desktop) */}
               <div className="hidden sm:block text-left">
                 <div className="text-xs font-bold text-[#14251F] leading-tight truncate max-w-[130px]">
-                  {farmerName}
+                  {displayName}
                 </div>
-                <div className="text-[10px] font-semibold text-[#087443] flex items-center gap-1">
-                  <span>{roleLabel}</span>
+                <div className="text-[10px] font-semibold text-[#087443] flex items-center gap-1 truncate max-w-[130px]">
+                  <span>{isBuyerSection && displayCompany ? displayCompany : roleLabel}</span>
                 </div>
               </div>
 
@@ -156,9 +165,12 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSidebar }) => {
               <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-stone-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                 {/* User Header */}
                 <div className="px-4 py-3 border-b border-stone-100">
-                  <p className="text-xs font-bold text-[#14251F]">{farmerName}</p>
+                  <p className="text-xs font-bold text-[#14251F] truncate">{displayName}</p>
+                  {isBuyerSection && displayCompany && (
+                    <p className="text-[11px] font-semibold text-[#087443] truncate">{displayCompany}</p>
+                  )}
                   <p className="text-[11px] text-[#66756D] truncate">
-                    {currentUser?.email || `${farmerName.toLowerCase().replace(/\s+/g, '')}@kishanbhai.in`}
+                    {displayEmail}
                   </p>
                   <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F6E9] text-[#087443] border border-emerald-200">
                     <ShieldCheck className="w-3 h-3 text-[#20A464]" />
@@ -232,7 +244,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSidebar }) => {
                     className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-stone-700 hover:bg-stone-50 flex items-center gap-2"
                   >
                     <User className="w-4 h-4 text-stone-500" />
-                    <span>My Farm Profile</span>
+                    <span>{isBuyerSection ? (language === 'hi' ? 'खरीदार प्रोफाइल' : 'Buyer Profile') : 'My Farm Profile'}</span>
                   </button>
                   <button
                     type="button"

@@ -9,6 +9,7 @@ import { config } from '../core/config.js';
 import { db } from '../db.js';
 import { AppError, ValidationError } from '../core/errors.js';
 import { DiseaseScanResult } from '../../../shared/types.js';
+import { generateWithModelFallback } from '../gemini.js';
 
 export class DiseaseScannerService {
   private aiInstance: GoogleGenAI | null = null;
@@ -19,7 +20,7 @@ export class DiseaseScannerService {
         apiKey: config.geminiApiKey || '',
         httpOptions: {
           headers: {
-            'User-Agent': 'kishan-bhai-disease-scanner/1.0',
+            'User-Agent': 'aistudio-build',
           },
         },
       });
@@ -91,27 +92,30 @@ Respond in STRICT JSON format:
 }
 `;
 
-        const response = await client.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: prompt },
-                {
-                  inlineData: {
-                    mimeType: params.mimeType || 'image/jpeg',
-                    data: cleanBase64,
+        const { response } = await generateWithModelFallback(
+          client,
+          'gemini-3.1-flash-lite',
+          (m) => ({
+            model: m,
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: prompt },
+                  {
+                    inlineData: {
+                      mimeType: params.mimeType || 'image/jpeg',
+                      data: cleanBase64,
+                    },
                   },
-                },
-              ],
+                ],
+              },
+            ],
+            config: {
+              responseMimeType: 'application/json',
             },
-          ],
-          config: {
-            temperature: 0.2,
-            responseMimeType: 'application/json',
-          },
-        });
+          })
+        );
 
         const rawText = (response.text || '{}').replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);

@@ -66,7 +66,7 @@ export const INITIAL_CROPS: CropLifecycleItem[] = [
     pestVulnerability: 'MEDIUM',
     pestWatchlist: ['Pink Bollworm', 'Whitefly', 'Jassids', 'Mites'],
     recentAction: 'Drip fertigation with 2nd Urea split (30 kg/acre) conducted yesterday',
-    imageUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/crop-cotton.jpg',
     observations: [
       {
         id: 'obs_sample_1',
@@ -92,7 +92,7 @@ export const INITIAL_CROPS: CropLifecycleItem[] = [
     pestVulnerability: 'LOW',
     pestWatchlist: ['Tikka Leaf Spot', 'White Grub (Gobera)', 'Rust'],
     recentAction: 'Second Gypsum application (100 kg/acre) completed for kernel filling',
-    imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/crop-groundnut.jpg',
   },
   {
     id: 'crop_03',
@@ -110,7 +110,7 @@ export const INITIAL_CROPS: CropLifecycleItem[] = [
     pestVulnerability: 'MEDIUM',
     pestWatchlist: ['Pod Borer', 'Leaf Roller', 'Stem Fly'],
     recentAction: 'Light protective spray of Emamectin Benzoate conducted',
-    imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/crop-wheat.jpg',
   },
   {
     id: 'crop_04',
@@ -128,7 +128,7 @@ export const INITIAL_CROPS: CropLifecycleItem[] = [
     pestVulnerability: 'LOW',
     pestWatchlist: ['Mustard Aphid', 'Sawfly'],
     recentAction: 'Field ploughing and bed preparation initiated. Certified seeds ordered.',
-    imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/crop-groundnut.jpg',
   },
 ];
 

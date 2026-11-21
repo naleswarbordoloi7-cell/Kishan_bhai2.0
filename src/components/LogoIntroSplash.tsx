@@ -238,7 +238,7 @@ export const LogoIntroSplash: React.FC<LogoIntroSplashProps> = ({ isOpen, onClos
 
             <div className="inline-flex items-center gap-1.5 bg-stone-800/80 border border-stone-700 px-3 py-1 rounded-full text-[11px] text-stone-300">
               <Layers className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Algorand Verified Escrows</span>
+              <span>Verified Escrow Settlements</span>
             </div>
           </div>
         </div>

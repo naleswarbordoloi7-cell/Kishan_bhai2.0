@@ -335,7 +335,7 @@ export const FarmerDashboard: React.FC = () => {
               ) : (
                 briefingText || (language === 'hi' 
                   ? `नमस्ते ${farmerProfile?.name || 'रमेशभाई'}! कल आपके खेत में भारी बारिश (70%) संभव है। मैंने सिंचाई रोक दी है और आपके लिए गोंडल मंडी में ₹140 प्रीमियम भाव ट्रैक किया है।`
-                  : `Hello ${farmerProfile?.name || 'Ramesh Patel'}! I've analyzed your telemetry: heavy rain (70%) is expected tomorrow. I've flagged a "Hold Irrigation" status and found a ₹140 premium price for your crop at Gondal.`)
+                  : `Hello ${farmerProfile?.name || 'Ramesh Patel'}! I've analyzed your farm conditions: heavy rain (70%) is expected tomorrow. I've flagged a "Hold Irrigation" status and found a ₹140 premium price for your crop at Gondal.`)
               )}
             </p>
             <button 
@@ -685,6 +685,7 @@ export const FarmerDashboard: React.FC = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
           {[
+            { id: 'crop-report-card', labelHi: 'फसल रिपोर्ट कार्ड', labelEn: 'Crop Report Card', icon: FileText, color: 'bg-emerald-100 text-emerald-950 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-700' },
             { id: 'group-buying', labelHi: 'सामूहिक खरीद', labelEn: 'Group Buy', icon: ShoppingBag, color: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-700' },
             { id: 'crop-recommendation', labelHi: 'फसल सलाहकार', labelEn: 'Crop Advisor', icon: Sprout, color: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' },
             { id: 'disease-scanner', labelHi: 'रोग डॉक्टर', labelEn: 'Disease Scanner', icon: Camera, color: 'bg-green-50 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800' },

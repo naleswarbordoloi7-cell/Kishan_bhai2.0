@@ -108,7 +108,7 @@ const aiLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 25, pref
 const generalLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 150, prefix: 'api' });
 
 app.use('/api', generalLimiter);
-app.use('/api/ai', aiLimiter);
+app.use('/api/ai', (req, res, next) => (req.method === 'GET' ? next() : aiLimiter(req, res, next)));
 app.use('/api', ttsRouter);
 app.use('/api/tts', ttsRouter);
 app.use('/api/speech', ttsRouter);
@@ -229,6 +229,19 @@ app.post('/api/auth/register', (req, res) => {
     farmSizeAcres,
     crops,
     preferredLanguage,
+    companyName,
+    businessType,
+    contactDesignation,
+    gstin,
+    panNumber,
+    mandiLicenseNo,
+    warehouseLocation,
+    sourcingStates,
+    preferredCrops,
+    monthlyProcurementTons,
+    paymentTerms,
+    upiOrBankRef,
+    bio,
   } = req.body;
   if (!email || !fullName || !role) {
     return res.status(400).json({ error: 'Missing required fields: email, fullName, role.' });
@@ -240,12 +253,13 @@ app.post('/api/auth/register', (req, res) => {
     return res.status(409).json({ error: 'User with this email already registered.' });
   }
 
+  const safeRole = role === 'ADMIN' ? 'FARMER' : role;
   const newUser = {
     id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     email,
     fullName,
     phone: phone || '+91 98000 00000',
-    role: role === 'ADMIN' ? 'FARMER' : role, // Admin cannot be registered publicly
+    role: safeRole, // Admin cannot be registered publicly
     village: village || 'Anandpur',
     district: district || undefined,
     state: state || 'Gujarat',
@@ -254,8 +268,21 @@ app.post('/api/auth/register', (req, res) => {
     locationAccuracy: typeof locationAccuracy === 'number' ? locationAccuracy : undefined,
     isGpsVerified: Boolean(isGpsVerified ?? (latitude && longitude)),
     verified: role === 'CHAMPION' ? false : true,
-    farmSizeAcres: Number(farmSizeAcres) || 3.5,
-    crops: Array.isArray(crops) ? crops : ['Wheat', 'Cotton'],
+    farmSizeAcres: safeRole === 'FARMER' ? (Number(farmSizeAcres) || 3.5) : undefined,
+    crops: safeRole === 'FARMER' ? (Array.isArray(crops) ? crops : ['Wheat', 'Cotton']) : undefined,
+    companyName: companyName || undefined,
+    businessType: businessType || undefined,
+    contactDesignation: contactDesignation || undefined,
+    gstin: gstin || undefined,
+    panNumber: panNumber || undefined,
+    mandiLicenseNo: mandiLicenseNo || undefined,
+    warehouseLocation: warehouseLocation || undefined,
+    sourcingStates: Array.isArray(sourcingStates) ? sourcingStates : undefined,
+    preferredCrops: Array.isArray(preferredCrops) ? preferredCrops : undefined,
+    monthlyProcurementTons: monthlyProcurementTons !== undefined ? Number(monthlyProcurementTons) : undefined,
+    paymentTerms: paymentTerms || undefined,
+    upiOrBankRef: upiOrBankRef || undefined,
+    bio: bio || undefined,
     preferredLanguage: preferredLanguage || 'hi',
     createdAt: new Date().toISOString(),
   };
@@ -381,10 +408,13 @@ app.get('/api/auth/users', (req, res) => {
   res.json({ users: Array.from(db.users.values()) });
 });
 
-app.post('/api/auth/update-profile', (req, res) => {
+const handleUpdateUserProfile = (req: express.Request, res: express.Response) => {
   const {
     id,
+    email,
+    role,
     fullName,
+    phone,
     village,
     district,
     state,
@@ -396,27 +426,94 @@ app.post('/api/auth/update-profile', (req, res) => {
     crops,
     preferredLanguage,
     walletAddress,
-  } = req.body;
-  const user = db.users.get(id);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+    companyName,
+    businessType,
+    contactDesignation,
+    gstin,
+    panNumber,
+    mandiLicenseNo,
+    warehouseLocation,
+    sourcingStates,
+    preferredCrops,
+    monthlyProcurementTons,
+    paymentTerms,
+    upiOrBankRef,
+    bio,
+  } = req.body || {};
 
-  if (fullName) user.fullName = fullName;
-  if (village) user.village = village;
-  if (district) user.district = district;
-  if (state) user.state = state;
+  const targetId = typeof id === 'string' && id.trim() ? id.trim() : '';
+  if (!targetId) {
+    return res.status(400).json({ error: 'User id is required to update profile.' });
+  }
+
+  let user = db.users.get(targetId);
+  if (!user) {
+    // Upsert seamlessly when a client-side quick-role or post-restart session updates their profile
+    const safeRole = role && ['FARMER', 'CHAMPION', 'BUYER'].includes(role) ? role : (targetId.includes('buyer') ? 'BUYER' : 'FARMER');
+    user = {
+      id: targetId,
+      email: typeof email === 'string' && email.trim() ? email.trim() : `${targetId}@kishanbhai.in`,
+      fullName: typeof fullName === 'string' && fullName.trim() ? fullName.trim() : (safeRole === 'BUYER' ? 'Institutional Buyer' : 'Kishan Member'),
+      phone: typeof phone === 'string' && phone.trim() ? phone.trim() : '+91 98000 00000',
+      role: safeRole as any,
+      village: typeof village === 'string' && village.trim() ? village.trim() : (safeRole === 'BUYER' ? 'Ahmedabad APMC Hub' : 'Anandpur'),
+      district: typeof district === 'string' ? district.trim() : undefined,
+      state: typeof state === 'string' && state.trim() ? state.trim() : 'Gujarat',
+      verified: safeRole !== 'CHAMPION',
+      preferredLanguage: preferredLanguage === 'hi' ? 'hi' : 'en',
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  if (typeof fullName === 'string' && fullName.trim()) user.fullName = fullName.trim();
+  if (typeof phone === 'string' && phone.trim()) user.phone = phone.trim();
+  if (typeof email === 'string' && email.includes('@') && !user.email) user.email = email.trim();
+  if (typeof village === 'string' && village.trim()) user.village = village.trim();
+  if (typeof district === 'string') user.district = district.trim();
+  if (typeof state === 'string' && state.trim()) user.state = state.trim();
   if (latitude !== undefined) user.latitude = Number(latitude);
   if (longitude !== undefined) user.longitude = Number(longitude);
   if (locationAccuracy !== undefined) user.locationAccuracy = Number(locationAccuracy);
   if (isGpsVerified !== undefined) user.isGpsVerified = Boolean(isGpsVerified);
-  if (farmSizeAcres) user.farmSizeAcres = Number(farmSizeAcres);
-  if (crops) user.crops = crops;
-  if (preferredLanguage) user.preferredLanguage = preferredLanguage;
-  if (walletAddress) user.walletAddress = walletAddress;
+  if (farmSizeAcres !== undefined && !isNaN(Number(farmSizeAcres))) user.farmSizeAcres = Number(farmSizeAcres);
+  if (Array.isArray(crops)) user.crops = crops;
+  if (preferredLanguage === 'en' || preferredLanguage === 'hi') user.preferredLanguage = preferredLanguage;
+  if (typeof walletAddress === 'string' && walletAddress.trim()) user.walletAddress = walletAddress.trim();
+
+  // Buyer profile fields
+  if (typeof companyName === 'string') user.companyName = companyName.trim();
+  if (typeof businessType === 'string') user.businessType = businessType.trim();
+  if (typeof contactDesignation === 'string') user.contactDesignation = contactDesignation.trim();
+  if (typeof gstin === 'string') user.gstin = gstin.trim().toUpperCase();
+  if (typeof panNumber === 'string') user.panNumber = panNumber.trim().toUpperCase();
+  if (typeof mandiLicenseNo === 'string') user.mandiLicenseNo = mandiLicenseNo.trim();
+  if (typeof warehouseLocation === 'string') user.warehouseLocation = warehouseLocation.trim();
+  if (Array.isArray(sourcingStates)) user.sourcingStates = sourcingStates.map((s: any) => String(s).trim()).filter(Boolean);
+  if (Array.isArray(preferredCrops)) user.preferredCrops = preferredCrops.map((c: any) => String(c).trim()).filter(Boolean);
+  if (monthlyProcurementTons !== undefined && !isNaN(Number(monthlyProcurementTons))) {
+    user.monthlyProcurementTons = Math.max(0, Number(monthlyProcurementTons));
+  }
+  if (typeof paymentTerms === 'string') user.paymentTerms = paymentTerms.trim();
+  if (typeof upiOrBankRef === 'string') user.upiOrBankRef = upiOrBankRef.trim();
+  if (typeof bio === 'string') user.bio = bio.trim();
+  user.updatedAt = new Date().toISOString();
 
   db.users.set(user.id, user);
   syncUserToFirestore(user).catch((err) => console.warn('[Firebase] Background sync note:', err.message));
-  res.json({ success: true, user });
+  return res.json({ success: true, user });
+};
+
+app.post('/api/auth/update-profile', handleUpdateUserProfile);
+app.put('/api/auth/update-profile', handleUpdateUserProfile);
+
+app.get('/api/buyer/profile/:id', (req, res) => {
+  const user = db.users.get(req.params.id);
+  if (!user) return res.status(404).json({ error: 'Buyer profile not found' });
+  return res.json({ success: true, profile: user });
 });
+
+app.post('/api/buyer/profile', handleUpdateUserProfile);
+app.put('/api/buyer/profile', handleUpdateUserProfile);
 
 // Helper: Check if a user has approved Village Champion credentials
 export function isChampionApproved(userId?: string): boolean {
@@ -3372,109 +3469,117 @@ app.post('/api/ai/briefing', async (req, res) => {
 });
 
 app.post('/api/ai/chat', async (req, res) => {
-  const {
-    prompt,
-    message,
-    userRole,
-    cropContext,
-    imageBase64,
-    userId,
-    modelName,
-    language,
-    farmContext,
-    conversationId,
-    history,
-  } = req.body;
-  const effectivePrompt = prompt || message;
-  if (!effectivePrompt && !imageBase64) {
-    return res.status(400).json({ error: 'Prompt or image is required.' });
-  }
-
-  const sessId = conversationId || `conv_${Date.now()}`;
-  let session = db.conversations.get(sessId);
-  const now = new Date().toISOString();
-
-  // Retrieve farmer long-term memory
-  const farmerMemoryRecord = userId ? db.farmerMemory.get(userId) : undefined;
-  const memoryData = farmerMemoryRecord?.preferences || {};
-
-  // Build or use multi-turn conversation history
-  let conversationHistory = history;
-  if (!conversationHistory && session && session.messages && session.messages.length > 0) {
-    conversationHistory = session.messages.slice(-8).map((m) => ({
-      role: m.role as any,
-      content: m.content,
-    }));
-  }
-
-  const result = await askKishanAI(
-    effectivePrompt || 'Analyze this crop image.',
-    userRole || 'FARMER',
-    cropContext,
-    imageBase64,
-    'image/jpeg',
-    userId,
-    modelName || 'gemini-2.5-flash',
-    language || 'en',
-    farmContext,
-    conversationHistory,
-    memoryData
-  );
-
-  // If conversationId is provided or if creating new, update session in DB
-  if (!session) {
-    session = {
-      id: sessId,
-      farmerId: userId || 'usr_farmer_ramesh',
-      title: (prompt || 'Crop Advisory').slice(0, 38) + '...',
-      crop: cropContext || 'Wheat & Cotton',
-      language: language || 'en',
-      createdAt: now,
-      updatedAt: now,
-      messages: [],
-    };
-  }
-
-  if (prompt) {
-    session.messages.push({
-      id: `msg_u_${Date.now()}`,
-      role: 'user',
-      content: prompt,
-      timestamp: now,
+  try {
+    const {
+      prompt,
+      message,
+      userRole,
+      cropContext,
       imageBase64,
+      imageMimeType,
+      userId,
+      modelName,
+      language,
+      farmContext,
+      conversationId,
+      history,
+    } = req.body || {};
+    const effectivePrompt = prompt || message;
+    if (!effectivePrompt && !imageBase64) {
+      return res.status(400).json({ error: 'Prompt or image is required.' });
+    }
+
+    const sessId = conversationId || `conv_${Date.now()}`;
+    let session = db.conversations.get(sessId);
+    const now = new Date().toISOString();
+
+    // Retrieve farmer long-term memory
+    const farmerMemoryRecord = userId ? db.farmerMemory.get(userId) : undefined;
+    const memoryData = farmerMemoryRecord?.preferences || {};
+
+    // Build or use multi-turn conversation history
+    let conversationHistory = history;
+    if (!conversationHistory && session && session.messages && session.messages.length > 0) {
+      conversationHistory = session.messages.slice(-8).map((m) => ({
+        role: m.role as any,
+        content: m.content,
+      }));
+    }
+
+    const result = await askKishanAI(
+      effectivePrompt || 'Analyze this crop image.',
+      userRole || 'FARMER',
+      cropContext,
+      imageBase64,
+      imageMimeType || 'image/jpeg',
+      userId,
+      modelName || 'gemini-4-hydrogen',
+      language || 'en',
+      farmContext,
+      conversationHistory,
+      memoryData
+    );
+
+    // If conversationId is provided or if creating new, update session in DB
+    if (!session) {
+      session = {
+        id: sessId,
+        farmerId: userId || 'usr_farmer_ramesh',
+        title: (effectivePrompt || 'Crop Advisory').slice(0, 38) + '...',
+        crop: cropContext || 'Wheat & Cotton',
+        language: language || 'en',
+        createdAt: now,
+        updatedAt: now,
+        messages: [],
+      };
+    }
+
+    if (effectivePrompt) {
+      session.messages.push({
+        id: `msg_u_${Date.now()}`,
+        role: 'user',
+        content: effectivePrompt,
+        timestamp: now,
+        imageBase64,
+      });
+    }
+
+    session.messages.push({
+      id: `msg_a_${Date.now()}`,
+      role: 'assistant',
+      content: result.text,
+      timestamp: now,
+      sources: result.sources,
+      actionCard: result.farmingActionCard,
+      diseaseAnalysis: result.diseaseAnalysis,
+      executedAction: result.executedAction,
+    });
+
+    session.updatedAt = now;
+    db.conversations.set(sessId, session);
+
+    // Auto-record useful recurring agricultural details into farmer memory
+    if (userId) {
+      const existing = db.farmerMemory.get(userId) || { preferences: {}, notes: [], updatedAt: now };
+      if (farmContext?.crops) existing.preferences.crops = farmContext.crops;
+      if (farmContext?.village) existing.preferences.village = farmContext.village;
+      if (farmContext?.soilType) existing.preferences.soilType = farmContext.soilType;
+      if (language) existing.preferences.language = language;
+      existing.updatedAt = now;
+      db.farmerMemory.set(userId, existing);
+    }
+
+    res.json({
+      ...result,
+      conversationId: sessId,
+      session,
+    });
+  } catch (err: any) {
+    console.error('[API /api/ai/chat] Error:', err);
+    res.status(500).json({
+      error: err?.message || 'Unable to process Kishan AI request.',
     });
   }
-
-  session.messages.push({
-    id: `msg_a_${Date.now()}`,
-    role: 'assistant',
-    content: result.text,
-    timestamp: now,
-    sources: result.sources,
-    actionCard: result.farmingActionCard,
-    diseaseAnalysis: result.diseaseAnalysis,
-    executedAction: result.executedAction,
-  });
-
-  session.updatedAt = now;
-  db.conversations.set(sessId, session);
-
-  // Auto-record useful recurring agricultural details into farmer memory
-  if (userId) {
-    const existing = db.farmerMemory.get(userId) || { preferences: {}, notes: [], updatedAt: now };
-    if (farmContext?.crops) existing.preferences.crops = farmContext.crops;
-    if (farmContext?.village) existing.preferences.village = farmContext.village;
-    if (farmContext?.soilType) existing.preferences.soilType = farmContext.soilType;
-    if (language) existing.preferences.language = language;
-    existing.updatedAt = now;
-    db.farmerMemory.set(userId, existing);
-  }
-
-  res.json({
-    ...result,
-    conversationId: sessId,
-    session,
-  });
 });
 
 // Long-Term Farm Memory Endpoints
@@ -3571,40 +3676,51 @@ app.delete('/api/disease/history/:id', (req, res) => {
 });
 
 app.post('/api/ai/analyze-image', async (req, res) => {
-  const { imageBase64, cropName, language } = req.body;
-  if (!imageBase64) {
-    return res.status(400).json({ error: 'Image base64 is required for disease analysis.' });
-  }
+  try {
+    const { imageBase64, imageMimeType, cropName, language } = req.body || {};
+    if (!imageBase64) {
+      return res.status(400).json({ error: 'Image base64 is required for disease analysis.' });
+    }
 
-  const result = await analyzeCropDiseaseImage(
-    imageBase64,
-    cropName || 'Cotton (Bt)',
-    language || 'en'
-  );
-  res.json(result);
+    const result = await analyzeCropDiseaseImage(
+      imageBase64,
+      cropName || 'Cotton (Bt)',
+      language || 'en',
+      imageMimeType || 'image/jpeg'
+    );
+    res.json(result);
+  } catch (err: any) {
+    console.error('[API /api/ai/analyze-image] Error:', err);
+    res.status(500).json({ error: err?.message || 'Failed to analyze crop image.' });
+  }
 });
 
 app.post('/api/ai/voice', async (req, res) => {
-  const { transcript, language, userRole, cropContext, farmContext } = req.body;
-  const userQuery = transcript || 'What should I do today for my farm?';
+  try {
+    const { transcript, language, userRole, cropContext, farmContext } = req.body || {};
+    const userQuery = transcript || 'What should I do today for my farm?';
 
-  const result = await askKishanAI(
-    userQuery,
-    userRole || 'FARMER',
-    cropContext,
-    undefined,
-    'image/jpeg',
-    undefined,
-    'gemini-2.5-flash',
-    language || 'hi',
-    farmContext
-  );
+    const result = await askKishanAI(
+      userQuery,
+      userRole || 'FARMER',
+      cropContext,
+      undefined,
+      'image/jpeg',
+      undefined,
+      'gemini-4-hydrogen',
+      language || 'hi',
+      farmContext
+    );
 
-  res.json({
-    ...result,
-    transcript: userQuery,
-    audioSupported: true,
-  });
+    res.json({
+      ...result,
+      transcript: userQuery,
+      audioSupported: true,
+    });
+  } catch (err: any) {
+    console.error('[API /api/ai/voice] Error:', err);
+    res.status(500).json({ error: err?.message || 'Failed to process voice query.' });
+  }
 });
 
 app.get('/api/ai/sessions', (req, res) => {
@@ -4069,6 +4185,248 @@ app.get('/api/admin/telemetry', (req, res) => {
     facilitatorUrl: GOPLAUSIBLE_CONFIG.facilitatorUrl,
     recentTransactions: txs.slice(-10).reverse(),
   });
+});
+
+// 16. DIGITAL CROP REPORT CARD ROUTES
+app.get('/api/crop-reports', (req, res) => {
+  const { approvedOnly, farmerId } = req.query;
+  let reports = Array.from(db.cropReports.values());
+
+  if (approvedOnly === 'true') {
+    reports = reports.filter((r) => r.verification?.farmerApprovedForBuyers === true);
+  }
+  if (typeof farmerId === 'string' && farmerId.trim()) {
+    reports = reports.filter((r) => r.farmerInfo?.farmerId === farmerId.trim());
+  }
+
+  // Ensure initial farmer-approved sample report exists so buyers always have verified reports to inspect
+  if (reports.length === 0 && approvedOnly === 'true') {
+    const sampleReport = {
+      reportId: 'KB_CRC_ramesh_crop_01',
+      uniqueCropId: 'KB-GU-COT-OP01',
+      seasonLabel: '2026–27 Crop Cycle',
+      generatedAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
+      farmerInfo: {
+        farmerId: 'usr_farmer_ramesh',
+        fullName: 'Ramesh Patel',
+        village: 'Anandpur',
+        district: 'Rajkot',
+        state: 'Gujarat',
+        photoUrl: '/crop-cotton.jpg',
+        kycVerified: true,
+      },
+      cropInfo: {
+        cropId: 'crop_01',
+        cropName: 'BT Cotton',
+        hindiName: 'बीटी कपास (शंकर-6)',
+        variety: 'Shankar-6 Hybrid',
+        landAreaAcres: 3.5,
+        landAreaHectares: 1.42,
+        sowingDate: '2026-06-15',
+        expectedHarvestDate: '2026-11-02',
+        daysElapsed: 82,
+        totalCycleDays: 140,
+        growthStage: 'Grain Filling / Boll Dev',
+        growthProgressPct: 68,
+        cropPhotoUrl: '/crop-cotton.jpg',
+      },
+      soilHealthReport: {
+        sampleId: 'SHC-GUJ-2026-12847',
+        testDate: '2026-07-18',
+        soilType: 'Deep Medium Black Cotton (Vertisols)',
+        ph: 7.3,
+        phStatus: 'Neutral',
+        organicCarbonPct: 0.68,
+        nitrogenKgHa: 178,
+        phosphorusKgHa: 28,
+        potassiumKgHa: 356,
+        soilHealthScore: 84,
+        classification: 'Good Fertility Index',
+        verification: 'VERIFIED',
+      },
+      diseaseReport: {
+        latestScanDate: '2026-08-31',
+        pathogenDetected: 'Bacterial Blight / Angular Leaf Spot (Low Residual)',
+        severity: 'LOW',
+        confidencePct: 96.8,
+        activeRiskLevel: 'MEDIUM',
+        treatmentStatus: 'Preventive Bio-Care Applied',
+        pestWatchlist: ['Pink Bollworm', 'Whitefly', 'Jassids'],
+        recentScansCount: 1,
+        verification: 'VERIFIED',
+      },
+      fertilizerAndIrrigation: {
+        irrigationEventsCount: 4,
+        fertilizerApplicationsCount: 3,
+        soilMoisturePct: 42,
+        waterSavedLitres: 24600,
+        pumpStatus: 'IDLE',
+        history: [
+          {
+            id: 'diary_01',
+            date: '2026-08-31',
+            category: 'Fertilizer',
+            title: 'Second Urea Split (30 kg/acre) Applied via Drip Fertigation',
+            quantityOrDose: '30 kg Urea (Neem-Coated) per acre',
+            expenseAmountInr: 1380,
+            verification: 'VERIFIED',
+          },
+          {
+            id: 'diary_03',
+            date: '2026-08-25',
+            category: 'Pesticide',
+            title: 'Protective Spray for Sucking Pests (Whitefly & Jassids)',
+            quantityOrDose: '1500 ppm Azadirachtin extract',
+            expenseAmountInr: 580,
+            verification: 'VERIFIED',
+          },
+        ],
+        verification: 'VERIFIED',
+      },
+      aiHealthAnalysis: {
+        healthScore: 92,
+        summary: 'BT Cotton (Shankar-6 Hybrid) across 3.5 acres shows vigorous boll formation with balanced soil pH (7.3) and drip fertigation discipline.',
+        strengths: [
+          'Soil fertility index is 84/100 with strong potassium reserves.',
+          'Drip fertigation and preventive pest scouting logged on schedule.',
+        ],
+        recommendations: [
+          'Maintain 40-50% root-zone moisture during final boll opening.',
+          'Target clean picking below 9% moisture for A+ Export premium.',
+        ],
+        analyzedAt: new Date().toISOString(),
+        verification: 'ESTIMATED',
+      },
+      harvestAndQuality: {
+        harvestQuantityQuintals: 45,
+        harvestQuantityKg: 4500,
+        harvestVerification: 'ESTIMATED',
+        cropQualityGrade: 'A+ Export',
+        moisturePct: 8.5,
+        purityScorePct: 97,
+        gradeVerification: 'ESTIMATED',
+      },
+      financials: {
+        marketPricePerQuintalInr: 7620,
+        marketPricePerKgInr: 76.2,
+        marketSource: 'Gondal APMC, Gujarat (Live APMC)',
+        priceVerification: 'VERIFIED',
+        totalCultivationExpensesInr: 51170,
+        loggedExpensesInr: 2410,
+        estimatedBaselineExpensesInr: 48760,
+        expenseBreakdown: [
+          { label: 'Logged Farm Diary Inputs & Field Operations', amountInr: 2410, source: 'VERIFIED' },
+          { label: 'Seeds, Land Preparation & Stage Baseline Operations', amountInr: 48760, source: 'ESTIMATED' },
+        ],
+        expenseVerification: 'VERIFIED',
+        expectedRevenueInr: 342900,
+        estimatedProfitInr: 291730,
+        profitPerAcreInr: 83351,
+        roiPct: 570,
+        revenueVerification: 'ESTIMATED',
+      },
+      performance: {
+        overallGrade: 'A+',
+        overallScorePct: 89,
+        overallRatingOutOf5: 4.5,
+        remarks: 'Outstanding agronomic stewardship with strong soil balance and reliable buyer readiness.',
+        subjects: [
+          { id: 'soil', subject: 'Soil Fertility & Nutrient Balance', subjectHi: 'मिट्टी उर्वरता', scorePct: 84, grade: 'A', ratingText: 'Strong', verification: 'VERIFIED', detailNote: 'pH 7.3 · OC 0.68%' },
+          { id: 'vigor', subject: 'Vegetative Vigor & Canopy Health', subjectHi: 'फसल विकास', scorePct: 92, grade: 'A+', ratingText: 'Exemplary', verification: 'ESTIMATED', detailNote: '68% cycle complete' },
+          { id: 'disease', subject: 'Disease & Pest Resistance', subjectHi: 'रोग सुरक्षा', scorePct: 92, grade: 'A+', ratingText: 'Exemplary', verification: 'VERIFIED', detailNote: 'Low residual risk' },
+          { id: 'water', subject: 'Water & Nutrient Management', subjectHi: 'सिंचाई प्रबंधन', scorePct: 90, grade: 'A+', ratingText: 'Exemplary', verification: 'VERIFIED', detailNote: '42% root moisture' },
+          { id: 'yield', subject: 'Yield & Market Readiness', subjectHi: 'उपज तैयारी', scorePct: 86, grade: 'A', ratingText: 'Strong', verification: 'ESTIMATED', detailNote: '45 Qtl · A+ Export' },
+        ],
+      },
+      verification: {
+        status: 'VERIFIED',
+        verifiedRecordsCount: 4,
+        estimatedRecordsCount: 2,
+        verificationCode: 'KBV-84F2A1',
+        verificationUrl: '?view=crop-report-card&report=KB_CRC_ramesh_crop_01&verify=KBV-84F2A1',
+        farmerApprovedForBuyers: true,
+        approvedAt: new Date().toISOString(),
+        approvedNote: 'Approved by farmer for verified buyer inspection',
+      },
+    } as any;
+    db.cropReports.set(sampleReport.reportId, sampleReport);
+    reports = [sampleReport];
+  }
+
+  res.json({ success: true, reports });
+});
+
+app.get('/api/crop-reports/:reportId', (req, res) => {
+  const { reportId } = req.params;
+  const report =
+    db.cropReports.get(reportId) ||
+    Array.from(db.cropReports.values()).find((r) => r.uniqueCropId === reportId);
+
+  if (!report) {
+    return res.status(404).json({ error: 'Crop report card not found' });
+  }
+  res.json({ success: true, report });
+});
+
+app.post('/api/crop-reports/publish', (req, res) => {
+  const report = req.body;
+  if (!report || !report.reportId || !report.uniqueCropId) {
+    return res.status(400).json({ error: 'Invalid crop report card payload' });
+  }
+  db.cropReports.set(report.reportId, {
+    ...report,
+    lastUpdatedAt: new Date().toISOString(),
+  });
+  res.json({ success: true, report: db.cropReports.get(report.reportId) });
+});
+
+app.post('/api/crop-reports/ai-analysis', async (req, res) => {
+  const { cropName, variety, areaAcres, stage, progressPct, soilHealth, disease, moisturePct, expectedYieldQuintals } = req.body || {};
+
+  const fallbackAnalysis = {
+    healthScore: Math.min(98, Math.max(70, Math.round(((soilHealth?.soilHealthScore || 82) + (progressPct || 50) * 0.2 + 12)))),
+    summary: `${cropName || 'Crop'} (${variety || 'Standard'}) over ${areaAcres || 2} acres is progressing steadily in ${stage || 'Active Growth'} (${progressPct || 50}% cycle). With soil score ${soilHealth?.soilHealthScore || 82}/100 and ${moisturePct || 42}% root moisture, projected harvest remains on track at ${expectedYieldQuintals || 30} quintals.`,
+    strengths: [
+      `Soil fertility (${soilHealth?.soilHealthScore || 82}/100) and pH ${soilHealth?.ph || 7.2} support strong nutrient uptake.`,
+      `Moisture stability at ${moisturePct || 42}% minimizes drought stress during critical yield formation.`,
+      `Proactive field monitoring keeps disease risk ${disease?.severity || 'LOW'}.`,
+    ],
+    recommendations: [
+      `Apply targeted foliar micronutrients prior to peak grain/boll filling.`,
+      `Continue scouting for ${disease?.pestWatchlist?.slice(0, 2).join(', ') || 'seasonal pests'} every 5 days.`,
+      `Schedule harvest at optimal dry-matter maturity to secure Grade A+ buyer pricing.`,
+    ],
+    analyzedAt: new Date().toISOString(),
+    verification: 'ESTIMATED',
+  };
+
+  try {
+    const prompt = `As an Indian agronomist for Kishan Bhai, analyze this crop record and respond ONLY with valid JSON matching {"healthScore": number, "summary": string, "strengths": string[], "recommendations": string[]}:
+Crop: ${cropName} (${variety}), Area: ${areaAcres} acres, Stage: ${stage} (${progressPct}%), Soil Score: ${soilHealth?.soilHealthScore}/100, Soil pH: ${soilHealth?.ph}, Moisture: ${moisturePct}%, Disease: ${disease?.pathogenDetected} (${disease?.severity}), Expected Yield: ${expectedYieldQuintals} Quintals. Keep summary concise (2 sentences) and provide 3 short strengths and 3 actionable recommendations.`;
+    const aiRes = await askKishanAI(prompt, 'FARMER', cropName, undefined, undefined, undefined, 'gemini-4-hydrogen', 'en');
+    const jsonMatch = (aiRes?.text || '').match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.summary && Array.isArray(parsed.strengths) && Array.isArray(parsed.recommendations)) {
+        return res.json({
+          success: true,
+          analysis: {
+            healthScore: Number(parsed.healthScore) || fallbackAnalysis.healthScore,
+            summary: String(parsed.summary),
+            strengths: parsed.strengths.slice(0, 3).map(String),
+            recommendations: parsed.recommendations.slice(0, 3).map(String),
+            analyzedAt: new Date().toISOString(),
+            verification: 'ESTIMATED',
+          },
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[CropReport AI Analysis fallback]:', err);
+  }
+
+  res.json({ success: true, analysis: fallbackAnalysis });
 });
 
 // Centralized API Error Handling Middleware

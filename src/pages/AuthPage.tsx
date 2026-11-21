@@ -408,7 +408,7 @@ export const AuthPage: React.FC = () => {
               title: 'Platform Administrator',
               defaultName: 'Platform Administrator',
               icon: BarChart3,
-              desc: 'System operations monitor for Algorand Testnet telemetry, cluster synchronization, and platform health.',
+              desc: 'Operations console for village champion approvals, cluster coordination, and platform rewards.',
             },
           ].map((item) => {
             const Icon = item.icon;

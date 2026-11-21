@@ -74,14 +74,14 @@ export const ImageQualityCheckCard: React.FC<ImageQualityCheckCardProps> = ({
   }
 
   return (
-    <div className="bg-stone-50 border border-stone-200/90 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2.5">
-      <div className="flex items-center gap-2">
+    <div className="w-full box-border min-w-0 bg-stone-50 border border-stone-200/90 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2.5">
+      <div className="flex items-center gap-2 min-w-0">
         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
         <span className="text-xs font-bold text-stone-800">
           Image Quality Assessment: Passed
         </span>
       </div>
-      <div className="flex items-center gap-2 text-[11px] text-stone-600 font-medium">
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-stone-600 font-medium min-w-0">
         <span className="px-2 py-0.5 rounded-md bg-white border border-stone-200">
           Clarity: {quality.clarity}
         </span>
